@@ -37,17 +37,14 @@ import urllib.request
 
 AGENT = "PlayInsights/1.0 (https://github.com/JigSawFr/PlayInsights)"
 SPARQL = "https://query.wikidata.org/sparql"
-GAMES = """
-SELECT ?tid ?links ?article WHERE {
+# One query (Wikidata's service may allow one a minute): each game with a
+# Switch title id, its sitelinks and English page, and each of its critics'
+# scores with the number of reviews behind it (a row each).
+QUERY = """
+SELECT ?tid ?links ?article ?score ?count WHERE {
   ?game wdt:P11072 ?tid; wikibase:sitelinks ?links.
   OPTIONAL { ?article schema:about ?game; schema:isPartOf <https://en.wikipedia.org/>. }
-}
-"""
-REVIEWS = """
-SELECT ?tid ?score ?count WHERE {
-  ?game wdt:P11072 ?tid; p:P444 ?statement.
-  ?statement ps:P444 ?score.
-  OPTIONAL { ?statement pq:P7887 ?count }
+  OPTIONAL { ?game p:P444 ?statement. ?statement ps:P444 ?score. OPTIONAL { ?statement pq:P7887 ?count } }
 }
 """
 VIEWS = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/"
@@ -58,6 +55,7 @@ TRENDING_VIEWS = 500   # last month's views below which the trend says nothing
 VIEWED = 400           # the games whose views are asked, the most sitelinks first
 PAUSE = 0.25           # seconds between two of them
 UPCOMING_DAYS = 365    # how far ahead upcoming.json looks
+MAX_WAIT = 1800        # seconds a rate-limited service is waited for, at most
 
 
 def fetch(url, tries=4, patient=True, timeout=120):
@@ -74,7 +72,11 @@ def fetch(url, tries=4, patient=True, timeout=120):
             if attempt == tries - 1 or (e.code == 429 and not patient):
                 raise
             if e.code == 429:
-                time.sleep(max(int(e.headers.get("Retry-After", "60") or 60), 60) + 5)
+                wait = max(int(e.headers.get("Retry-After", "60") or 60), 60) + 5
+                if wait > MAX_WAIT:
+                    raise
+                print(f"{url.split('?')[0]}: rate-limited, again in {wait} s", file=sys.stderr)
+                time.sleep(wait)
                 continue
         except (urllib.error.URLError, TimeoutError):
             if attempt == tries - 1:
@@ -94,10 +96,10 @@ def base_id(value):
     return tid if TID.match(tid) else None
 
 
-def games():
+def games(bindings):
     """{title id: (sitelinks, English article or None)}, the most sitelinks of an item's ids."""
     out = {}
-    for b in sparql(GAMES):
+    for b in bindings:
         tid = base_id(b["tid"]["value"])
         if not tid:
             continue
@@ -132,7 +134,7 @@ def reviews(bindings):
     out = {}
     for b in bindings:
         tid = base_id(b["tid"]["value"])
-        score = score_of(b["score"]["value"])
+        score = score_of(b["score"]["value"]) if "score" in b else None
         if not tid or score is None:
             continue
         count = int(float(b["count"]["value"])) if "count" in b else 0
@@ -245,9 +247,10 @@ def main():
     today = datetime.date.today()
     starts, end = months(today)
 
-    known = games()
+    rows = sparql(QUERY)
+    known = games(rows)
     print(f"{len(known)} games with a Switch title id", file=sys.stderr)
-    critics = reviews(sparql(REVIEWS))
+    critics = reviews(rows)
     print(f"{len(critics)} with critics' scores", file=sys.stderr)
     read = read_views(known, starts, end)
     write(os.path.join(out_dir, "popular.json"), {
