@@ -1,0 +1,50 @@
+# The data files made again every Monday (and on demand), then committed to
+# the `data` branch, where PlayShelf reads them through jsDelivr.
+name: build
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test
+        run: python3 -m unittest discover -s tests
+      - name: Build
+        run: python3 tools/build.py out
+      - name: Commit to the data branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin data >/dev/null; then
+            git fetch --depth 1 origin data:refs/remotes/origin/data
+            git worktree add data-branch origin/data
+            git -C data-branch checkout -B data
+          else
+            git worktree add --orphan -b data data-branch
+          fi
+          cp out/*.json data-branch/
+          cd data-branch
+          git add -A
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+            exit 0
+          fi
+          git commit -q -m "data: $(date -u +%Y-%m-%d)"
+          git push origin data
+          # jsDelivr keeps a branch's files up to 12 hours: asked again now.
+          for f in popular.json upcoming.json; do
+            curl -fsS "https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@data/$f" >/dev/null || true
+          done
