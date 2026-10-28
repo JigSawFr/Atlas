@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""Builds PlayInsights' data files, by Nintendo Switch title id, from open
+sources that need no key:
+
+- data/popular.json: how well known each game is (a score from 0 to 100),
+  whether it is read more lately (a trend, in percent) and what the critics
+  gave it (0 to 100, 0 when unknown);
+- data/upcoming.json: the games whose release date is still to come, with
+  their name and date.
+
+The sources:
+
+- Wikidata: the games with a Switch title id (P11072), how many Wikipedias
+  have a page on each (sitelinks), their English page, and their critics'
+  scores (P444) with the number of reviews behind each (P7887);
+- Wikimedia's pageviews: how often each English page was read in each of the
+  last three whole months, for the best known games (VIEWED);
+- blawar/titledb's US eShop list: the release dates, for upcoming.json.
+
+A game's score weighs its sitelinks, its number of critics' reviews and its
+views of the last month, each on a log scale against the most of all. When
+Wikimedia turns too many view requests away (fewer than half read), every
+game is scored without views and none has a trend: no mixing of scales.
+
+Usage: tools/build.py [out-dir]   (default: out/)
+"""
+import datetime
+import json
+import math
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+AGENT = "PlayInsights/1.0 (https://github.com/JigSawFr/PlayInsights)"
+SPARQL = "https://query.wikidata.org/sparql"
+GAMES = """
+SELECT ?tid ?links ?article WHERE {
+  ?game wdt:P11072 ?tid; wikibase:sitelinks ?links.
+  OPTIONAL { ?article schema:about ?game; schema:isPartOf <https://en.wikipedia.org/>. }
+}
+"""
+REVIEWS = """
+SELECT ?tid ?score ?count WHERE {
+  ?game wdt:P11072 ?tid; p:P444 ?statement.
+  ?statement ps:P444 ?score.
+  OPTIONAL { ?statement pq:P7887 ?count }
+}
+"""
+VIEWS = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/"
+         "{article}/monthly/{start}/{end}")
+TITLEDB = "https://raw.githubusercontent.com/blawar/titledb/master/US.en.json"
+TID = re.compile(r"^0100[0-9A-F]{9}000$")
+TRENDING_VIEWS = 500   # last month's views below which the trend says nothing
+VIEWED = 400           # the games whose views are asked, the most sitelinks first
+PAUSE = 0.25           # seconds between two of them
+UPCOMING_DAYS = 365    # how far ahead upcoming.json looks
+
+
+def fetch(url, tries=4, patient=True, timeout=120):
+    """`url`'s JSON answer; None for a 404. A 429 waits as long as the
+    service says (`patient`) or is raised at once."""
+    for attempt in range(tries):
+        try:
+            request = urllib.request.Request(url, headers={"User-Agent": AGENT, "Accept": "application/json"})
+            with urllib.request.urlopen(request, timeout=timeout) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return None
+            if attempt == tries - 1 or (e.code == 429 and not patient):
+                raise
+            if e.code == 429:
+                time.sleep(max(int(e.headers.get("Retry-After", "60") or 60), 60) + 5)
+                continue
+        except (urllib.error.URLError, TimeoutError):
+            if attempt == tries - 1:
+                raise
+        time.sleep(2 ** attempt)
+    return None
+
+
+def sparql(query):
+    body = fetch(SPARQL + "?" + urllib.parse.urlencode({"query": query, "format": "json"}))
+    return body["results"]["bindings"]
+
+
+def base_id(value):
+    """A base game's title id, upper case, or None."""
+    tid = (value or "").strip().upper()
+    return tid if TID.match(tid) else None
+
+
+def games():
+    """{title id: (sitelinks, English article or None)}, the most sitelinks of an item's ids."""
+    out = {}
+    for b in sparql(GAMES):
+        tid = base_id(b["tid"]["value"])
+        if not tid:
+            continue
+        links = int(b["links"]["value"])
+        article = urllib.parse.unquote(b["article"]["value"].rsplit("/wiki/", 1)[-1]) if "article" in b else None
+        old = out.get(tid)
+        if not old or links > old[0] or (links == old[0] and article and not old[1]):
+            out[tid] = (links, article or (old[1] if old else None))
+    return out
+
+
+def score_of(text):
+    """A critics' score as Wikidata writes it ("84%", "8.5/10", "80/100") on 0..100, or None."""
+    m = re.match(r"^\s*([0-9]+(?:\.[0-9]+)?)\s*(%|/\s*([0-9]+(?:\.[0-9]+)?))?\s*$", text or "")
+    if not m:
+        return None
+    value = float(m.group(1))
+    if m.group(2) == "%":
+        top = 100.0
+    elif m.group(3):
+        top = float(m.group(3))
+    else:
+        return None
+    if top <= 0 or value < 0 or value > top:
+        return None
+    return value * 100.0 / top
+
+
+def reviews(bindings):
+    """{title id: (reviews, critics' score)}: the most reviews any of its
+    scores counts, and the score that counts the most reviews."""
+    out = {}
+    for b in bindings:
+        tid = base_id(b["tid"]["value"])
+        score = score_of(b["score"]["value"])
+        if not tid or score is None:
+            continue
+        count = int(float(b["count"]["value"])) if "count" in b else 0
+        old = out.get(tid, (0, 0.0))
+        if count > old[0] or (old[1] == 0 and count == old[0]):
+            out[tid] = (count, score)
+    return out
+
+
+def months(today):
+    """The first days of the last three whole months, oldest first, and the end of the last."""
+    first = today.replace(day=1)
+    starts = []
+    for _ in range(3):
+        first = (first - datetime.timedelta(days=1)).replace(day=1)
+        starts.insert(0, first)
+    return starts, today.replace(day=1) - datetime.timedelta(days=1)
+
+
+def views(article, starts, end):
+    """The article's views in each of `starts`' months (0 for none)."""
+    url = VIEWS.format(article=urllib.parse.quote(article.replace(" ", "_"), safe=""),
+                       start=starts[0].strftime("%Y%m%d"), end=end.strftime("%Y%m%d"))
+    body = fetch(url, tries=2, patient=False, timeout=30)
+    counts = {item["timestamp"][:6]: item["views"] for item in (body or {}).get("items", [])}
+    return [counts.get(s.strftime("%Y%m"), 0) for s in starts]
+
+
+def read_views(known, starts, end):
+    """{article: [views a month]} for the best known games; {} when Wikimedia turned too many away."""
+    best = sorted(((links, a) for links, a in known.values() if a), reverse=True)[:VIEWED]
+    read, refused = {}, 0
+    for _, article in best:
+        if article in read:
+            continue
+        try:
+            read[article] = views(article, starts, end)
+        except urllib.error.HTTPError as e:
+            refused += 1
+            if refused >= 3:
+                print(f"views: refused ({e.code}) after {len(read)}", file=sys.stderr)
+                break
+            time.sleep(30)
+            continue
+        time.sleep(PAUSE)
+    if len(read) < len(best) // 2:
+        print(f"views: {len(read)} of {len(best)} read, too few: none used", file=sys.stderr)
+        return {}
+    print(f"views: {len(read)} of {len(best)} read", file=sys.stderr)
+    return read
+
+
+def scale(value, most):
+    return math.log1p(value) / math.log1p(most) if most > 0 else 0.0
+
+
+def popular(known, critics, read):
+    """{title id: [score, trend, critics' score]}, the games scored above 0."""
+    most_links = max((links for links, _ in known.values()), default=1)
+    most_reviews = max((n for n, _ in critics.values()), default=1)
+    most_views = max([c[-1] for c in read.values()] + [1])
+    table = {}
+    for tid, (links, article) in sorted(known.items()):
+        reviewed, critic = critics.get(tid, (0, 0.0))
+        counts = read.get(article) if article else None
+        if read:
+            # Views read: they weigh most; a game whose page was not read
+            # (not among the best known) has none.
+            last = counts[-1] if counts else 0
+            score = 0.3 * scale(links, most_links) + 0.2 * scale(reviewed, most_reviews) + 0.5 * scale(last, most_views)
+        else:
+            score = 0.6 * scale(links, most_links) + 0.4 * scale(reviewed, most_reviews)
+        trend = 0
+        if counts:
+            before = (counts[0] + counts[1]) / 2
+            if counts[-1] >= TRENDING_VIEWS and before > 0:
+                trend = max(-100, min(999, round((counts[-1] - before) * 100 / before)))
+        if round(score * 100) > 0:
+            table[tid] = [round(score * 100), trend, round(critic)]
+    return table
+
+
+def upcoming(titles, today, days=UPCOMING_DAYS):
+    """{title id: [YYYYMMDD, name]} of titledb's base games out after `today` and within `days`."""
+    first = int(today.strftime("%Y%m%d"))
+    last = int((today + datetime.timedelta(days=days)).strftime("%Y%m%d"))
+    out = {}
+    for entry in titles.values():
+        tid = base_id(entry.get("id"))
+        try:
+            date = int(entry.get("releaseDate") or 0)
+        except (TypeError, ValueError):
+            continue
+        name = (entry.get("name") or "").strip()
+        if tid and name and first < date <= last and not entry.get("isDemo"):
+            out[tid] = [date, name[:200]]
+    return dict(sorted(out.items()))
+
+
+def write(path, payload):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+        f.write("\n")
+    print(f"{path}: {len(payload['games'])} games", file=sys.stderr)
+
+
+def main():
+    out_dir = sys.argv[1] if len(sys.argv) > 1 else "out"
+    os.makedirs(out_dir, exist_ok=True)
+    today = datetime.date.today()
+    starts, end = months(today)
+
+    known = games()
+    print(f"{len(known)} games with a Switch title id", file=sys.stderr)
+    critics = reviews(sparql(REVIEWS))
+    print(f"{len(critics)} with critics' scores", file=sys.stderr)
+    read = read_views(known, starts, end)
+    write(os.path.join(out_dir, "popular.json"), {
+        "schema": 1, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
+        "views": bool(read),
+        "source": "Wikidata (P11072, sitelinks, P444 with P7887) and Wikimedia pageviews (en.wikipedia)",
+        "games": popular(known, critics, read)})
+
+    titles = fetch(TITLEDB, timeout=600) or {}
+    write(os.path.join(out_dir, "upcoming.json"), {
+        "schema": 1, "generated": today.isoformat(), "source": "blawar/titledb (US.en.json)",
+        "games": upcoming(titles, today)})
+
+
+if __name__ == "__main__":
+    main()
