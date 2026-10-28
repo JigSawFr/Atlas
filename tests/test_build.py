@@ -31,8 +31,13 @@ class Build(unittest.TestCase):
                 binding(tid="01000B3012F3A000", score="80/100", count="30"),
                 binding(tid="01008DF00B78E000", score="7/10"),
                 binding(tid="01008DF00B78E800", score="90%", count="9"),
-                binding(tid="0100000000010000", score="great", count="50")]
-        self.assertEqual(build.reviews(rows), {"01000B3012F3A000": (31, 84.0), "01008DF00B78E000": (0, 70.0)})
+                binding(tid="0100000000010000", score="great", count="50"),
+                # An unknown number of reviews: Wikidata gives a blank node.
+                binding(tid="0100000000020000", score="75%",
+                        count="http://www.wikidata.org/.well-known/genid/06bbd14e8fb318f31861d45c712357df")]
+        self.assertEqual(build.reviews(rows), {"01000B3012F3A000": (31, 84.0), "01008DF00B78E000": (0, 70.0),
+                                               "0100000000020000": (0, 75.0)})
+        self.assertEqual([build.count_of(v) for v in ("12", "3.0", "-4", "inf", "nan", "", None)], [12, 3, 0, 0, 0, 0, 0])
 
     def test_games(self):
         rows = [binding(tid="0100000000010000", links="10", article="https://en.wikipedia.org/wiki/A%27s_game"),
