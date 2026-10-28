@@ -128,6 +128,15 @@ def score_of(text):
     return value * 100.0 / top
 
 
+def count_of(text):
+    """A number of reviews; 0 for Wikidata's "unknown value" (a blank node's
+    address) or anything else that is not a number."""
+    try:
+        return max(0, int(float(text)))
+    except (TypeError, ValueError, OverflowError):
+        return 0
+
+
 def reviews(bindings):
     """{title id: (reviews, critics' score)}: the most reviews any of its
     scores counts, and the score that counts the most reviews."""
@@ -137,7 +146,7 @@ def reviews(bindings):
         score = score_of(b["score"]["value"]) if "score" in b else None
         if not tid or score is None:
             continue
-        count = int(float(b["count"]["value"])) if "count" in b else 0
+        count = count_of(b["count"]["value"]) if "count" in b else 0
         old = out.get(tid, (0, 0.0))
         if count > old[0] or (old[1] == 0 and count == old[0]):
             out[tid] = (count, score)
