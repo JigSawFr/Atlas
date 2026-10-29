@@ -34,6 +34,11 @@ jobs:
             git worktree add --orphan -b data data-branch
           fi
       - name: Build
+        # IGDB's keys, when the repository has them (tools/igdb.py): without
+        # them the files are made from the other sources alone.
+        env:
+          IGDB_CLIENT_ID: ${{ secrets.IGDB_CLIENT_ID }}
+          IGDB_CLIENT_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
         run: python3 tools/build.py out data-branch
       - name: Commit to the data branch
         run: |

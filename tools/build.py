@@ -6,7 +6,7 @@ sources that need no key:
   whether it is read more lately (a trend, in percent) and what the critics
   gave it (0 to 100, 0 when unknown);
 - data/upcoming.json: the games whose release date is still to come, with
-  their name and date;
+  their name and date (and how many follow them on IGDB, when known);
 - data/games.json: each game's traits (series, developers, publishers,
   genres, modes) and, for one also sold on Steam, its Steam audience;
 - data/similar.json: the games most like each one, by their traits
@@ -22,11 +22,14 @@ The sources:
 - blawar/titledb's US eShop list: the release dates, for upcoming.json;
 - SteamSpy: the reviews, owners and players of the games also on Steam
   (Wikidata's Steam id), a request a second within a time budget, the rest
-  kept from the last run (`previous`).
+  kept from the last run (`previous`);
+- IGDB, only when IGDB_CLIENT_ID and IGDB_CLIENT_SECRET are set (the
+  repository's secrets): more traits, a popularity and the hype of the games
+  Wikidata links to it (tools/igdb.py).
 
 A game's score weighs its sitelinks, its number of critics' reviews, its
 views of the last month and its Steam reviews, each on a log scale against
-the most of all. When
+the most of all, and its popularity on IGDB. When
 Wikimedia turns too many view requests away (fewer than half read), every
 game is scored without views and none has a trend: no mixing of scales.
 
@@ -45,6 +48,7 @@ import urllib.parse
 import urllib.request
 
 import features
+import igdb
 
 AGENT = "PlayInsights/1.0 (https://github.com/JigSawFr/PlayInsights)"
 SPARQL = "https://query.wikidata.org/sparql"
@@ -211,9 +215,10 @@ def scale(value, most):
     return math.log1p(value) / math.log1p(most) if most > 0 else 0.0
 
 
-def popular(known, critics, read, steam=None):
+def popular(known, critics, read, steam=None, igdb_popularity=None):
     """{title id: [score, trend, critics' score]}, the games scored above 0."""
     steam = steam or {}
+    igdb_popularity = igdb_popularity or {}
     most_steam = max((s["positive"] + s["negative"] for s in steam.values()), default=0)
     most_links = max((links for links, _ in known.values()), default=1)
     most_reviews = max((n for n, _ in critics.values()), default=1)
@@ -231,6 +236,8 @@ def popular(known, critics, read, steam=None):
             score = 0.6 * scale(links, most_links) + 0.4 * scale(reviewed, most_reviews)
         # Its Steam audience, for a game also sold there: a lift, never a cost.
         score = max(score, 0.75 * score + 0.25 * features.steam_scale(steam, tid, most_steam))
+        # Its popularity on IGDB, the same way.
+        score = max(score, 0.75 * score + 0.25 * igdb_popularity.get(tid, 0.0))
         trend = 0
         if counts:
             before = (counts[0] + counts[1]) / 2
@@ -241,8 +248,10 @@ def popular(known, critics, read, steam=None):
     return table
 
 
-def upcoming(titles, today, days=UPCOMING_DAYS):
-    """{title id: [YYYYMMDD, name]} of titledb's base games out after `today` and within `days`."""
+def upcoming(titles, today, days=UPCOMING_DAYS, hypes=None):
+    """{title id: [YYYYMMDD, name]} of titledb's base games out after `today`
+    and within `days`, [YYYYMMDD, name, hypes] for one IGDB says is followed."""
+    hypes = hypes or {}
     first = int(today.strftime("%Y%m%d"))
     last = int((today + datetime.timedelta(days=days)).strftime("%Y%m%d"))
     out = {}
@@ -254,7 +263,7 @@ def upcoming(titles, today, days=UPCOMING_DAYS):
             continue
         name = (entry.get("name") or "").strip()
         if tid and name and first < date <= last and not entry.get("isDemo"):
-            out[tid] = [date, name[:200]]
+            out[tid] = [date, name[:200]] + ([hypes[tid]] if hypes.get(tid) else [])
     return dict(sorted(out.items()))
 
 
@@ -275,6 +284,21 @@ def previous_games(directory):
         return {}
 
 
+def read_igdb():
+    """IGDB's traits, popularity and hypes; none without the keys, or when IGDB fails (the run goes on)."""
+    nothing = {"traits": {}, "popularity": {}, "hypes": {}}
+    client_id, secret = os.environ.get("IGDB_CLIENT_ID"), os.environ.get("IGDB_CLIENT_SECRET")
+    if not client_id or not secret:
+        print("igdb: no keys, left out", file=sys.stderr)
+        return nothing
+    try:
+        by_slug = igdb.slugs(sparql(igdb.SLUG_QUERY), base_id)
+        return igdb.read(igdb.Client(client_id, secret, AGENT), by_slug)
+    except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as e:
+        print(f"igdb: {e}, left out", file=sys.stderr)
+        return nothing
+
+
 def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else "out"
     before = previous_games(sys.argv[2]) if len(sys.argv) > 2 else {}
@@ -291,6 +315,9 @@ def main():
 
     # The traits and the Steam audience, then the games alike.
     game_traits = features.traits(features.query_traits(sparql), base_id)
+    found = read_igdb()
+    for tid, kinds in found["traits"].items():
+        game_traits.setdefault(tid, {}).update(kinds)
     apps = features.steam_ids(sparql(features.STEAM_QUERY), base_id)
     steam = features.read_steam(apps, {t: g["steam"] for t, g in before.items() if "steam" in g},
                                 lambda url: fetch(url, tries=2, patient=False, timeout=30))
@@ -302,7 +329,8 @@ def main():
         table[tid] = entry
     write(os.path.join(out_dir, "games.json"), {
         "schema": 1, "generated": today.isoformat(),
-        "source": "Wikidata (P179, P178, P123, P136, P404, P1733) and SteamSpy", "games": table})
+        "source": "Wikidata (P179, P178, P123, P136, P404, P1733), SteamSpy" + (" and IGDB" if found["traits"] else ""),
+        "games": table})
     write(os.path.join(out_dir, "similar.json"), {
         "schema": 1, "generated": today.isoformat(), "source": "games.json's traits",
         "games": features.similar(game_traits)})
@@ -310,13 +338,15 @@ def main():
     write(os.path.join(out_dir, "popular.json"), {
         "schema": 1, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
         "views": bool(read),
-        "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia) and SteamSpy",
-        "games": popular(known, critics, read, steam)})
+        "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), SteamSpy"
+                  + (" and IGDB" if found["popularity"] else ""),
+        "games": popular(known, critics, read, steam, found["popularity"])})
 
     titles = fetch(TITLEDB, timeout=600) or {}
     write(os.path.join(out_dir, "upcoming.json"), {
-        "schema": 1, "generated": today.isoformat(), "source": "blawar/titledb (US.en.json)",
-        "games": upcoming(titles, today)})
+        "schema": 1, "generated": today.isoformat(),
+        "source": "blawar/titledb (US.en.json)" + (" and IGDB" if found["hypes"] else ""),
+        "games": upcoming(titles, today, hypes=found["hypes"])})
 
 
 if __name__ == "__main__":
