@@ -109,6 +109,16 @@ class Guard(unittest.TestCase):
         self.assertEqual(report, [("popular.json", 100, 40, True)])
         self.assertIn("no: last run kept", build.summary(report, path=os.path.join(self.tmp.name, "summary.md")))
 
+    def test_alert(self):
+        alerts = os.path.join(self.tmp.name, "alerts.md")
+        from unittest import mock
+        with mock.patch.dict(os.environ, {"ALERTS": alerts}):
+            build.publish(self.out, "popular.json", self.payload(40), self.last, [])
+            build.publish(self.out, "popular.json", self.payload(95), self.last, [])
+        with open(alerts, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+        self.assertEqual(lines, ["`popular.json` came out with 40 games against 100 last time: the last run's file was kept."])
+
     def test_published(self):
         report = []
         self.assertTrue(build.publish(self.out, "popular.json", self.payload(90), self.last, report))

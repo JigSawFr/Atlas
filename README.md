@@ -108,6 +108,11 @@ published: the last run's file stays on the `data` branch, the run says so
 with a warning, and the workflow's summary lists each file's games against
 the last run's.
 
+Whatever goes wrong in a run — the job failing, one of the daily steps
+failing on its own, a file kept by the guard — opens an issue labelled
+`data-alert` (`tools/alert.sh`), or adds a comment to the one still open,
+so it does not go unseen.
+
 ## IGDB's keys
 
 IGDB is asked only when `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` are set: a
