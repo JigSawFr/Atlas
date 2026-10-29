@@ -38,7 +38,7 @@ game's title id (16 hex digits, upper case, ending in `000`).
 Each game is `[score, trend, critics]`:
 
 - **score**, 1 to 100: how well known it is. It weighs how many Wikipedias have a page on the game (Wikidata's sitelinks), how many critics reviewed it (Wikidata's review scores and their number of reviews, OpenCritic's mostly) and, when `views` is true, how often its English Wikipedia page was read last month. Each is on a log scale against the most of all. A game also sold on Steam can be lifted by its Steam reviews (a quarter of the score at most), never lowered; with IGDB, a game can be lifted the same way by its popularity there (its rank among the games for its visits on IGDB and the players who want to play it, play it or have played it).
-- **trend**, -100 to 999: the change of its page's views last month against the two months before, in percent. It is 0 when the page was read fewer than 500 times or its views were not read.
+- **trend**, -100 to 999: how much more (or less) the game was read on Wikipedia in the last seven days than in a week of the four before, in percent, its pages in English, French, German, Spanish, Italian, Japanese, Dutch and Portuguese added up. It is measured every day for the 400 best known games ([`daily.yml`](.github/workflows/daily.yml), `tools/trends.py`), and `trends` gives the day; it is 0 when the game was read fewer than 300 times in the week. Between two measures, and for the others, it is the weekly build's: last month's English views against the two months before.
 - **critics**, 0 to 100: the critics' score that counts the most reviews (0 when none is known).
 
 Wikimedia's pageviews are asked for the 400 best known games, one at a time. When too many are turned away (fewer than half read), `views` is false: every game is scored by its sitelinks and reviews alone, and none has a trend.
@@ -122,6 +122,7 @@ to.
 ```sh
 python3 tools/build.py out/ [last/]  # writes out/*.json; last/: the last run's files, for Steam
 python3 tools/prices.py out/ [last/] # writes out/prices/*.json, every country's (some 20 minutes)
+python3 tools/trends.py out/ last/   # last/popular.json with today's trends, as out/popular.json
 python3 -m unittest discover -s tests
 ```
 

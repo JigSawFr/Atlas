@@ -1,0 +1,60 @@
+"""tools/trends.py without the network: the pages of each language, the
+views a day, a trend, the scores kept."""
+import datetime
+import os
+import sys
+import unittest
+import urllib.error
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
+import build  # noqa: E402
+import trends  # noqa: E402
+
+A, B, C = "0100000000010000", "0100000000020000", "0100000000030000"
+
+
+def row(tid, url):
+    return {"tid": {"value": tid}, "article": {"value": url}}
+
+
+class Trends(unittest.TestCase):
+    def test_pages(self):
+        rows = [row(A, "https://en.wikipedia.org/wiki/Lantern_Tale"), row(A, "https://fr.wikipedia.org/wiki/Lantern_Tale_%28jeu%29"),
+                row(A, "https://en.wikipedia.org/wiki/Lantern_Tale"), row(B, "https://xx.wikipedia.org/wiki/Quiet_Pond"),
+                row("0100000000010800", "https://en.wikipedia.org/wiki/Update")]
+        self.assertEqual(trends.pages(rows, build.base_id), {A: [("en", "Lantern_Tale"), ("fr", "Lantern_Tale_(jeu)")]})
+        self.assertIn('"0100000000010000"', trends.pages_query([A]))
+        self.assertIn("<https://ja.wikipedia.org/>", trends.pages_query([A]))
+
+    def test_trend(self):
+        self.assertEqual(trends.trend([100] * 28 + [200] * 7), 100)     # twice a week of before
+        self.assertEqual(trends.trend([100] * 28 + [50] * 7), -50)
+        self.assertEqual(trends.trend([10] * 35), 0)                      # too little read
+        self.assertEqual(trends.trend([0] * 28 + [500] * 7), 0)           # nothing before
+
+    def test_read(self):
+        start, end = trends.window(datetime.date(2026, 10, 29))
+        self.assertEqual((start, end), (datetime.date(2026, 9, 24), datetime.date(2026, 10, 28)))
+
+        def fetch(url):
+            # Every page: 100 views a day, then 300 the last week; B's French page refused.
+            if "fr.wikipedia" in url:
+                raise urllib.error.HTTPError(url, 429, "busy", {}, None)
+            items = []
+            for i in range(35):
+                day = start + datetime.timedelta(days=i)
+                items.append({"timestamp": day.strftime("%Y%m%d") + "00", "views": 300 if i >= 28 else 100})
+            return {"items": items}
+
+        got = trends.read_trends({A: [("en", "A")], B: [("en", "B"), ("fr", "B")]}, start, end, fetch, sleep=lambda s: None)
+        self.assertEqual(got, {A: 200, B: 200})
+
+    def test_updated(self):
+        popular = {"schema": 1, "month": "2026-09", "games": {A: [90, 5, 80], B: [50, -3, 0], C: [10, 0, 0]}}
+        got = trends.updated(popular, {A: 40, B: 0}, datetime.date(2026, 10, 29))
+        self.assertEqual(got["games"], {A: [90, 40, 80], B: [50, 0, 0], C: [10, 0, 0]})
+        self.assertEqual((got["trends"], got["month"]), ("2026-10-29", "2026-09"))
+
+
+if __name__ == "__main__":
+    unittest.main()
