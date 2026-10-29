@@ -9,11 +9,15 @@ games at a time, a few requests at once.
 
 prices/<country>.json:
   {"schema": 1, "generated": "YYYY-MM-DD", "country": "FR", "currency": "EUR",
-   "games": {"<title id>": [regular, sale, until], ...}}
+   "since": "YYYY-MM-DD",
+   "games": {"<title id>": [regular, sale, until, lowest, lowest_day], ...}}
 
 `regular` and `sale` are prices in the country's currency (sale 0: not on
-sale), `until` the sale's last day, YYYYMMDD (0: none). A game no longer
-sold, or not in that eShop, is left out.
+sale), `until` the sale's last day, YYYYMMDD (0: none). `lowest` is the
+lowest price the game has had since `since`, the day these files began,
+and `lowest_day` (YYYYMMDD) the last day it had it: each day's price is
+weighed against the last run's file. A game no longer sold, or not in that
+eShop, is left out.
 
 Usage: tools/prices.py [out-dir] [previous-dir]   (writes out-dir/prices/)
 """
@@ -109,6 +113,33 @@ def read_country(country, ids, fetch, workers=WORKERS, pause=PAUSE):
     return dict(sorted(games.items())), currency
 
 
+def with_lowest(games, previous, today):
+    """Each game's row with its lowest price so far and that price's last
+    day, from the last run's rows (`previous`, {} on a first run)."""
+    day = int(today.replace("-", ""))
+    out = {}
+    for tid, row in games.items():
+        regular, sale, until = row[:3]
+        now = sale or regular
+        lowest, lowest_day = now, day
+        last = previous.get(tid)
+        if isinstance(last, list) and len(last) >= 5 and isinstance(last[3], (int, float)) and isinstance(last[4], int):
+            if last[3] < now:
+                lowest, lowest_day = last[3], last[4]
+        out[tid] = [regular, sale, until, lowest, lowest_day]
+    return out
+
+
+def previous_file(previous_dir, country):
+    """The last run's file of `country`, {} when there is none."""
+    try:
+        with open(os.path.join(previous_dir, f"{country}.json"), encoding="utf-8") as f:
+            body = json.load(f)
+        return body if body.get("schema") == 1 else {}
+    except (OSError, ValueError, AttributeError, TypeError):
+        return {}
+
+
 def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else "out"
     previous_dir = os.path.join(sys.argv[2], "prices") if len(sys.argv) > 2 else None
@@ -125,9 +156,12 @@ def main():
             games, currency = read_country(country, ids, fetch)
             print(f"{country}: {len(games)} games, {sum(1 for r in games.values() if r[1])} on sale, "
                   f"{time.monotonic() - started:.0f} s", file=sys.stderr)
+            last = previous_file(previous_dir, country) if previous_dir else {}
             build.publish(os.path.join(out_dir, "prices"), f"{country}.json", {
                 "schema": 1, "generated": today, "country": country, "currency": currency or "",
-                "source": f"Nintendo eShop's prices, by titledb's {file} eShop ids", "games": games}, previous_dir, report)
+                "since": last.get("since") or last.get("generated") or today,
+                "source": f"Nintendo eShop's prices, by titledb's {file} eShop ids",
+                "games": with_lowest(games, last.get("games") or {}, today)}, previous_dir, report)
     print(build.summary(report), file=sys.stderr)
 
 
