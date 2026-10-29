@@ -9,6 +9,8 @@ sources that need no key:
   their name and date (and how many follow them on IGDB, when known);
 - data/games.json: each game's traits (series, developers, publishers,
   genres, modes) and, for one also sold on Steam, its Steam audience;
+- data/editions.json: a game's other editions (a Deluxe, a Complete
+  Edition…), each with the game it is one of (tools/editions.py);
 - data/similar.json: the games most like each one, by their traits
   (tools/features.py), and for the others by what the eShop says of them
   (tools/text.py).
@@ -49,6 +51,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import editions
 import features
 import igdb
 import text
@@ -389,10 +392,16 @@ def main():
     # many games Wikidata knows nothing of.
     titles = fetch(TITLEDB, timeout=600) or {}
     by_text = text.similar(titles, base_id)
+    # A game's other editions: one game, not one like it.
+    of = editions.editions(titles, base_id)
     publish(out_dir, "similar.json", {
         "schema": 1, "generated": today.isoformat(),
         "source": "games.json's traits" + (" and titledb's descriptions" if by_text else ""),
-        "games": text.merged(features.similar(game_traits), by_text)}, previous_dir, report)
+        "games": editions.apart(text.merged(features.similar(game_traits), by_text), of)}, previous_dir, report)
+    if of:
+        publish(out_dir, "editions.json", {
+            "schema": 1, "generated": today.isoformat(), "source": "blawar/titledb (US.en.json)",
+            "games": of}, previous_dir, report)
 
     publish(out_dir, "popular.json", {
         "schema": 1, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
