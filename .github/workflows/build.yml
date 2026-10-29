@@ -17,14 +17,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test
         run: python3 -m unittest discover -s tests
-      - name: Build
-        run: python3 tools/build.py out
-      - name: Commit to the data branch
+      - name: The last run's files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -35,6 +33,10 @@ jobs:
           else
             git worktree add --orphan -b data data-branch
           fi
+      - name: Build
+        run: python3 tools/build.py out data-branch
+      - name: Commit to the data branch
+        run: |
           cp out/*.json data-branch/
           cd data-branch
           git add -A
@@ -45,6 +47,6 @@ jobs:
           git commit -q -m "data: $(date -u +%Y-%m-%d)"
           git push origin data
           # jsDelivr keeps a branch's files up to 12 hours: asked again now.
-          for f in popular.json upcoming.json; do
+          for f in *.json; do
             curl -fsS "https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@data/$f" >/dev/null || true
           done
