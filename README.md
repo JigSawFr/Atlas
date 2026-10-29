@@ -80,6 +80,15 @@ likeness by words counts four fifths of one by traits, 10 at most a game and
 25 at least; a game's list keeps the best 12 of both. That brings
 `similar.json` from some 2,400 games to some 14,000.
 
+`prices/<country>.json`, made every day ([`daily.yml`](.github/workflows/daily.yml)) for US, CA, MX, BR, GB, FR, DE, ES, IT, NL, PT, AU and JP:
+
+```json
+{"schema": 1, "generated": "2026-10-29", "country": "FR", "currency": "EUR", "source": "...",
+ "games": {"0100000000010000": [19.99, 13.99, 20261101], "0100000000020000": [39.99, 0, 0]}}
+```
+
+Each game the country's eShop sells is `[regular, sale, until]`: its price, its sale price (0 when not on sale) and the sale's last day (YYYYMMDD, 0 when none), in the country's currency. The eShop's price service answers by its own ids, which differ from one region to the next: titledb's list of each region (US, GB, JP) gives them with the title ids. A game no longer sold is left out.
+
 ## The sources
 
 | Source | What it gives | Licence |
@@ -88,6 +97,7 @@ likeness by words counts four fifths of one by traits, 10 at most a game and
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
 | [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
+| [Nintendo eShop's prices](https://api.ec.nintendo.com/v1/price) | Each game's price and sale, by country (`prices/`) | as published there |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
 ## When a source fails
@@ -111,6 +121,7 @@ to.
 
 ```sh
 python3 tools/build.py out/ [last/]  # writes out/*.json; last/: the last run's files, for Steam
+python3 tools/prices.py out/ [last/] # writes out/prices/*.json, every country's (some 20 minutes)
 python3 -m unittest discover -s tests
 ```
 
