@@ -84,6 +84,15 @@ likeness by words counts four fifths of one by traits, 10 at most a game and
 25 at least; a game's list keeps the best 12 of both. That brings
 `similar.json` from some 2,400 games to some 14,000.
 
+`editions.json`:
+
+```json
+{"schema": 1, "generated": "2026-10-30", "source": "blawar/titledb (US.en.json)",
+ "games": {"0100000000020000": "0100000000010000"}}
+```
+
+A game's other editions (a Deluxe, a Complete Edition, a Game of the Year, the game with a DLC pack), each with the game it is one of: the edition out first, under the same publisher and a name that differs only by its edition words (`tools/editions.py`). Words that make another game (Remastered, Special, Enhanced, a second title after "+") keep the games apart. `similar.json` leaves a game's own editions out of its list.
+
 `prices/<country>.json`, made every day ([`daily.yml`](.github/workflows/daily.yml)) for US, CA, MX, BR, GB, FR, DE, ES, IT, NL, PT, AU and JP:
 
 ```json
