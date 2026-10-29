@@ -340,7 +340,7 @@ def previous_games(directory):
 
 def read_igdb():
     """IGDB's traits, popularity and hypes; none without the keys, or when IGDB fails (the run goes on)."""
-    nothing = {"traits": {}, "popularity": {}, "hypes": {}}
+    nothing = {"traits": {}, "popularity": {}, "hypes": {}, "ratings": {}}
     client_id, secret = os.environ.get("IGDB_CLIENT_ID"), os.environ.get("IGDB_CLIENT_SECRET")
     if not client_id or not secret:
         print("igdb: no keys, left out", file=sys.stderr)
@@ -378,8 +378,10 @@ def main():
     steam = features.read_steam(apps, {t: g["steam"] for t, g in before.items() if "steam" in g},
                                 lambda url: fetch(url, tries=2, patient=False, timeout=30))
     table = {}
-    for tid in sorted(set(game_traits) | set(steam)):
+    for tid in sorted(set(game_traits) | set(steam) | set(found["ratings"])):
         entry = dict(game_traits.get(tid, {}))
+        if tid in found["ratings"]:
+            entry["igdb_rating"] = found["ratings"][tid]
         if tid in steam:
             entry["steam"] = steam[tid]
         table[tid] = entry

@@ -55,6 +55,14 @@ class Igdb(unittest.TestCase):
         self.assertEqual(traits[B]["perspectives"], [["2", ""]])
         self.assertEqual(hypes, {A: 40, B: 40})
 
+    def test_ratings(self):
+        records = [{"id": 7, "slug": "lantern-tale", "rating": 82.6, "rating_count": 1240},
+                   {"id": 8, "slug": "quiet-pond", "rating": 70.0, "rating_count": 0},
+                   {"id": 9, "slug": "kart-cup", "rating": "x", "rating_count": 3}]
+        got = igdb.read_ratings(records, {"lantern-tale": [A, B], "quiet-pond": [C], "kart-cup": [C]})
+        self.assertEqual(got, {A: [83, 1240], B: [83, 1240]})
+        self.assertIn("rating_count", igdb.games_query(["a"]))
+
     def test_popularity(self):
         ids = {7: [A], 8: [B], 9: [C]}
         records = [
@@ -77,7 +85,7 @@ class Igdb(unittest.TestCase):
 
     def test_without_keys(self):
         with mock.patch.dict(os.environ, {"IGDB_CLIENT_ID": "", "IGDB_CLIENT_SECRET": ""}):
-            self.assertEqual(build.read_igdb(), {"traits": {}, "popularity": {}, "hypes": {}})
+            self.assertEqual(build.read_igdb(), {"traits": {}, "popularity": {}, "hypes": {}, "ratings": {}})
 
     def test_build_uses_it(self):
         known = {A: (10, None), B: (10, None)}
