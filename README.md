@@ -2,7 +2,9 @@
 
 Open data about Nintendo Switch games, by title id, rebuilt every week from
 sources that need no account: which games are well known, which are read
-about more lately, what critics gave them, and which come out soon.
+about more lately, what critics gave them, which come out soon, what each
+game is (its series, developers, publishers, genres, modes), how it does on
+Steam, and which games are most like it.
 [PlayShelf](https://github.com/JigSawFr/PlayShelf) reads it for its Home
 tab's **Popular**, **Trending** and **Coming soon** rows; anything else may
 too.
@@ -17,6 +19,8 @@ jsDelivr:
 |---|---|
 | `popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/popular.json` |
 | `upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/upcoming.json` |
+| `games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/games.json` |
+| `similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/similar.json` |
 
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
 meaning), the day it was `generated` and its `source`. A game is a base
@@ -31,7 +35,7 @@ game's title id (16 hex digits, upper case, ending in `000`).
 
 Each game is `[score, trend, critics]`:
 
-- **score**, 1 to 100: how well known it is. It weighs how many Wikipedias have a page on the game (Wikidata's sitelinks), how many critics reviewed it (Wikidata's review scores and their number of reviews, OpenCritic's mostly) and, when `views` is true, how often its English Wikipedia page was read last month. Each is on a log scale against the most of all.
+- **score**, 1 to 100: how well known it is. It weighs how many Wikipedias have a page on the game (Wikidata's sitelinks), how many critics reviewed it (Wikidata's review scores and their number of reviews, OpenCritic's mostly) and, when `views` is true, how often its English Wikipedia page was read last month. Each is on a log scale against the most of all. A game also sold on Steam can be lifted by its Steam reviews (a quarter of the score at most), never lowered.
 - **trend**, -100 to 999: the change of its page's views last month against the two months before, in percent. It is 0 when the page was read fewer than 500 times or its views were not read.
 - **critics**, 0 to 100: the critics' score that counts the most reviews (0 when none is known).
 
@@ -46,6 +50,26 @@ Wikimedia's pageviews are asked for the 400 best known games, one at a time. Whe
 
 The games whose release date, as the US eShop gives it, is in the next year: `[YYYYMMDD, name]`.
 
+`games.json`:
+
+```json
+{"schema": 1, "generated": "2026-10-29", "source": "...",
+ "games": {"0100000000010000": {"series": [["Q123", "A series"]], "developers": [["Q456", "A studio"]],
+   "publishers": [...], "genres": [...], "modes": [...],
+   "steam": {"app": 504230, "positive": 117545, "negative": 3057, "owners": 2000000, "ccu": 1174}}}}
+```
+
+Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. `steam` is there for a game also sold on Steam: its reviews, the lower bound of its owners and its players at once when SteamSpy last saw it. SteamSpy allows a request a second, so each run asks it for as many games as 45 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
+
+`similar.json`:
+
+```json
+{"schema": 1, "generated": "2026-10-29", "source": "games.json's traits",
+ "games": {"0100000000010000": [["0100000000020000", 86], ["0100000000030000", 41]]}}
+```
+
+Each game's 12 most similar, `[title id, 1..100]`, the most first. Two games are alike by the traits they share, each weighed by its kind (a series 4, a developer 2, a genre 1, a publisher or a mode 0.5) and by how rare it is: a cosine over weighted sets. Two games sharing only a publisher or a mode are not alike.
+
 ## The sources
 
 | Source | What it gives | Licence |
@@ -53,13 +77,14 @@ The games whose release date, as the US eShop gives it, is in the next year: `[Y
 | [Wikidata](https://www.wikidata.org/) | Switch title ids ([P11072](https://www.wikidata.org/wiki/Property:P11072)), sitelinks, English pages, review scores ([P444](https://www.wikidata.org/wiki/Property:P444)) and their number of reviews ([P7887](https://www.wikidata.org/wiki/Property:P7887)) | CC0 |
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names | as published there |
+| [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
 
 ## Running it
 
 ```sh
-python3 tools/build.py out/          # writes out/popular.json and out/upcoming.json
+python3 tools/build.py out/ [last/]  # writes out/*.json; last/: the last run's files, for Steam
 python3 -m unittest discover -s tests
 ```
 
-Python 3.10 or later, no package to install. It takes a few minutes, most of
-them on the pageviews and on titledb's list (about 90 MB).
+Python 3.10 or later, no package to install. It takes up to an hour: SteamSpy's
+45 minutes, the pageviews, and titledb's list (about 90 MB).

@@ -6,7 +6,11 @@ sources that need no key:
   whether it is read more lately (a trend, in percent) and what the critics
   gave it (0 to 100, 0 when unknown);
 - data/upcoming.json: the games whose release date is still to come, with
-  their name and date.
+  their name and date;
+- data/games.json: each game's traits (series, developers, publishers,
+  genres, modes) and, for one also sold on Steam, its Steam audience;
+- data/similar.json: the games most like each one, by their traits
+  (tools/features.py).
 
 The sources:
 
@@ -15,14 +19,19 @@ The sources:
   scores (P444) with the number of reviews behind each (P7887);
 - Wikimedia's pageviews: how often each English page was read in each of the
   last three whole months, for the best known games (VIEWED);
-- blawar/titledb's US eShop list: the release dates, for upcoming.json.
+- blawar/titledb's US eShop list: the release dates, for upcoming.json;
+- SteamSpy: the reviews, owners and players of the games also on Steam
+  (Wikidata's Steam id), a request a second within a time budget, the rest
+  kept from the last run (`previous`).
 
-A game's score weighs its sitelinks, its number of critics' reviews and its
-views of the last month, each on a log scale against the most of all. When
+A game's score weighs its sitelinks, its number of critics' reviews, its
+views of the last month and its Steam reviews, each on a log scale against
+the most of all. When
 Wikimedia turns too many view requests away (fewer than half read), every
 game is scored without views and none has a trend: no mixing of scales.
 
-Usage: tools/build.py [out-dir]   (default: out/)
+Usage: tools/build.py [out-dir] [previous-dir]   (default: out/; previous-dir:
+the last run's files, whose Steam figures are kept for the games not asked)
 """
 import datetime
 import json
@@ -34,6 +43,8 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+
+import features
 
 AGENT = "PlayInsights/1.0 (https://github.com/JigSawFr/PlayInsights)"
 SPARQL = "https://query.wikidata.org/sparql"
@@ -200,8 +211,10 @@ def scale(value, most):
     return math.log1p(value) / math.log1p(most) if most > 0 else 0.0
 
 
-def popular(known, critics, read):
+def popular(known, critics, read, steam=None):
     """{title id: [score, trend, critics' score]}, the games scored above 0."""
+    steam = steam or {}
+    most_steam = max((s["positive"] + s["negative"] for s in steam.values()), default=0)
     most_links = max((links for links, _ in known.values()), default=1)
     most_reviews = max((n for n, _ in critics.values()), default=1)
     most_views = max([c[-1] for c in read.values()] + [1])
@@ -216,6 +229,8 @@ def popular(known, critics, read):
             score = 0.3 * scale(links, most_links) + 0.2 * scale(reviewed, most_reviews) + 0.5 * scale(last, most_views)
         else:
             score = 0.6 * scale(links, most_links) + 0.4 * scale(reviewed, most_reviews)
+        # Its Steam audience, for a game also sold there: a lift, never a cost.
+        score = max(score, 0.75 * score + 0.25 * features.steam_scale(steam, tid, most_steam))
         trend = 0
         if counts:
             before = (counts[0] + counts[1]) / 2
@@ -250,8 +265,19 @@ def write(path, payload):
     print(f"{path}: {len(payload['games'])} games", file=sys.stderr)
 
 
+def previous_games(directory):
+    """The last run's games.json's games, {} when there is none."""
+    try:
+        with open(os.path.join(directory, "games.json"), encoding="utf-8") as f:
+            body = json.load(f)
+        return body.get("games", {}) if body.get("schema") == 1 else {}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
 def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else "out"
+    before = previous_games(sys.argv[2]) if len(sys.argv) > 2 else {}
     os.makedirs(out_dir, exist_ok=True)
     today = datetime.date.today()
     starts, end = months(today)
@@ -262,11 +288,30 @@ def main():
     critics = reviews(rows)
     print(f"{len(critics)} with critics' scores", file=sys.stderr)
     read = read_views(known, starts, end)
+
+    # The traits and the Steam audience, then the games alike.
+    game_traits = features.traits(features.query_traits(sparql), base_id)
+    apps = features.steam_ids(sparql(features.STEAM_QUERY), base_id)
+    steam = features.read_steam(apps, {t: g["steam"] for t, g in before.items() if "steam" in g},
+                                lambda url: fetch(url, tries=2, patient=False, timeout=30))
+    table = {}
+    for tid in sorted(set(game_traits) | set(steam)):
+        entry = dict(game_traits.get(tid, {}))
+        if tid in steam:
+            entry["steam"] = steam[tid]
+        table[tid] = entry
+    write(os.path.join(out_dir, "games.json"), {
+        "schema": 1, "generated": today.isoformat(),
+        "source": "Wikidata (P179, P178, P123, P136, P404, P1733) and SteamSpy", "games": table})
+    write(os.path.join(out_dir, "similar.json"), {
+        "schema": 1, "generated": today.isoformat(), "source": "games.json's traits",
+        "games": features.similar(game_traits)})
+
     write(os.path.join(out_dir, "popular.json"), {
         "schema": 1, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
         "views": bool(read),
-        "source": "Wikidata (P11072, sitelinks, P444 with P7887) and Wikimedia pageviews (en.wikipedia)",
-        "games": popular(known, critics, read)})
+        "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia) and SteamSpy",
+        "games": popular(known, critics, read, steam)})
 
     titles = fetch(TITLEDB, timeout=600) or {}
     write(os.path.join(out_dir, "upcoming.json"), {
