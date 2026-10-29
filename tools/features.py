@@ -1,11 +1,12 @@
 """What tools/build.py adds beyond popularity: each game's traits (its series,
-developers, publishers, genres and modes, from Wikidata), its Steam
+developers, publishers, genres and modes, from Wikidata; its themes, keywords
+and player perspectives, from IGDB when the keys are there), its Steam
 audience (from SteamSpy, for the games also sold on Steam), and, from the
 traits, the games most like each one (similar.json).
 
 The similarity of two games weighs the traits they share, each by how rare
-it is (its inverse document frequency) and by its kind (KIND_WEIGHT: a
-series counts most, a mode least), over the square root of what each has:
+it is (its inverse document frequency) and by its kind (WEIGHT: a series
+counts most, a mode or a perspective least), over the square root of what each has:
 a cosine over weighted sets. Two games sharing only a mode are not similar.
 """
 import math
@@ -21,7 +22,10 @@ KINDS = {
     "publishers": ("P123", 0.5),
     "modes": ("P404", 0.5),
 }
-WEAK = {"modes", "publishers"}   # not enough alone to make two games alike
+# IGDB's (tools/igdb.py), when the repository has its keys.
+IGDB_WEIGHT = {"themes": 1.0, "keywords": 1.0, "perspectives": 0.5}
+WEIGHT = {**{kind: w for kind, (_, w) in KINDS.items()}, **IGDB_WEIGHT}
+WEAK = {"modes", "publishers", "perspectives"}   # not enough alone to make two games alike
 SIMILAR = 12                     # the games kept as like each one
 MAX_TRAITS = 12                  # of a kind, a game's first ones
 STEAMSPY = "https://steamspy.com/api.php?request=appdetails&appid={}"
@@ -131,7 +135,7 @@ def similar(game_traits, keep=SIMILAR):
             for value, _ in values:
                 counts[(kind, value)] = counts.get((kind, value), 0) + 1
     total = max(len(game_traits), 1)
-    weight = {key: KINDS[key[0]][1] * math.log(1 + total / n) for key, n in counts.items() if key[0] in KINDS}
+    weight = {key: WEIGHT[key[0]] * math.log(1 + total / n) for key, n in counts.items() if key[0] in WEIGHT}
     vectors = {}
     for tid, kinds in game_traits.items():
         keys = {(kind, value) for kind, values in kinds.items() for value, _ in values if (kind, value) in weight}
