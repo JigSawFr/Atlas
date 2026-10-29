@@ -83,11 +83,11 @@ likeness by words counts four fifths of one by traits, 10 at most a game and
 `prices/<country>.json`, made every day ([`daily.yml`](.github/workflows/daily.yml)) for US, CA, MX, BR, GB, FR, DE, ES, IT, NL, PT, AU and JP:
 
 ```json
-{"schema": 1, "generated": "2026-10-29", "country": "FR", "currency": "EUR", "source": "...",
- "games": {"0100000000010000": [19.99, 13.99, 20261101], "0100000000020000": [39.99, 0, 0]}}
+{"schema": 1, "generated": "2026-10-30", "country": "FR", "currency": "EUR", "since": "2026-10-29", "source": "...",
+ "games": {"0100000000010000": [19.99, 13.99, 20261101, 13.99, 20261030], "0100000000020000": [39.99, 0, 0, 29.99, 20261029]}}
 ```
 
-Each game the country's eShop sells is `[regular, sale, until]`: its price, its sale price (0 when not on sale) and the sale's last day (YYYYMMDD, 0 when none), in the country's currency. The eShop's price service answers by its own ids, which differ from one region to the next: titledb's list of each region (US, GB, JP) gives them with the title ids. A game no longer sold is left out.
+Each game the country's eShop sells is `[regular, sale, until, lowest, lowest_day]`: its price, its sale price (0 when not on sale), the sale's last day (YYYYMMDD, 0 when none), the lowest price it has had since `since` (the day the files began) and the last day it had it, in the country's currency. Each day's price is weighed against the last run's file. The eShop's price service answers by its own ids, which differ from one region to the next: titledb's list of each region (US, GB, JP) gives them with the title ids. A game no longer sold is left out.
 
 ## The sources
 

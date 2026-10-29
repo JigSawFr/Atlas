@@ -53,6 +53,15 @@ class Prices(unittest.TestCase):
         self.assertEqual(sum(1 for r in games.values() if r[1]), 12)
         self.assertEqual(currency, "EUR")
 
+    def test_lowest(self):
+        last = {A: [19.99, 9.99, 20261020, 9.99, 20261020], B: [39.99, 0, 0, 39.99, 20261001], C: [5.0, 0, 0]}
+        games = {A: [19.99, 0, 0], B: [39.99, 29.99, 20261105], C: [5.0, 4.0, 20261102], "0100000000040000": [7.0, 0, 0]}
+        got = prices.with_lowest(games, last, "2026-10-29")
+        self.assertEqual(got[A], [19.99, 0, 0, 9.99, 20261020])        # lower before: kept
+        self.assertEqual(got[B], [39.99, 29.99, 20261105, 29.99, 20261029])   # lower today
+        self.assertEqual(got[C], [5.0, 4.0, 20261102, 4.0, 20261029])  # last row without a lowest
+        self.assertEqual(got["0100000000040000"], [7.0, 0, 0, 7.0, 20261029])
+
 
 if __name__ == "__main__":
     unittest.main()
