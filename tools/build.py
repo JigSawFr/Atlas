@@ -300,6 +300,10 @@ def publish(out_dir, name, payload, previous_dir, report):
     if kept:
         shutil.copyfile(os.path.join(previous_dir, name), path)
         print(f"::warning::{name}: {now} games against {before} last time, last run's file kept", file=sys.stderr)
+        # For the run's alert (tools/alert.sh), when the workflow asks for one.
+        if os.environ.get("ALERTS"):
+            with open(os.environ["ALERTS"], "a", encoding="utf-8") as f:
+                f.write(f"`{name}` came out with {now} games against {before} last time: the last run's file was kept.\n")
     else:
         write(path, payload)
     report.append((name, before, now, kept))

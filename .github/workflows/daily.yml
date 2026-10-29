@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  issues: write   # tools/alert.sh: an issue when a run goes wrong
 
 # One writer of the data branch at a time: the weekly build waits for it.
 concurrency:
@@ -22,6 +23,8 @@ jobs:
   prices:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      ALERTS: ${{ runner.temp }}/alerts.md
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test
@@ -35,9 +38,11 @@ jobs:
           git -C data-branch checkout -B data
       # A failure of one leaves the other's files to publish.
       - name: Trends
+        id: trends
         continue-on-error: true
         run: python3 tools/trends.py out data-branch
       - name: Prices
+        id: prices
         continue-on-error: true
         run: python3 tools/prices.py out data-branch
       - name: Commit to the data branch
@@ -56,3 +61,12 @@ jobs:
           for f in popular.json prices/*.json; do
             curl -fsS "https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@data/$f" >/dev/null || true
           done
+      # Anything wrong (the job, a step that may fail, a file the guard
+      # kept): an issue labelled data-alert, or a comment on the open one.
+      - name: Alert
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+          OUTCOMES: "trends=${{ steps.trends.outcome }} prices=${{ steps.prices.outcome }}"
+        run: tools/alert.sh "${{ github.workflow }}"
