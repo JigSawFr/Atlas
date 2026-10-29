@@ -27,6 +27,7 @@ TOP = 400            # the best known games measured
 MIN_VIEWS = 300      # views in the last seven days below which a trend says nothing
 DAYS = 35            # the last seven days and the four weeks before
 PAUSE = 0.1          # seconds between two requests
+BATCH = 80           # games a Wikidata query asks for: more makes too long an address (414)
 DAILY = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{lang}.wikipedia/all-access/user/"
          "{article}/daily/{start}/{end}")
 PAGES = """
@@ -37,6 +38,16 @@ SELECT ?tid ?article WHERE {{
   FILTER(?wiki IN ({wikis}))
 }}
 """
+
+
+def all_pages(tids, sparql, sleep=time.sleep):
+    """{title id: [(language, page title)]} for `tids`, asked of Wikidata BATCH at a time."""
+    out = {}
+    for i in range(0, len(tids), BATCH):
+        if i:
+            sleep(5)
+        out.update(pages(sparql(pages_query(tids[i:i + BATCH])), build.base_id))
+    return out
 
 
 def pages_query(tids):
@@ -125,7 +136,7 @@ def main():
         sys.exit("trends: popular.json is not of schema 1")
     today = datetime.date.today()
     top = [tid for tid, _ in sorted(popular["games"].items(), key=lambda kv: -kv[1][0])[:TOP]]
-    by_game = pages(build.sparql(pages_query(top)), build.base_id)
+    by_game = all_pages(top, build.sparql)
     start, end = window(today)
     trends = read_trends(by_game, start, end, lambda url: build.fetch(url, tries=2, patient=False, timeout=30))
     if trends is None:
