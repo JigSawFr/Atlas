@@ -65,7 +65,7 @@ The games whose release date, as the US eShop gives it, is in the next year: `[Y
    "steam": {"app": 504230, "positive": 117545, "negative": 3057, "owners": 2000000, "ccu": 1174}}}}
 ```
 
-Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`. `steam` is there for a game also sold on Steam: its reviews, the lower bound of its owners and its players at once when SteamSpy last saw it. SteamSpy allows a request a second, so each run asks it for as many games as 45 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
+Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`, and `igdb_rating`: `[players' rating 0..100, how many rated]` (IGDB's users, not the critics). `steam` is there for a game also sold on Steam: its reviews, the lower bound of its owners and its players at once when SteamSpy last saw it. SteamSpy allows a request a second, so each run asks it for as many games as 45 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
 
 `similar.json`:
 

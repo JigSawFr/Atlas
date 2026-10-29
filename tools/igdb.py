@@ -8,6 +8,7 @@ application's): without them, nothing, and every file is made as before.
   want to play it, play it or have played it), a lift to popular.json's
   score as Steam's audience is.
 - Its hype (how many follow it before its release), for upcoming.json.
+- Its players' rating (IGDB's users', not the critics'), for games.json.
 
 The games are found by their IGDB slug in Wikidata (P5794), which links them
 to their Switch title id: no table kept by hand. IGDB answers 4 requests a
@@ -51,7 +52,7 @@ def quoted(values):
 
 
 def games_query(batch):
-    fields = ",".join(["slug", "hypes"] + [f"{f}.name" for f in KINDS.values()])
+    fields = ",".join(["slug", "hypes", "rating", "rating_count"] + [f"{f}.name" for f in KINDS.values()])
     return f"fields {fields}; where slug = ({quoted(batch)}); limit {BATCH};"
 
 
@@ -82,6 +83,18 @@ def read_games(records, by_slug):
             if isinstance(g.get("hypes"), int) and g["hypes"] > 0:
                 hypes[tid] = g["hypes"]
     return ids, traits, hypes
+
+
+def read_ratings(records, by_slug):
+    """{title id: [players' rating 0..100, how many rated]} from IGDB's games."""
+    out = {}
+    for g in records:
+        rating, count = g.get("rating"), g.get("rating_count")
+        if not isinstance(rating, (int, float)) or not isinstance(count, int) or count <= 0:
+            continue
+        for tid in by_slug.get(g.get("slug")) or []:
+            out[tid] = [max(0, min(100, round(rating))), count]
+    return out
 
 
 def read_popularity(records, ids):
@@ -142,6 +155,7 @@ def read(client, by_slug):
     for i in range(0, len(names), BATCH):
         records += client.query("games", games_query(names[i:i + BATCH]))
     ids, traits, hypes = read_games(records, by_slug)
+    ratings = read_ratings(records, by_slug)
     found = []
     games = sorted(ids)
     step = BATCH // len(POPULARITY)   # a record for each kind of each game
@@ -150,4 +164,4 @@ def read(client, by_slug):
     popularity = read_popularity(found, ids)
     print(f"igdb: {len(ids)} games found of {len(by_slug)}, {len(traits)} with traits, "
           f"{len(popularity)} with a popularity, {len(hypes)} with a hype", file=sys.stderr)
-    return {"traits": traits, "popularity": popularity, "hypes": hypes}
+    return {"traits": traits, "popularity": popularity, "hypes": hypes, "ratings": ratings}
