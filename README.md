@@ -82,6 +82,14 @@ Each game's 12 most similar, `[title id, 1..100]`, the most first. Two games are
 | [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
+## When a source fails
+
+A file that comes out with fewer than 70 % of the games the last run's had (a
+source down or answering half, rather than the world changing) is not
+published: the last run's file stays on the `data` branch, the run says so
+with a warning, and the workflow's summary lists each file's games against
+the last run's.
+
 ## IGDB's keys
 
 IGDB is asked only when `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` are set: a

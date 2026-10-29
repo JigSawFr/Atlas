@@ -82,3 +82,38 @@ class Build(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Guard(unittest.TestCase):
+    """A file that lost too many games is not published: the last run's is kept."""
+
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.TemporaryDirectory()
+        self.out = os.path.join(self.tmp.name, "out")
+        self.last = os.path.join(self.tmp.name, "last")
+        os.makedirs(self.out)
+        os.makedirs(self.last)
+        build.write(os.path.join(self.last, "popular.json"), {"schema": 1, "games": {f"{i:016X}": [1, 0, 0] for i in range(100)}})
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def payload(self, n):
+        return {"schema": 1, "games": {f"{i:016X}": [2, 0, 0] for i in range(n)}}
+
+    def test_kept(self):
+        report = []
+        self.assertFalse(build.publish(self.out, "popular.json", self.payload(40), self.last, report))
+        self.assertEqual(build.count_in(os.path.join(self.out, "popular.json")), 100)
+        self.assertEqual(report, [("popular.json", 100, 40, True)])
+        self.assertIn("no: last run kept", build.summary(report, path=os.path.join(self.tmp.name, "summary.md")))
+
+    def test_published(self):
+        report = []
+        self.assertTrue(build.publish(self.out, "popular.json", self.payload(90), self.last, report))
+        self.assertEqual(build.count_in(os.path.join(self.out, "popular.json")), 90)
+        # No last run, or a small one: published whatever its size.
+        self.assertTrue(build.publish(self.out, "games.json", self.payload(1), self.last, report))
+        self.assertTrue(build.publish(self.out, "upcoming.json", self.payload(1), None, report))
+        self.assertIn("| `popular.json` | 100 | 90 (-10 %) | yes |", build.summary(report, path=os.path.join(self.tmp.name, "s.md")))
