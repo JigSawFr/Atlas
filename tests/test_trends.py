@@ -26,6 +26,19 @@ class Trends(unittest.TestCase):
         self.assertIn('"0100000000010000"', trends.pages_query([A]))
         self.assertIn("<https://ja.wikipedia.org/>", trends.pages_query([A]))
 
+    def test_batches(self):
+        asked = []
+
+        def sparql(query):
+            asked.append(query)
+            return [row(t, f"https://en.wikipedia.org/wiki/{t}") for t in query.split('"')[1::2] if t.startswith("0100")]
+
+        tids = [f"01000000{n:05X}000" for n in range(1, 201)]
+        got = trends.all_pages(tids, sparql, sleep=lambda s: None)
+        self.assertEqual(len(asked), 3)                    # 200 games, 80 a query
+        self.assertTrue(all(len(q) < 6000 for q in asked))
+        self.assertEqual(len(got), 200)
+
     def test_trend(self):
         self.assertEqual(trends.trend([100] * 28 + [200] * 7), 100)     # twice a week of before
         self.assertEqual(trends.trend([100] * 28 + [50] * 7), -50)
