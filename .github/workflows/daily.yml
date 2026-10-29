@@ -13,6 +13,7 @@ on:
 permissions:
   contents: write
   issues: write   # tools/alert.sh: an issue when a run goes wrong
+  actions: write  # keeping the schedules on
 
 # One writer of the data branch at a time: the weekly build waits for it.
 concurrency:
@@ -45,22 +46,21 @@ jobs:
         id: prices
         continue-on-error: true
         run: python3 tools/prices.py out data-branch
-      - name: Commit to the data branch
+      - name: Publish to the data branch
         run: |
           mkdir -p data-branch/prices
           if [ -f out/popular.json ]; then cp out/popular.json data-branch/; fi
           if ls out/prices/*.json >/dev/null 2>&1; then cp out/prices/*.json data-branch/prices/; fi
-          cd data-branch
-          git add -A
-          if git diff --cached --quiet; then
-            echo "nothing changed"
-            exit 0
-          fi
-          git commit -q -m "daily: $(date -u +%Y-%m-%d)"
-          git push origin data
-          for f in popular.json prices/*.json; do
-            curl -fsS "https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@data/$f" >/dev/null || true
-          done
+          tools/publish.sh data-branch "daily: $(date -u +%Y-%m-%d)"
+      # GitHub turns off a public repository's schedules after 60 days with
+      # no activity, and the data branch's pushes may not count: enabling
+      # them again, every day, starts those 60 days over.
+      - name: Keep the schedules on
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow enable daily.yml
+          gh workflow enable build.yml
       # Anything wrong (the job, a step that may fail, a file the guard
       # kept): an issue labelled data-alert, or a comment on the open one.
       - name: Alert

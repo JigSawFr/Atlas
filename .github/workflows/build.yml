@@ -43,21 +43,10 @@ jobs:
           IGDB_CLIENT_ID: ${{ secrets.IGDB_CLIENT_ID }}
           IGDB_CLIENT_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
         run: python3 tools/build.py out data-branch
-      - name: Commit to the data branch
+      - name: Publish to the data branch
         run: |
           cp out/*.json data-branch/
-          cd data-branch
-          git add -A
-          if git diff --cached --quiet; then
-            echo "nothing changed"
-            exit 0
-          fi
-          git commit -q -m "data: $(date -u +%Y-%m-%d)"
-          git push origin data
-          # jsDelivr keeps a branch's files up to 12 hours: asked again now.
-          for f in *.json; do
-            curl -fsS "https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@data/$f" >/dev/null || true
-          done
+          tools/publish.sh data-branch "data: $(date -u +%Y-%m-%d)"
       # Anything wrong (the job, a step that may fail, a file the guard
       # kept): an issue labelled data-alert, or a comment on the open one.
       - name: Alert

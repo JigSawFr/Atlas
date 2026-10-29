@@ -24,6 +24,10 @@ jsDelivr:
 | `games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/games.json` |
 | `similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/similar.json` |
 
+`index.json` lists every file with the day it was made, its size and a hash of its content: a reader can ask for it every day and fetch only the files whose hash changed.
+
+The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`): each run only needs the last files, and keeping every day's prices would grow the repository by hundreds of MB a year.
+
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
 meaning), the day it was `generated` and its `source`. A game is a base
 game's title id (16 hex digits, upper case, ending in `000`).
@@ -112,6 +116,8 @@ Whatever goes wrong in a run — the job failing, one of the daily steps
 failing on its own, a file kept by the guard — opens an issue labelled
 `data-alert` (`tools/alert.sh`), or adds a comment to the one still open,
 so it does not go unseen.
+
+GitHub turns off a public repository's schedules after 60 days without activity: the daily run enables both workflows again each day, which starts those 60 days over.
 
 ## IGDB's keys
 
