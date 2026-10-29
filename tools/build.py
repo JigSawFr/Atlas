@@ -41,6 +41,7 @@ import json
 import math
 import os
 import re
+import shutil
 import sys
 import time
 import urllib.error
@@ -71,6 +72,8 @@ VIEWED = 400           # the games whose views are asked, the most sitelinks fir
 PAUSE = 0.25           # seconds between two of them
 UPCOMING_DAYS = 365    # how far ahead upcoming.json looks
 MAX_WAIT = 1800        # seconds a rate-limited service is waited for, at most
+GUARD_KEEP = 0.7       # a file with fewer games than this share of the last run's is not published
+GUARD_FLOOR = 50       # games the last run's file had at least, for that to count
 
 
 def fetch(url, tries=4, patient=True, timeout=120):
@@ -274,6 +277,48 @@ def write(path, payload):
     print(f"{path}: {len(payload['games'])} games", file=sys.stderr)
 
 
+def count_in(path):
+    """How many games a data file has, None when there is no such file (or not one of ours)."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            games_of = json.load(f).get("games")
+        return len(games_of) if isinstance(games_of, dict) else None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def publish(out_dir, name, payload, previous_dir, report):
+    """`payload` written as out_dir/name, unless it has lost too many games
+    against the last run's (a source down, not the world changed): then the
+    last run's file is kept, and said. Each file's line goes in `report`."""
+    path = os.path.join(out_dir, name)
+    now = len(payload["games"])
+    before = count_in(os.path.join(previous_dir, name)) if previous_dir else None
+    kept = before is not None and before >= GUARD_FLOOR and now < before * GUARD_KEEP
+    if kept:
+        shutil.copyfile(os.path.join(previous_dir, name), path)
+        print(f"::warning::{name}: {now} games against {before} last time, last run's file kept", file=sys.stderr)
+    else:
+        write(path, payload)
+    report.append((name, before, now, kept))
+    return not kept
+
+
+def summary(report, path=None):
+    """The run's files against the last run's, as a Markdown table (for the workflow's summary)."""
+    lines = ["| File | Last run | This run | Published |", "|---|---:|---:|---|"]
+    for name, before, now, kept in report:
+        change = "" if not before else f" ({(now - before) * 100 / before:+.0f} %)"
+        lines.append(f"| `{name}` | {before if before is not None else '–'} | {now}{change} | "
+                     f"{'no: last run kept' if kept else 'yes'} |")
+    text = "\n".join(lines) + "\n"
+    path = path or os.environ.get("GITHUB_STEP_SUMMARY")
+    if path:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write("### The data files\n\n" + text)
+    return text
+
+
 def previous_games(directory):
     """The last run's games.json's games, {} when there is none."""
     try:
@@ -301,7 +346,9 @@ def read_igdb():
 
 def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else "out"
-    before = previous_games(sys.argv[2]) if len(sys.argv) > 2 else {}
+    previous_dir = sys.argv[2] if len(sys.argv) > 2 else None
+    before = previous_games(previous_dir) if previous_dir else {}
+    report = []
     os.makedirs(out_dir, exist_ok=True)
     today = datetime.date.today()
     starts, end = months(today)
@@ -327,26 +374,28 @@ def main():
         if tid in steam:
             entry["steam"] = steam[tid]
         table[tid] = entry
-    write(os.path.join(out_dir, "games.json"), {
+    publish(out_dir, "games.json", {
         "schema": 1, "generated": today.isoformat(),
         "source": "Wikidata (P179, P178, P123, P136, P404, P1733), SteamSpy" + (" and IGDB" if found["traits"] else ""),
-        "games": table})
-    write(os.path.join(out_dir, "similar.json"), {
+        "games": table}, previous_dir, report)
+    publish(out_dir, "similar.json", {
         "schema": 1, "generated": today.isoformat(), "source": "games.json's traits",
-        "games": features.similar(game_traits)})
+        "games": features.similar(game_traits)}, previous_dir, report)
 
-    write(os.path.join(out_dir, "popular.json"), {
+    publish(out_dir, "popular.json", {
         "schema": 1, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
         "views": bool(read),
         "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), SteamSpy"
                   + (" and IGDB" if found["popularity"] else ""),
-        "games": popular(known, critics, read, steam, found["popularity"])})
+        "games": popular(known, critics, read, steam, found["popularity"])}, previous_dir, report)
 
     titles = fetch(TITLEDB, timeout=600) or {}
-    write(os.path.join(out_dir, "upcoming.json"), {
+    publish(out_dir, "upcoming.json", {
         "schema": 1, "generated": today.isoformat(),
         "source": "blawar/titledb (US.en.json)" + (" and IGDB" if found["hypes"] else ""),
-        "games": upcoming(titles, today, hypes=found["hypes"])})
+        "games": upcoming(titles, today, hypes=found["hypes"])}, previous_dir, report)
+
+    print(summary(report), file=sys.stderr)
 
 
 if __name__ == "__main__":
