@@ -1,6 +1,8 @@
-# What changes every day: each game's price and sale in a few countries'
-# eShops (tools/prices.py, the data branch's prices/ folder), committed to
-# the `data` branch, where PlayShelf reads them through jsDelivr.
+# What changes every day: the popular games' trends on the Wikipedias of
+# PlayShelf's languages (tools/trends.py, popular.json's `trend`) and each
+# game's price and sale in a few countries' eShops (tools/prices.py, the
+# prices/ folder), committed to the `data` branch, where PlayShelf reads
+# them through jsDelivr.
 name: daily
 
 on:
@@ -31,20 +33,26 @@ jobs:
           git fetch --depth 1 origin data:refs/remotes/origin/data
           git worktree add data-branch origin/data
           git -C data-branch checkout -B data
+      # A failure of one leaves the other's files to publish.
+      - name: Trends
+        continue-on-error: true
+        run: python3 tools/trends.py out data-branch
       - name: Prices
+        continue-on-error: true
         run: python3 tools/prices.py out data-branch
       - name: Commit to the data branch
         run: |
           mkdir -p data-branch/prices
-          cp out/prices/*.json data-branch/prices/
+          if [ -f out/popular.json ]; then cp out/popular.json data-branch/; fi
+          if ls out/prices/*.json >/dev/null 2>&1; then cp out/prices/*.json data-branch/prices/; fi
           cd data-branch
           git add -A
           if git diff --cached --quiet; then
             echo "nothing changed"
             exit 0
           fi
-          git commit -q -m "prices: $(date -u +%Y-%m-%d)"
+          git commit -q -m "daily: $(date -u +%Y-%m-%d)"
           git push origin data
-          for f in prices/*.json; do
+          for f in popular.json prices/*.json; do
             curl -fsS "https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@data/$f" >/dev/null || true
           done
