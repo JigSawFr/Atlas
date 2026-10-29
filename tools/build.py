@@ -10,7 +10,8 @@ sources that need no key:
 - data/games.json: each game's traits (series, developers, publishers,
   genres, modes) and, for one also sold on Steam, its Steam audience;
 - data/similar.json: the games most like each one, by their traits
-  (tools/features.py).
+  (tools/features.py), and for the others by what the eShop says of them
+  (tools/text.py).
 
 The sources:
 
@@ -50,6 +51,7 @@ import urllib.request
 
 import features
 import igdb
+import text
 
 AGENT = "PlayInsights/1.0 (https://github.com/JigSawFr/PlayInsights)"
 SPARQL = "https://query.wikidata.org/sparql"
@@ -378,9 +380,15 @@ def main():
         "schema": 1, "generated": today.isoformat(),
         "source": "Wikidata (P179, P178, P123, P136, P404, P1733), SteamSpy" + (" and IGDB" if found["traits"] else ""),
         "games": table}, previous_dir, report)
+    # The games alike: by their traits, then by what the eShop says of them
+    # (titledb's names, descriptions, categories and publishers) for the
+    # many games Wikidata knows nothing of.
+    titles = fetch(TITLEDB, timeout=600) or {}
+    by_text = text.similar(titles, base_id)
     publish(out_dir, "similar.json", {
-        "schema": 1, "generated": today.isoformat(), "source": "games.json's traits",
-        "games": features.similar(game_traits)}, previous_dir, report)
+        "schema": 1, "generated": today.isoformat(),
+        "source": "games.json's traits" + (" and titledb's descriptions" if by_text else ""),
+        "games": text.merged(features.similar(game_traits), by_text)}, previous_dir, report)
 
     publish(out_dir, "popular.json", {
         "schema": 1, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
@@ -389,7 +397,6 @@ def main():
                   + (" and IGDB" if found["popularity"] else ""),
         "games": popular(known, critics, read, steam, found["popularity"])}, previous_dir, report)
 
-    titles = fetch(TITLEDB, timeout=600) or {}
     publish(out_dir, "upcoming.json", {
         "schema": 1, "generated": today.isoformat(),
         "source": "blawar/titledb (US.en.json)" + (" and IGDB" if found["hypes"] else ""),

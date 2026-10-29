@@ -72,13 +72,21 @@ Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata h
 
 Each game's 12 most similar, `[title id, 1..100]`, the most first. Two games are alike by the traits they share, each weighed by its kind (a series 4, a developer 2, a genre, an IGDB theme or keyword 1, a publisher, a mode or a perspective 0.5) and by how rare it is: a cosine over weighted sets. Two games sharing only a publisher, a mode or a perspective are not alike.
 
+Wikidata describes a few thousand Switch games; the eShop has many more. For
+those, games are also found alike by what the eShop says of them (titledb's
+names, intros, descriptions, categories and publishers): each game's
+weightiest words by tf-idf, compared as a cosine (`tools/text.py`). A
+likeness by words counts four fifths of one by traits, 10 at most a game and
+25 at least; a game's list keeps the best 12 of both. That brings
+`similar.json` from some 2,400 games to some 14,000.
+
 ## The sources
 
 | Source | What it gives | Licence |
 |---|---|---|
 | [Wikidata](https://www.wikidata.org/) | Switch title ids ([P11072](https://www.wikidata.org/wiki/Property:P11072)), sitelinks, English pages, review scores ([P444](https://www.wikidata.org/wiki/Property:P444)) and their number of reviews ([P7887](https://www.wikidata.org/wiki/Property:P7887)) | CC0 |
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
-| [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names | as published there |
+| [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
 | [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
