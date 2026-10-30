@@ -1,5 +1,5 @@
 """tools/xbox.py's parts that need no network: the store's products read, a
-game's entry, its price, the Game Pass, the scores."""
+game's entry, the Game Pass, the scores."""
 import os
 import sys
 import unittest
@@ -10,28 +10,19 @@ import xbox  # noqa: E402
 A, B, C = "9ZZZZZZZZZZ1", "9ZZZZZZZZZZ2", "9ZZZZZZZZZZ3"
 
 
-def product(pid, title, list_price=29.99, msrp=29.99, kind="Game", ratings=463):
+def product(pid, title, kind="Game", ratings=463):
     return {"ProductId": pid, "ProductKind": kind,
             "LocalizedProperties": [{"ProductTitle": title, "DeveloperName": "Lantern Works", "PublisherName": "Tiny Owl"}],
             "MarketProperties": [{"OriginalReleaseDate": "2020-10-23T00:00:00.0000000Z",
                                   "UsageData": [{"AggregateTimeSpan": "7Days", "AverageRating": 4.5, "RatingCount": 2},
                                                 {"AggregateTimeSpan": "AllTime", "AverageRating": 4.2, "RatingCount": ratings}]}],
-            "Properties": {"Categories": ["Action & adventure", "Platformer"]},
-            "DisplaySkuAvailabilities": [{"Availabilities": [
-                {"Actions": ["Details", "License"], "OrderManagementData": {"Price": {"ListPrice": 0.0, "MSRP": 0.0}}},
-                {"Actions": ["Details", "Purchase"], "OrderManagementData": {"Price": {"ListPrice": list_price, "MSRP": msrp}}}]}]}
+            "Properties": {"Categories": ["Action & adventure", "Platformer"]}}
 
 
 class Xbox(unittest.TestCase):
     def test_big_id(self):
         self.assertEqual(xbox.big_id(" 9zzzzzzzzzz1 "), A)
         self.assertIsNone(xbox.big_id("9ZZZ"))
-
-    def test_price_of(self):
-        self.assertEqual(xbox.price_of(product(A, "A")), [29.99, 0, 0])
-        self.assertEqual(xbox.price_of(product(B, "B", 14.99, 29.99)), [29.99, 14.99, 0])
-        self.assertIsNone(xbox.price_of(product(C, "C", 0.0, 0.0)))
-        self.assertIsNone(xbox.price_of({"ProductId": C}))
 
     def test_entry(self):
         self.assertEqual(xbox.entry(product(A, "Amber Lantern"), "Q900001", ["pc", "console"]), {
@@ -43,6 +34,7 @@ class Xbox(unittest.TestCase):
     def test_read_products(self):
         def fetch(url):
             self.assertIn("market=JP", url)
+            self.assertIn("fieldsTemplate=details", url)
             return {"Products": [product(A, "A"), {"ProductId": "bad"}]}
         got = xbox.read_products([A, B], "JP", fetch, workers=1, pause=0)
         self.assertEqual(list(got), [A])

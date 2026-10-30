@@ -5,6 +5,8 @@ games only."""
 import datetime
 import json
 import os
+import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -16,8 +18,6 @@ import build  # noqa: E402
 import collect  # noqa: E402
 import common  # noqa: E402
 import features  # noqa: E402
-import prices  # noqa: E402
-import steam_prices  # noqa: E402
 import trends  # noqa: E402
 
 A, B, C = "0100000000010000", "0100000000020000", "0100000000030000"
@@ -88,46 +88,7 @@ class SourceFiles(unittest.TestCase):
             self.assertEqual(common.collected_today(src, "demo/b.json", "2026-10-30"), {})
 
 
-def price(nsu, regular, sale=None, status="onsale"):
-    p = {"title_id": nsu, "sales_status": status}
-    if regular is not None:
-        p["regular_price"] = {"currency": "EUR", "raw_value": str(regular)}
-    if sale is not None:
-        p["discount_price"] = {"raw_value": str(sale), "end_datetime": "2026-11-01T06:59:59Z"}
-    return p
-
-
 class SameFiles(unittest.TestCase):
-    def test_eshop(self):
-        ids = {n: f"01000000000{n:02d}000" for n in range(1, 121)}
-        ids[7] = ids[3]   # two eShop ids of one game: the first answered wins
-
-        def fetch(url):
-            numbers = [int(x) for x in url.split("ids=")[1].split(",")]
-            return {"prices": [price(n, 5.0, 2.5 if n % 10 == 0 else (6.0 if n == 9 else None),
-                                     "sales_termination" if n == 11 else "onsale") for n in numbers]
-                    + [price(None, 1.0), price(3, None)]}
-
-        with mock.patch.object(prices.time, "sleep"), mock.patch.object(collect.time, "sleep"):
-            asked = prices.read_country("FR", ids, fetch, workers=2)
-            kept = json.loads(json.dumps(collect.read_eshop("FR", ids, fetch, workers=2)))
-        self.assertEqual(prices.from_answers(kept, ids), asked)
-
-    def test_steam_prices(self):
-        def fetch(url):
-            apps = [a["appid"] for a in json.loads(urllib.parse.unquote(url.split("input_json=")[1]))["ids"]]
-            return {"response": {"store_items": [
-                {"appid": a, "success": 1, "is_free": a == 900003, "name": "x",
-                 "best_purchase_option": {"final_price_in_cents": 999, "original_price_in_cents": 1999 if a % 2 else 999,
-                                          "active_discounts": [{"discount_end_date": 1793491199}],
-                                          "lowest_recent_price_in_cents": 799}} for a in apps]}}
-        import urllib.parse  # noqa: F401
-        apps = [str(900000 + n) for n in range(1, 450)]
-        asked = steam_prices.read_country("FR", apps, fetch, workers=2, pause=0)
-        items = steam_prices.read_items("FR", apps, fetch, workers=2, pause=0)
-        kept = json.loads(json.dumps({app: collect.steam_item(item) for app, item in items.items()}))
-        self.assertEqual(steam_prices.rows_of(kept), asked)
-
     def test_monthly_views(self):
         known = {f"g{n}": (n % 7, f"Page {n}" if n % 5 else None) for n in range(600)}
         known["dup"] = (6, "Page 1")
@@ -194,59 +155,75 @@ class SameFiles(unittest.TestCase):
         self.assertEqual(build.steam_figures(lambda n: src.get(n, {}), apps, before), asked)
 
 
-class SteamCountries(unittest.TestCase):
-    """daily.yml asks Steam's prices a country a job (steam-store:FR)."""
+class NoPrices(unittest.TestCase):
+    """Atlas keeps no price nor sale (2026-10-30): the stores' answers are
+    kept without theirs, nothing is asked for them every day, and the one-time
+    cleanup takes their files off the data branch."""
 
-    def test_parts(self):
-        self.assertEqual(collect.parts("gog"), ("gog", {}))
-        self.assertEqual(collect.parts("steam-store"), ("steam-store", {}))
-        self.assertEqual(collect.parts("steam-store:FR,DE"), ("steam-store", {"countries": ["FR", "DE"]}))
-        for wrong in ("steam-store:XX", "gog:FR", "nothing"):
-            with self.assertRaises(SystemExit):
-                collect.parts(wrong)
+    def test_steam_item(self):
+        item = {"appid": 900001, "success": 1, "type": 0, "name": "Lantern Tale", "is_free": False,
+                "reviews": {"summary_filtered": {"review_count": 10, "percent_positive": 90}},
+                "best_purchase_option": {"final_price_in_cents": 999, "original_price_in_cents": 1999,
+                                         "lowest_recent_price_in_cents": 799}}
+        kept = collect.steam_item(item)
+        self.assertNotIn("best_purchase_option", kept)
+        self.assertEqual(kept["reviews"], item["reviews"])
 
-    def test_only_the_countries_named(self):
+    def test_gog_catalog(self):
+        product = {"id": 1207000001, "title": "Quiet Pond", "slug": "quiet_pond", "reviewsCount": 12, "reviewsRating": 43,
+                   "price": {"finalMoney": {"amount": "3.99"}, "baseMoney": {"amount": "19.99"}}}
         asked = []
 
-        def read_items(country, games, fetch):
-            asked.append(country)
-            return {"900001": {"appid": 900001, "success": 1, "name": "Lantern Tale",
-                               "best_purchase_option": {"final_price_in_cents": 999}}}
-        with tempfile.TemporaryDirectory() as out, tempfile.TemporaryDirectory() as last, \
-                mock.patch.object(steam_prices, "read_items", read_items):
-            os.makedirs(os.path.join(last, "platforms", "steam"))
-            with open(os.path.join(last, "platforms", "steam", "games.json"), "w") as f:
-                json.dump({"schema": common.SCHEMA, "games": {"900001": {}}}, f)
-            collect.collect_steam_store("daily", out, last, [], datetime.date(2026, 10, 30), [], countries=["NL", "JP"])
-            written = sorted(os.listdir(os.path.join(out, common.SOURCES, "steam-store", "prices")))
-        self.assertEqual(asked, ["NL", "JP"])
-        self.assertEqual(written, ["JP.json", "NL.json"])
+        def fetch(url):
+            asked.append(url)
+            return {"pages": 1, "products": [product]}
+        with tempfile.TemporaryDirectory() as out, mock.patch.object(common, "fetch", lambda url, **k: fetch(url)):
+            collect.collect_gog("weekly", out, None, [], datetime.date(2026, 11, 2), [])
+            kept = common.read_records(out, "sources/gog/catalog/US.json")
+        self.assertEqual(len(asked), 1)
+        self.assertNotIn("currencyCode", asked[0])
+        self.assertEqual(kept["games"]["1207000001"]["reviewsCount"], 12)
+        self.assertNotIn("price", kept["games"]["1207000001"])
 
-    def test_runtime_file_name(self):
-        """An artifact's paths may not hold a colon (run 41070253734)."""
+    def test_one_source_a_job(self):
+        with self.assertRaises(SystemExit), mock.patch.object(sys, "argv", ["collect.py", "eshop", "daily", "o", "o"]):
+            collect.main()
+        with self.assertRaises(SystemExit), mock.patch.object(sys, "argv", ["collect.py", "steam-store:FR", "daily", "o", "o"]):
+            collect.main()
         with tempfile.TemporaryDirectory() as out, \
-                mock.patch.object(sys, "argv", ["collect.py", "steam-store:FR", "daily", out, out]), \
+                mock.patch.object(sys, "argv", ["collect.py", "steam-store", "weekly", out, out]), \
                 mock.patch.dict(collect.COLLECTORS, {"steam-store": lambda *a, **k: None}):
             collect.main()
-            self.assertEqual(os.listdir(os.path.join(out, ".runtimes")), ["collect steam-store FR daily.json"])
+            self.assertEqual(os.listdir(os.path.join(out, ".runtimes")), ["collect steam-store weekly.json"])
 
-    def test_daily_asks_every_country(self):
-        import re
+    def test_daily_asks_no_store(self):
         with open(os.path.join(os.path.dirname(__file__), "..", ".github", "workflows", "daily.yml"), encoding="utf-8") as f:
-            jobs = re.findall(r"first: steam-store:(\S+)", f.read())
-        self.assertEqual(sorted(jobs), sorted(steam_prices.COUNTRIES))
+            daily = f.read()
+        asked = sorted(set(re.findall(r"tools/collect\.py (\S+) daily", daily)))
+        self.assertEqual(asked, ["wikidata", "wikipedia"])
+        for gone in ("prices.py", "steam_prices.py", "gog.py prices", "xbox.py prices", "steam-store"):
+            self.assertNotIn(gone, daily)
 
-    def test_a_country_not_collected_keeps_its_file(self):
-        """steam_prices.consolidate writes only the countries collected today:
-        the others' files are not in out/, the data branch keeps the last ones."""
-        today = "2026-10-30"
-        with tempfile.TemporaryDirectory() as out, tempfile.TemporaryDirectory() as last:
-            files = {"steam-store/prices/FR.json": {"generated": today, "games": {"900001": {
-                "success": 1, "best_purchase_option": {"final_price_in_cents": 999}}}},
-                     "steam-store/prices/DE.json": {"generated": "2026-10-29", "games": {}}}
-            steam_prices.consolidate(lambda name: files.get(name, {}), out, last, today)
-            written = sorted(os.listdir(os.path.join(out, "platforms", "steam", "prices")))
-        self.assertEqual(written, ["FR.json"])
+    def test_cleanup(self):
+        script = os.path.join(os.path.dirname(__file__), "..", "tools", "drop-prices.sh")
+        with tempfile.TemporaryDirectory() as d:
+            kept = ["platforms/switch/popular.json", "platforms/steam/games.json", "sources/gog/catalog/US.json",
+                    "sources/steam-store/apps.json", "sources/msstore/products.json", "sources/titledb/US.json"]
+            gone = ["platforms/switch/prices/FR.json", "platforms/xbox/prices/JP.json", "history/steam/2026-10.json",
+                    "sources/eshop/prices/FR.json", "sources/steam-store/prices/DE.json", "sources/msstore/prices/BR.json",
+                    "sources/gog/catalog/FR.json", "sources/gog/catalog/JP/1.json"]
+            for name in kept + gone:
+                os.makedirs(os.path.dirname(os.path.join(d, name)), exist_ok=True)
+                with open(os.path.join(d, name), "w") as f:
+                    f.write("{}")
+            subprocess.run(["bash", script, d], check=True)
+            for name in kept:
+                self.assertTrue(os.path.exists(os.path.join(d, name)), name)
+            for name in gone:
+                self.assertFalse(os.path.exists(os.path.join(d, name)), name)
+            for folder in ("history", "sources/eshop", "platforms/switch/prices"):
+                self.assertFalse(os.path.exists(os.path.join(d, folder)), folder)
+            subprocess.run(["bash", script, d], check=True)   # again: nothing left to do, no error
 
 
 if __name__ == "__main__":

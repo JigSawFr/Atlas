@@ -9,15 +9,13 @@
   - platforms/gog/games.json: each game's name, slug, release, reviews, Wikidata item
     and traits (developers, publishers, genres, tags);
   - platforms/gog/upcoming.json: the games still to come, [YYYYMMDD, name];
-  - platforms/gog/similar.json: the games most like each one, by their traits;
-- every day (daily.yml), `tools/gog.py prices`: platforms/gog/prices/<country>.json,
-  [regular, sale, until, lowest, lowest_day] as platforms/switch/prices/ (GOG gives no
-  sale's last day: `until` is 0).
+  - platforms/gog/similar.json: the games most like each one, by their traits.
 
 GOG's catalog (catalog.gog.com, no key) gives every game and pack, 100 a
-page, with its price in a country's currency; some 85 pages a country.
+page, some 85 pages (asked as in the US: the order and the reviews are the
+same everywhere).
 
-Usage: tools/gog.py catalog|prices <out-dir> <previous-dir> <sources-dir>
+Usage: tools/gog.py catalog <out-dir> <previous-dir> <sources-dir>
   (from the sources tools/collect.py keeps: gog, wikidata, wikipedia)
 """
 import concurrent.futures
@@ -32,11 +30,8 @@ import common
 import features
 
 GOG = "gog"
-CATALOG = ("https://catalog.gog.com/v1/catalog?limit=100&page={page}&countryCode={country}&currencyCode={currency}"
+CATALOG = ("https://catalog.gog.com/v1/catalog?limit=100&page={page}&countryCode=US"
            "&locale=en-US&order=desc:trending&productType=in:game,pack")
-# GOG sells in Japan in US dollars.
-COUNTRIES = {"US": "USD", "CA": "CAD", "MX": "MXN", "BR": "BRL", "GB": "GBP", "FR": "EUR", "DE": "EUR",
-             "ES": "EUR", "IT": "EUR", "NL": "EUR", "PT": "EUR", "AU": "AUD", "JP": "USD"}
 QUERY = """
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX wikibase: <http://wikiba.se/ontology#>
@@ -58,18 +53,17 @@ TAGS_KEPT = 10
 UPCOMING_DAYS = 365
 
 
-def read_catalog(country, fetch, workers=WORKERS, pause=PAUSE):
-    """GOG's products in `country`, in its trending order: [(product, rank)]."""
-    currency = COUNTRIES[country]
-    first = fetch(CATALOG.format(page=1, country=country, currency=currency)) or {}
+def read_catalog(fetch, workers=WORKERS, pause=PAUSE):
+    """GOG's products, in its trending order: [(product, rank)]."""
+    first = fetch(CATALOG.format(page=1)) or {}
     pages = min(int(first.get("pages") or 0), MAX_PAGES)
 
     def ask(page):
         time.sleep(pause)
         try:
-            return (fetch(CATALOG.format(page=page, country=country, currency=currency)) or {}).get("products") or []
+            return (fetch(CATALOG.format(page=page)) or {}).get("products") or []
         except (urllib.error.URLError, OSError, ValueError) as e:
-            print(f"gog: {country} page {page}: {e}", file=sys.stderr)
+            print(f"gog: page {page}: {e}", file=sys.stderr)
             return []
 
     found = list(first.get("products") or [])
@@ -82,27 +76,8 @@ def read_catalog(country, fetch, workers=WORKERS, pause=PAUSE):
         if pid.isdigit() and pid not in seen:
             seen.add(pid)
             out.append((product, len(out) + 1))
-    print(f"gog: {country}: {len(out)} products, {pages} pages", file=sys.stderr)
+    print(f"gog: {len(out)} products, {pages} pages", file=sys.stderr)
     return out
-
-
-def money(value):
-    try:
-        v = float((value or {}).get("amount"))
-    except (TypeError, ValueError):
-        return None
-    return round(v, 2) if v >= 0 else None
-
-
-def price_of(product):
-    """[regular, sale, until] of a product, or None when it is free or has no price."""
-    price = product.get("price") or {}
-    final, base = money(price.get("finalMoney")), money(price.get("baseMoney"))
-    if not final:
-        return None
-    if base and base > final:
-        return [base, final, 0]
-    return [final, 0, 0]
 
 
 def day_of(text):
@@ -170,11 +145,9 @@ def wikidata_rows():
         return body["results"]["bindings"]
 
 
-def catalog_games(src, country="US", today=None):
-    """[(product, rank)] of the catalog collected for `country`, in its order
-    (with `today`: only one collected that day)."""
-    found = (common.collected_today(src, f"gog/catalog/{country}.json", today) if today
-             else src(f"gog/catalog/{country}.json")).get("games") or {}
+def catalog_games(src):
+    """[(product, rank)] of the catalog collected, in its order."""
+    found = src("gog/catalog/US.json").get("games") or {}
     return [(p, i + 1) for i, p in enumerate(found.values())]
 
 
@@ -227,31 +200,9 @@ def catalog(src, out_dir, previous_dir, today):
     print(common.summary(report), file=sys.stderr)
 
 
-def prices(src, out_dir, previous_dir, today):
-    report = []
-    for country, currency in COUNTRIES.items():
-        rows = {}
-        found = catalog_games(src, country, today)
-        if not found:
-            print(f"gog prices: {country}: nothing collected today", file=sys.stderr)
-            continue
-        for product, _ in found:
-            row = price_of(product)
-            if row:
-                rows[str(product["id"])] = row
-        name = f"platforms/{GOG}/prices/{country}.json"
-        last = common.previous_file(previous_dir, name) if previous_dir else {}
-        common.publish(out_dir, name, {
-            "schema": common.SCHEMA, "platform": GOG, "generated": today.isoformat(), "country": country, "currency": currency,
-            "since": last.get("since") or last.get("generated") or today.isoformat(), "source": "GOG's catalog",
-            "games": common.with_lowest(dict(sorted(rows.items(), key=lambda kv: int(kv[0]))),
-                                        last.get("games") or {}, today.isoformat())}, previous_dir, report)
-    print(common.summary(report), file=sys.stderr)
-
-
 def main():
     what, out_dir, previous_dir, sources_dir = sys.argv[1:5]
-    common.timed(out_dir, f"gog {what}", lambda: {"catalog": catalog, "prices": prices}[what](
+    common.timed(out_dir, f"gog {what}", lambda: {"catalog": catalog}[what](
         common.reader(sources_dir, previous_dir), out_dir, previous_dir, datetime.date.today()))
 
 

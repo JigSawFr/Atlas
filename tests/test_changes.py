@@ -1,4 +1,4 @@
-"""tools/changes.py: what a run changed, the prices' history, the light files. Fictional games only."""
+"""tools/changes.py: what a run changed, the light files. Fictional games only."""
 import datetime
 import json
 import os
@@ -30,13 +30,9 @@ class Changes(unittest.TestCase):
             "platforms/switch/games.json": {"schema": 1, "games": {A: {}, B: {}}},
             "platforms/switch/upcoming.json": {"schema": 1, "games": {C: [20261102, "Quiet Pond"]}},
             "platforms/switch/popular.json": {"schema": 1, "games": {A: [50, 10, 0], B: [40, 0, 0]}},
-            "platforms/switch/prices/FR.json": {"schema": 1, "games": {A: [19.99, 0, 0, 19.99, 20261001],
-                                                          B: [9.99, 4.99, 20261101, 4.99, 20261020]}},
         }
         put(self.d, "platforms/switch/games.json", {"schema": 1, "generated": "2026-11-02", "games": {A: {}, B: {}, C: {}}})
         put(self.d, "platforms/switch/popular.json", {"schema": 1, "games": {A: [55, 210, 0], B: [40, 5, 0]}})
-        put(self.d, "platforms/switch/prices/FR.json", {"schema": 1, "games": {A: [19.99, 9.99, 20261110, 9.99, 20261102],
-                                                                  B: [9.99, 0, 0, 4.99, 20261020]}})
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -46,38 +42,16 @@ class Changes(unittest.TestCase):
         self.assertEqual(got["new"], [C])
         self.assertEqual(got["out_today"], [C])
         self.assertEqual(got["trends"], [[A, 10, 210]])
-        self.assertEqual(got["sales"]["FR"], {"started": [A], "ended": [B], "lowest": [A]})
+        self.assertEqual(sorted(got), ["new", "out_today", "trends"])
         body = {"schema": 1, "generated": "2026-11-02", "platforms": {"switch": got}}
         self.assertEqual(schemas.errors(body, schemas.KINDS["changes"]), [])
 
-    def test_history(self):
-        prev = lambda p: self.before.get(p, {})   # noqa: E731
-        changes.history(self.d, TODAY, prev)
-        with open(os.path.join(self.d, "history/switch/2026-11.json")) as f:
-            month = json.load(f)
-        self.assertEqual(month["games"], {A: {"FR": [[20261102, 19.99, 9.99]]}, B: {"FR": [[20261102, 9.99, 0]]}})
-        self.assertEqual(schemas.errors(month, schemas.KINDS["history"]), [])
-        # The next day: nothing changed, nothing more; then A's sale ends.
-        changes.history(self.d, datetime.date(2026, 11, 3), prev)
-        put(self.d, "platforms/switch/prices/FR.json", {"schema": 1, "games": {A: [19.99, 0, 0, 9.99, 20261102], B: [9.99, 0, 0, 4.99, 0]}})
-        changes.history(self.d, datetime.date(2026, 11, 4), prev)
-        with open(os.path.join(self.d, "history/switch/2026-11.json")) as f:
-            month = json.load(f)
-        self.assertEqual(month["games"][A]["FR"], [[20261102, 19.99, 9.99], [20261104, 19.99, 0]])
-        self.assertEqual(month["games"][B]["FR"], [[20261102, 9.99, 0]])
-
     def test_other_schema(self):
-        # The last run's files of a later schema read as none: no game said new, no sale.
+        # The last run's files of a later schema read as none: no game said new, no trend moved.
         later = {p: {**b, "schema": 2} for p, b in self.before.items()}
         got = changes.changes(self.d, TODAY, previous=lambda p: later.get(p, {}))["switch"]
         self.assertNotIn("new", got)
-        self.assertNotIn("sales", got)
-        # A month's history of a later schema is left as it is, not written over.
-        month = {"schema": 2, "platform": "switch", "games": {A: {"FR": "kept"}}}
-        put(self.d, "history/switch/2026-11.json", month)
-        self.assertEqual(changes.history(self.d, TODAY, lambda p: self.before.get(p, {})), [])
-        with open(os.path.join(self.d, "history/switch/2026-11.json")) as f:
-            self.assertEqual(json.load(f), month)
+        self.assertNotIn("trends", got)
 
     def test_lite(self):
         put(self.d, "platforms/steam/games.json", {"schema": 1, "generated": "2026-11-02", "games": {

@@ -1,10 +1,11 @@
 # Atlas
 
 Open data about video games on every platform it can read without an
-account, rebuilt every week, with prices every day: which games are well
+account, rebuilt every week, with trends every day: which games are well
 known, which are read about more lately, what critics and players gave them,
 which come out soon, what each game is (its series, developers, publishers,
-genres), which games are most like it, and what it costs in 13 countries.
+genres) and which games are most like it. No prices nor sales: Atlas left
+them on 2026-10-30, they are not what it is about.
 Each platform has a folder: the Nintendo Switch (`platforms/switch/`, by title id),
 Steam (`platforms/steam/`), GOG (`platforms/gog/`) and the Xbox and Microsoft Store (`platforms/xbox/`);
 `links.json` ties a game's ids on every platform together. With IGDB's keys
@@ -33,16 +34,12 @@ jsDelivr. Each platform has a folder of its own in `platforms/`, by its id
 | `platforms/switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/similar.json` |
 | `platforms/switch/names.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/names.json` |
 | `platforms/switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/editions.json` |
-| `platforms/switch/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/prices/FR.json` |
 | `platforms/steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/popular.json` |
 | `platforms/steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/games.json` |
 | `platforms/steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/upcoming.json` |
 | `platforms/steam/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/similar.json` |
-| `platforms/steam/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/prices/FR.json` |
 | `platforms/gog/popular.json`, `platforms/gog/games.json`, `platforms/gog/upcoming.json`, `platforms/gog/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/gog/popular.json`… |
-| `platforms/gog/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/gog/prices/FR.json` |
 | `platforms/xbox/popular.json`, `platforms/xbox/games.json`, `platforms/xbox/gamepass.json`, `platforms/xbox/upcoming.json`, `platforms/xbox/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/xbox/popular.json`… |
-| `platforms/xbox/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/xbox/prices/FR.json` |
 | `platforms/3ds/games.json`, `popular.json`, `similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/3ds/games.json`… |
 | `platforms/ps4/games.json`, `popular.json`, `similar.json`, `upcoming.json` (and `platforms/ps5/`) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/ps4/games.json`… |
 | `platforms/<machine>/popular.json`, `games.json`, `similar.json` (the old machines: `nes`, `snes`, `gba`, `ps2`…) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/nes/popular.json`… |
@@ -51,11 +48,11 @@ jsDelivr. Each platform has a folder of its own in `platforms/`, by its id
 | `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/index.json` |
 
 The files have moved twice: until 2026-10-30 the Switch's were at the
-branch's root (`popular.json`, `prices/FR.json`…), then each platform's
+branch's root (`popular.json`, `upcoming.json`…), then each platform's
 folder was (`switch/`, `steam/`, `gog/`, `xbox/`, and `retro/` for every old
 machine together). The first run after each move put them in their new
-place, keeping them as the last run's for the guard,
-the trends and the lowest prices; `retro/` made way for a folder a machine.
+place, keeping them as the last run's for the guard
+and the trends; `retro/` made way for a folder a machine.
 
 `platforms.json` is the platforms' registry, `{"platforms": {id: {name,
 qid, igdb, aurore, kind}}}`: its Wikidata item, its IGDB platform (slug),
@@ -81,12 +78,11 @@ files against this branch's schemas.
 
 `report.json` says how the data is: for each source its files, records,
 size and the last day it answered; for each platform its games, how many
-have a name, a score, a link to another platform (`linked`), a price
-(`priced`, in any country) and reviews or a rating (`reviewed`), as shares
-of 1; and how long each step of the run took. A file of another schema
+have a name, a score, a link to another platform (`linked`) and reviews or
+a rating (`reviewed`), as shares of 1; and how long each step of the run took. A file of another schema
 counts as none there.
 
-The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`): each run only needs the last files, and keeping every day's prices would grow the repository by hundreds of MB a year.
+The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`): each run only needs the last files, and keeping every day's files would grow the repository by hundreds of MB a year.
 
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
 meaning), the day it was `generated` and its `source`; a platform's files
@@ -101,8 +97,8 @@ path of its own, `platforms/switch/v2/popular.json` next to
 both made at each run until the readers of schema 1 (PlayShelf's
 installed versions) are gone; only then does the old path stop. The tools
 read the last run's files back the same way: one of another schema counts
-as none (the guard lets the new file through, the lowest prices start over,
-the daily trends wait for the weekly build).
+as none (the guard lets the new file through, the daily trends wait for
+the weekly build).
 
 `links.json`, made every Monday:
 
@@ -184,15 +180,6 @@ likeness by words counts four fifths of one by traits, 10 at most a game and
 
 A game's other editions (a Deluxe, a Complete Edition, a Game of the Year, the game with a DLC pack), each with the game it is one of: the edition out first, under the same publisher and a name that differs only by its edition words (`tools/editions.py`). Words that make another game (Remastered, Special, Enhanced, a second title after "+") keep the games apart. `similar.json` leaves a game's own editions out of its list.
 
-`platforms/switch/prices/<country>.json`, made every day ([`daily.yml`](.github/workflows/daily.yml)) for US, CA, MX, BR, GB, FR, DE, ES, IT, NL, PT, AU and JP:
-
-```json
-{"schema": 1, "generated": "2026-10-30", "country": "FR", "currency": "EUR", "since": "2026-10-29", "source": "...",
- "games": {"0100000000010000": [19.99, 13.99, 20261101, 13.99, 20261030], "0100000000020000": [39.99, 0, 0, 29.99, 20261029]}}
-```
-
-Each game the country's eShop sells is `[regular, sale, until, lowest, lowest_day]`: its price, its sale price (0 when not on sale), the sale's last day (YYYYMMDD, 0 when none), the lowest price it has had since `since` (the day the files began) and the last day it had it, in the country's currency. Each day's price is weighed against the last run's file. The eShop's price service answers by its own ids, which differ from one region to the next: titledb's list of each region (US, GB, JP) gives them with the title ids. A game no longer sold is left out.
-
 ### Steam
 
 `platforms/steam/` has the Switch's files' formats, by Steam app id (`"620"`), made every
@@ -221,17 +208,6 @@ Monday by `tools/steam.py` in a job of its own:
 - `platforms/steam/similar.json`: the 12 most similar, `[app id, 1..100]`, of the 30,000
   best known games, by their traits as the Switch's (a tag weighs as a genre).
 
-- `platforms/steam/prices/<country>.json`, made every day (`tools/steam_prices.py`)
-  for the same 13 countries as the Switch's, for the games of
-  `platforms/steam/games.json`: each row is `[regular, sale, until, lowest,
-  lowest_day, lowest_30]`, the first five as `platforms/switch/prices/`, and
-  `lowest_30` Steam's own lowest price of the last 30 days (as its store
-  shows it in Europe; 0 when it gives none). A free game, or one a country's
-  store does not sell (Germany's sells some 4,000 fewer), is left out.
-  Each country is asked in a job of its own (`steam-store:FR`, 45 minutes
-  at most): a country whose job fails or runs out of time keeps its last
-  file, and the others are published.
-
 The games are those Wikidata gives a Steam app id (some 128,000 items) and
 Steam's most played; Steam's store says which are games (not a DLC, a tool or
 a soundtrack) and gives the rest, 200 apps a request.
@@ -241,18 +217,14 @@ a soundtrack) and gives the rest, 200 apps a request.
 `platforms/gog/` has the same formats, by GOG product id (`"1207658924"`), from GOG's
 catalog (`tools/gog.py`), every game and pack it sells (some 8,400):
 
-- every Monday: `platforms/gog/popular.json` (half the game's renown on Wikipedia, by
+- `platforms/gog/popular.json` (half the game's renown on Wikipedia, by
   the Wikidata item that gives its GOG page, P2725; half its GOG reviews;
   GOG's 100 first in its "trending" order lifted by their rank),
   `platforms/gog/games.json` (each game's `name`, `slug`, `release`, `reviews` as
   `[count, percent]`, its rating out of 5 doubled into a percent, `qid`,
   `pack` for a bundle, and its traits as `[id, name]`: `developers`,
   `publishers`, `genres`, `tags`), `platforms/gog/upcoming.json` and
-  `platforms/gog/similar.json`;
-- every day: `platforms/gog/prices/<country>.json`, `[regular, sale, until, lowest,
-  lowest_day]` as `platforms/switch/prices/`, for the 13 countries (Japan in US
-  dollars, as GOG sells there). GOG doesn't say when a sale ends: `until` is
-  0. A free game is left out.
+  `platforms/gog/similar.json`, every Monday.
 
 ### Xbox and the Microsoft Store
 
@@ -261,16 +233,14 @@ Xbox and PC alike), for the games Wikidata gives a Microsoft Store id (P5885)
 and the Game Pass's (some 6,700), from the store's catalog
 (`displaycatalog.mp.microsoft.com`, no key, `tools/xbox.py`):
 
-- every Monday: `platforms/xbox/popular.json` (half the game's renown on Wikipedia,
+- `platforms/xbox/popular.json` (half the game's renown on Wikipedia,
   half its players' ratings on the store; a game in the Game Pass lifted),
   `platforms/xbox/games.json` (each game's `name`, `release`, `rating` as `[count,
   percent]`, its stars out of 5 into a percent, `gamepass`, `qid`, and its
   traits as `[id, name]`: `developers`, `publishers`, `genres`),
   `platforms/xbox/gamepass.json` (the games in the Game Pass: `["console", "pc"]`, from
-  its public lists), `platforms/xbox/upcoming.json`, `platforms/xbox/similar.json`;
-- every day: `platforms/xbox/prices/<country>.json`, `[regular, sale, until, lowest,
-  lowest_day]` as `platforms/switch/prices/`, for the 13 countries. The store's short
-  answer doesn't say when a sale ends: `until` is 0. A free game is left out.
+  its public lists), `platforms/xbox/upcoming.json`, `platforms/xbox/similar.json`,
+  every Monday.
 
 ### Nintendo 3DS
 
@@ -288,8 +258,7 @@ across its regions, by its product code's serial (`"CTR-AKD"` for the
   from Wikidata and Wikipedia for the games Wikidata knows; `critics` is 0.
 - `similar.json`: the 12 most alike, by their traits.
 
-No prices: the 3DS's eShop closed in March 2023. No pictures nor texts.
-The titles come from [Nlib API](https://api.nlib.cc/ctr/)'s 3DS (its lists
+No pictures nor texts. The titles come from [Nlib API](https://api.nlib.cc/ctr/)'s 3DS (its lists
 of title ids by category, then each base game's name, region, publisher,
 product code and first day, asked once and kept in
 `sources/nlib-ctr/titles.json`: a run asks only the titles it does not know
@@ -344,7 +313,7 @@ platforms (Steam, Switch…).
   year, `[YYYYMMDD, name]` (a day Wikidata says only to the month or the
   year is left out).
 
-No prices, sales, players' ratings nor sales ranks: nothing is asked of
+No players' ratings nor sales ranks: nothing is asked of
 the PlayStation Store nor of any `playstation.com` address, whose terms of
 use forbid collecting their data and building a database of it. The PS3,
 PSP and Vita stay with the old machines below (Wikidata alone too, and their
@@ -368,50 +337,49 @@ say) is here too, by its Wikidata item: `links.json` gives its store ids.
   traits as `[QID, name]`: `series`, `developers`, `publishers`, `genres`.
 - `similar.json`: the 12 most alike among the machine's games, by their traits.
 
-## What changed, and the prices' history
+## What changed
 
 Every run, once its files are made (`tools/changes.py`):
 
 - `changes.json`: by platform, the games new since the last run (`new`),
   the ones out today (`out_today`), the trends that moved by 100 points or
-  more (`trends`: `[id, before, now]`), and by country the sales that
-  started and ended and the new lowest prices (`sales`), 200 of each at
-  most:
+  more (`trends`: `[id, before, now]`), 200 of each at most:
 
   ```json
   {"schema": 1, "generated": "2026-11-02", "source": "Atlas (the run's files against the last run's)",
-   "platforms": {"switch": {"new": ["0100000000030000"], "trends": [["0100000000010000", 10, 210]],
-                            "sales": {"FR": {"started": ["0100000000010000"], "ended": [], "lowest": []}}}}}
+   "platforms": {"switch": {"new": ["0100000000030000"], "trends": [["0100000000010000", 10, 210]]}}}
   ```
 
-- `history/<platform>/YYYY-MM.json`: each game's price by country, on the
-  days it changed only, `[YYYYMMDD, regular, sale]` (sale 0: none), a file
-  a month, kept from day to day. It stays on the data branch (and in the
-  weekly archives); the website does not copy it.
 - `platforms/<id>/games.lite.json`, beside a `games.json` over 1 MB: each
   game's `name`, `qid`, `release` and `reviews` or `rating` alone, for a
   reader that needs no more.
 
 The last run's files of another schema count as none (nothing is said new
-against them), and a month's history of another schema is left as it is.
+against them).
+
+Until 2026-10-30, `changes.json` also had by country the sales that started
+and ended and the new lowest prices (`sales`), and `history/<platform>/` each
+game's prices: Atlas no longer reads prices, and both went with the
+`prices/` folders (the schema stays 1: no field left changed its meaning,
+and `sales` was already absent on a day without one).
 
 ## The archives
 
 The `data` branch keeps only the last files. Every Monday's build also keeps
 them as a [release](../../releases), `data-YYYY-MM-DD`, tagged on the commit
 that made them: each file the branch had that day, attached on its own
-(`platforms/switch/prices/FR.json` as `switch-prices-FR.json`, a release's files having
+(`platforms/switch/popular.json` as `platforms-switch-popular.json`, a release's files having
 no folders),
 all of them in one zip with their folders (`atlas-data-YYYY-MM-DD.zip`,
 about 3 MB), and their `SHA256SUMS.txt`. Some 17 MB a week, kept for good, as the data's
-history: the prices of a Monday, the trends of a week.
+history: the renown and the trends of a week.
 
 The last week's files have addresses of their own, which follow each new
 release:
 
 ```
 https://github.com/JigSawFr/Atlas/releases/latest/download/switch-popular.json
-https://github.com/JigSawFr/Atlas/releases/download/data-2026-11-02/switch-prices-FR.json
+https://github.com/JigSawFr/Atlas/releases/download/data-2026-11-02/platforms-switch-games.json
 https://github.com/JigSawFr/Atlas/releases/download/data-2026-11-02/atlas-data-2026-11-02.zip
 ```
 
@@ -423,7 +391,7 @@ gh attestation verify switch-popular.json -R JigSawFr/Atlas
 
 ## Website
 
-Atlas's website, [atlas.boreale.dev](https://atlas.boreale.dev/?utm_source=github&utm_medium=readme), shows the project and an explorer of the data (the best known games, the trends, the deals by country, the games coming soon, each game's sheet), in fifteen languages. It is built from `site/` with a copy of the `data` branch, served with it under `data/` (`.github/workflows/site.yml`, after each run); see [`site/README.md`](site/README.md).
+Atlas's website, [atlas.boreale.dev](https://atlas.boreale.dev/?utm_source=github&utm_medium=readme), shows the project and an explorer of the data (the best known games, the trends, the games coming soon, each game's sheet), in fifteen languages. It is built from `site/` with a copy of the `data` branch, served with it under `data/` (`.github/workflows/site.yml`, after each run); see [`site/README.md`](site/README.md).
 
 ## The sources
 
@@ -437,12 +405,11 @@ branch: the platforms' files are then made from these, asking nothing more
 | Folder | What it keeps | When |
 |---|---|---|
 | `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `others-igdb` (every console's games' IGDB slugs), `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`, `playstation`, `playstation-<kind>`, `playstation-dates`, `3ds` (the 3DS games' Japanese labels, English aliases, dates, GameTDB codes); `switch-pages`, `steam-pages` (daily) | Monday, every day |
-| `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers; the others with ids and names) | every day |
-| `sources/eshop/prices/` | The eShop's answer by eShop id: status, regular price, discount, its last day, currency | every day |
-| `sources/steam-store/` | `apps.json` (GetItems by app id), `tags.json`, `most-played.json`; `prices/<country>.json` (GetItems' prices) | Monday, every day |
+| `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers; the others with ids and names) | Monday |
+| `sources/steam-store/` | `apps.json` (GetItems by app id), `tags.json`, `most-played.json` | Monday |
 | `sources/steamspy/` | `apps.json`: owners and players by app id, as many as 10 minutes allow | Monday |
-| `sources/gog/catalog/` | The catalog's products by product id, in its trending order, a country a file | Monday (US), every day |
-| `sources/msstore/` | `products.json`, `gamepass.json`; `prices/<country>.json` ([list price, MSRP] by product id) | Monday, every day |
+| `sources/gog/catalog/` | `US.json`: the catalog's products by product id, in its trending order | Monday |
+| `sources/msstore/` | `products.json`, `gamepass.json` | Monday |
 | `sources/nlib-ctr/` | `categories.json` (the 3DS's title ids by category), `titles.json` (each base game's name, region, publisher, product code, first day; kept from run to run) | Monday |
 | `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records of the Switch's games; `others.json`, of every console's (with its keys only) | Monday |
 | `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (the Switch's and Steam's best known games' pages' views a day, 8 languages) | Monday, every day |
@@ -460,10 +427,9 @@ left as it was), and skips the fields it does not know.
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
 | [SteamSpy](https://steamspy.com/api.php) | Steam owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
-| [Steam's store](https://store.steampowered.com/) (`IStoreBrowseService/GetItems`, `IStoreService/GetTagList`, `ISteamChartsService/GetMostPlayedGames`, no key) | Steam's games: names, reviews, releases, franchises, developers, publishers, tags, most played; their prices and sales by country (`platforms/steam/prices/`) | [Steam Web API terms](https://steamcommunity.com/dev/apiterms); data from Valve, not endorsed by it |
-| [GOG's catalog](https://www.gog.com/) (`catalog.gog.com`, no key) | GOG's games: names, releases, reviews, developers, publishers, genres, tags, trending order; prices and sales by country (`platforms/gog/prices/`) | as published there; data from GOG |
-| [Microsoft Store's catalog](https://www.xbox.com/) (`displaycatalog.mp.microsoft.com`, `catalog.gamepass.com`, no key) | The Xbox and PC games: names, releases, players' ratings, developers, publishers, genres, the Game Pass; prices and sales by country (`platforms/xbox/prices/`) | as published there; data from Microsoft |
-| [Nintendo eShop's prices](https://api.ec.nintendo.com/v1/price) | Each game's price and sale, by country (`platforms/switch/prices/`) | as published there |
+| [Steam's store](https://store.steampowered.com/) (`IStoreBrowseService/GetItems`, `IStoreService/GetTagList`, `ISteamChartsService/GetMostPlayedGames`, no key) | Steam's games: names, reviews, releases, franchises, developers, publishers, tags, most played | [Steam Web API terms](https://steamcommunity.com/dev/apiterms); data from Valve, not endorsed by it |
+| [GOG's catalog](https://www.gog.com/) (`catalog.gog.com`, no key) | GOG's games: names, releases, reviews, developers, publishers, genres, tags, trending order | as published there; data from GOG |
+| [Microsoft Store's catalog](https://www.xbox.com/) (`displaycatalog.mp.microsoft.com`, `catalog.gamepass.com`, no key) | The Xbox and PC games: names, releases, players' ratings, developers, publishers, genres, the Game Pass | as published there; data from Microsoft |
 | [Nlib API](https://api.nlib.cc/ctr/) (3DS, no key; asked as `Atlas/1.0 (+https://atlas.boreale.dev)`, two requests at a time) | The 3DS's titles: names, regions, publishers, product codes, first days on the eShop; their updates', add-ons' and demos' title ids | as published there (no terms stated) |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the Switch's games, the consoles' missing traits and every game's players' rating, for the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
@@ -476,15 +442,15 @@ with a warning, and the workflow's summary lists each file's games against
 the last run's.
 
 A source that fails leaves its last run's file, and the platforms' files are
-made from that; a daily file (prices, trends) is made only from what was
+made from that; a daily file (the trends) is made only from what was
 collected that day, else left as it was.
 
 Whatever goes wrong in a run — the job failing, one of the daily steps
 failing on its own, a source's job failing or running out of time (it says
 which), a file kept by the guard, a published file that more than doubled
 or fell under half its size against the last run's (`tools/index.py`:
-still published, but worth a look; files under 50 kB, `changes.json`,
-`report.json` and `history/` not weighed) — opens an issue labelled
+still published, but worth a look; files under 50 kB, `changes.json` and
+`report.json` not weighed) — opens an issue labelled
 `data-alert` (`tools/alert.sh`), or adds a comment to the one still open,
 so it does not go unseen.
 
@@ -540,11 +506,6 @@ python3 tools/collect.py nlib-ctr weekly out/ last/         # the 3DS's titles n
 python3 tools/collect.py wikipedia weekly out/ last/ out/   # after the stores: their best known games' pages
 python3 tools/collect.py wikidata daily out/ last/          # the pages of last/platforms/{switch,steam}/popular.json's best known
 python3 tools/collect.py wikipedia daily out/ last/ out/
-python3 tools/collect.py eshop daily out/ last/ out/        # after titledb (some 20 minutes)
-python3 tools/collect.py steam-store daily out/ last/       # last/platforms/steam/games.json's prices (some 4 minutes a country)
-python3 tools/collect.py steam-store:FR,DE daily out/ last/ # only those countries (daily.yml: a country a job)
-python3 tools/collect.py gog daily out/ last/               # every country's catalog (some 6 minutes)
-python3 tools/collect.py msstore daily out/ last/           # last/platforms/xbox/games.json's prices (some 4 minutes)
 # Each platform's files from the sources (out/ this run's, else last/'s), asking nothing:
 python3 tools/links.py out/ last/ out/          # out/links.json, out/platforms.json
 python3 tools/build.py out/ last/ out/          # out/platforms/switch/*.json
@@ -555,16 +516,11 @@ python3 tools/retro.py out/ last/ out/          # out/platforms/<machine>/*.json
 python3 tools/n3ds.py out/ last/ out/           # out/platforms/3ds/*.json
 python3 tools/playstation.py out/ last/ out/    # out/platforms/ps4/*.json, out/platforms/ps5/*.json
 python3 tools/trends.py out/ last/ out/         # last/platforms/{switch,steam}/popular.json with today's trends
-python3 tools/prices.py out/ last/ out/         # out/platforms/switch/prices/*.json
-python3 tools/steam_prices.py out/ last/ out/   # out/platforms/steam/prices/*.json
-python3 tools/gog.py prices out/ last/ out/     # out/platforms/gog/prices/*.json
-python3 tools/xbox.py prices out/ last/ out/    # out/platforms/xbox/prices/*.json
 python3 -m unittest discover -s tests
 ```
 
 `tools/common.py` holds what every tool shares: the requests, Wikidata's query
 service, the guard and publishing a file (a platform's or a source's, cut in
-parts when too large), reading the sources, the lowest price kept from run to
-run.
+parts when too large), reading the sources.
 
 Python 3.10 or later, no package to install.

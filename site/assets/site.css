@@ -274,9 +274,6 @@ pre { margin: 0; padding: 12px 14px; overflow-x: auto; background: var(--abyss);
 .trend { font-family: var(--mono); font-size: 0.8125rem; }
 .trend.up { color: var(--aurora); }
 .trend.down { color: var(--mist); }
-.cut { font-family: var(--mono); font-weight: 600; color: var(--abyss); background: var(--aurora); border-radius: 6px; padding: 0 6px; }
-.price { color: var(--snow); }
-.lowest { font-family: var(--mono); font-size: 0.75rem; color: var(--abyss); background: #ffd166; border-radius: 99px; padding: 1px 8px; }
 .dim { color: var(--mist); }
 .date { font-family: var(--mono); color: var(--snow); }
 
@@ -302,8 +299,6 @@ pre { margin: 0; padding: 12px 14px; overflow-x: auto; background: var(--abyss);
 .traits dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { font-size: 0.8125rem; padding: 2px 10px; border-radius: 99px; background: rgb(51 187 255 / 0.1); border: 1px solid rgb(51 187 255 / 0.25); color: var(--snow); }
 @media (max-width: 520px) { .traits div { grid-template-columns: minmax(0, 1fr); } }
-.prices tr.here th, .prices tr.here td { background: rgb(0 255 204 / 0.06); }
-.prices small { color: var(--mist); }
 .similar { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
 .similar li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
 .similar a { display: inline-flex; min-height: 32px; align-items: center; }
@@ -371,17 +366,3 @@ main .sheet section { padding: 0; }
 @media (prefers-reduced-motion: reduce) { .switch .chevron, .lang-button .chevron { transition: none; } }
 .switch img { width: 34px; height: 34px; }
 @media (max-width: 640px) { .switch { font-size: 1.125rem; gap: 8px; } }
-
-/* A game's prices' history (explore.js's chart(): inline SVG, no style attribute). */
-.history-box { display: grid; gap: 8px; margin-top: 10px; max-width: 760px; }
-svg.history { width: 100%; height: auto; display: block; background: rgb(14 26 51 / 0.5); border: 1px solid var(--night-line); border-radius: var(--radius); }
-svg.history .grid { stroke: var(--night-line); stroke-width: 1; }
-svg.history .tick { fill: var(--mist); font-family: var(--mono); font-size: 12px; }
-svg.history .h-paid { fill: none; stroke: var(--aurora); stroke-width: 2.5; stroke-linejoin: round; }
-svg.history .h-regular { fill: none; stroke: var(--mist); stroke-width: 1.5; stroke-dasharray: 5 4; }
-svg.history .h-low { fill: var(--abyss); stroke: var(--aurora); stroke-width: 2.5; }
-.h-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.875rem; color: var(--mist); margin: 0; }
-.h-key::before { content: ""; display: inline-block; width: 18px; height: 0; vertical-align: middle; margin-right: 6px; border-top: 2.5px solid var(--aurora); }
-.h-key.h-dashed::before { border-top: 1.5px dashed var(--mist); }
-.h-lowest { margin: 0; color: var(--snow); }
-.h-country { max-width: 320px; }

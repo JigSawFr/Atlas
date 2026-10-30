@@ -1,18 +1,11 @@
 # What changes every day, in two steps:
-# - each source asked once, side by side (tools/collect.py: sources/<source>/):
-#   - pages: the best known Switch and Steam games' pages on the Wikipedias
-#     of PlayShelf's languages (Wikidata), then their views a day (Wikimedia);
-#   - eshop: titledb's lists (the eShop's ids), then the eShop's prices in a
-#     few countries;
-#   - steam-store, gog, msstore: each store's prices in the same countries
-#     (Steam's a country a job: the slowest store, each country has its own
-#     time, and a country not done today keeps its last file);
-# - the platforms' files made from them, asking nothing: platforms/switch/ and steam/popular.json's
-#   trends (tools/trends.py), platforms/switch/prices/ (tools/prices.py), platforms/steam/prices/
-#   (tools/steam_prices.py), platforms/gog/prices/ (tools/gog.py prices), platforms/xbox/prices/
-#   (tools/xbox.py prices); then everything committed to the `data` branch,
-#   where PlayShelf reads it through jsDelivr. A file made from nothing
-#   collected today is left as it was.
+# - the sources asked (tools/collect.py: sources/<source>/): the best known
+#   Switch and Steam games' pages on the Wikipedias of PlayShelf's languages
+#   (Wikidata), then their views a day (Wikimedia);
+# - platforms/switch/ and steam/popular.json's trends made from them, asking
+#   nothing (tools/trends.py); then everything committed to the `data`
+#   branch, where PlayShelf reads it through jsDelivr. A file made from
+#   nothing collected today is left as it was.
 name: daily
 
 on:
@@ -36,66 +29,21 @@ env:
 jobs:
   sources:
     runs-on: ubuntu-26.04
-    # pages: the Switch's and Steam's best known games' pages, some 20 minutes, and up to 10 waiting for Wikimedia
-    timeout-minutes: ${{ matrix.name == 'pages' && 60 || 45 }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: pages
-            first: wikidata
-            then: wikipedia
-          - name: eshop
-            first: titledb
-            then: eshop
-          # Steam's prices, a country a job (some 4 minutes each, 45 at
-          # most): one slow country no longer leaves the others without
-          # prices. The countries of tools/steam_prices.py's COUNTRIES.
-          - name: steam-store-US
-            first: steam-store:US
-          - name: steam-store-CA
-            first: steam-store:CA
-          - name: steam-store-MX
-            first: steam-store:MX
-          - name: steam-store-BR
-            first: steam-store:BR
-          - name: steam-store-GB
-            first: steam-store:GB
-          - name: steam-store-FR
-            first: steam-store:FR
-          - name: steam-store-DE
-            first: steam-store:DE
-          - name: steam-store-ES
-            first: steam-store:ES
-          - name: steam-store-IT
-            first: steam-store:IT
-          - name: steam-store-NL
-            first: steam-store:NL
-          - name: steam-store-PT
-            first: steam-store:PT
-          - name: steam-store-AU
-            first: steam-store:AU
-          - name: steam-store-JP
-            first: steam-store:JP
-          - name: gog
-            first: gog
-          - name: msstore
-            first: msstore
+    # The Switch's and Steam's best known games' pages, some 20 minutes, and up to 10 waiting for Wikimedia
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test
-        if: matrix.name == 'pages'
         env:
           ALERTS: ""   # the run's alerts are not the tests' (tests/test_common.py)
         run: python3 -m unittest discover -s tests
       - name: The data branch
         run: tools/data-branch.sh
-      - name: Collect
-        run: python3 tools/collect.py "${{ matrix.first }}" daily out data-branch
-      # The source the first one's answers are needed for (this run's).
-      - name: Then
-        if: matrix.then
-        run: python3 tools/collect.py "${{ matrix.then }}" daily out data-branch out
+      - name: Wikidata
+        run: python3 tools/collect.py wikidata daily out data-branch
+      # The views of the pages Wikidata just gave.
+      - name: Wikipedia
+        run: python3 tools/collect.py wikipedia daily out data-branch out
       - name: Keep the files
         if: always()
         env:
@@ -103,13 +51,13 @@ jobs:
         run: |
           mkdir -p out
           touch "$ALERTS"
-          # A job that failed or ran out of time says which source it was.
-          [ "$JOB_STATUS" = success ] || echo "**sources (${{ matrix.name }})** ended in **$JOB_STATUS**; its files are the last run's." >> "$ALERTS"
-          cp "$ALERTS" "out/.alerts-${{ matrix.name }}"
+          # A job that failed or ran out of time says so.
+          [ "$JOB_STATUS" = success ] || echo "**sources** ended in **$JOB_STATUS**; their files are the last run's." >> "$ALERTS"
+          cp "$ALERTS" out/.alerts-sources
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: source-${{ matrix.name }}
+          name: sources
           path: out/
           include-hidden-files: true
           retention-days: 3
@@ -125,35 +73,20 @@ jobs:
         run: tools/data-branch.sh
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: source-*
-          merge-multiple: true
+          name: sources
           path: fresh
       - name: Trends
         id: trends
         continue-on-error: true
         run: python3 tools/trends.py out data-branch fresh
-      - name: Switch prices
-        id: switch
-        continue-on-error: true
-        run: python3 tools/prices.py out data-branch fresh
-      - name: Steam prices
-        id: steam
-        continue-on-error: true
-        run: python3 tools/steam_prices.py out data-branch fresh
-      - name: GOG prices
-        id: gog
-        continue-on-error: true
-        run: python3 tools/gog.py prices out data-branch fresh
-      - name: Xbox prices
-        id: xbox
-        continue-on-error: true
-        run: python3 tools/xbox.py prices out data-branch fresh
       - name: Publish to the data branch
         run: |
           for f in fresh/.alerts-*; do [ -f "$f" ] && cat "$f" >> "$ALERTS" && rm "$f"; done
           if [ -d fresh/sources ]; then cp -r fresh/sources data-branch/; fi
           if [ -d out ]; then rsync -a --exclude .runtimes out/ data-branch/; fi
-          # What changed since the last run (changes.json, history/, light files),
+          # One time: the prices' files gone from the branch (tools/drop-prices.sh says when it goes).
+          tools/drop-prices.sh data-branch
+          # What changed since the last run (changes.json, light files),
           # how the data is (report.json), then every file checked against its
           # schema (a wrong one put back as it was), schemas/ written again.
           python3 tools/changes.py data-branch
@@ -176,5 +109,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_STATUS: ${{ job.status }}
-          OUTCOMES: "sources=${{ needs.sources.result }} trends=${{ steps.trends.outcome }} switch=${{ steps.switch.outcome }} steam=${{ steps.steam.outcome }} gog=${{ steps.gog.outcome }} xbox=${{ steps.xbox.outcome }}"
+          OUTCOMES: "sources=${{ needs.sources.result }} trends=${{ steps.trends.outcome }}"
         run: tools/alert.sh "${{ github.workflow }}"

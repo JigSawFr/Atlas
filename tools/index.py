@@ -19,9 +19,9 @@ less than half as large (SIZE_GROW, SIZE_SHRINK), is said in the run's
 alert (ALERTS, tools/alert.sh), beside the games' guard (common.publish),
 which a file that keeps its games but loses or doubles its fields does not
 see. It is still published: a size is a sign, not a proof. Small files
-(under SIZE_FLOOR), the run's own (changes.json, report.json) and the
-prices' history (it grows through the month) are not weighed; a source's
-parts (sources/<name>/<file>/<n>.json) are weighed together.
+(under SIZE_FLOOR) and the run's own (changes.json, report.json) are not
+weighed; a source's parts (sources/<name>/<file>/<n>.json) are weighed
+together.
 
 Usage: tools/index.py <data-dir>   (writes <data-dir>/index.json)
 """
@@ -39,7 +39,6 @@ LICENCES = [
     ("Wikidata", "CC0-1.0", "Wikidata"),
     ("Wikimedia", "CC0-1.0", "Wikimedia pageviews"),
     ("titledb", "as published by blawar/titledb", "blawar/titledb"),
-    ("eShop", "Nintendo's terms of use", "Nintendo"),
     ("SteamSpy", "SteamSpy's terms of use", "SteamSpy"),
     ("Steam", "Steam Web API terms of use", "Data from Valve, not endorsed by it"),
     ("GOG", "GOG's terms of use", "GOG"),
@@ -52,7 +51,7 @@ OWN = ("CC0-1.0", "Atlas (github.com/JigSawFr/Atlas)")   # what Atlas makes of n
 SIZE_GROW = 2.0       # a file more than this many times last run's size is said
 SIZE_SHRINK = 0.5     # and one under this share of it
 SIZE_FLOOR = 50_000   # bytes, last run's or this run's, under which a file is not weighed
-UNWEIGHED = re.compile(r"^(changes|report)\.json$|^history/")
+UNWEIGHED = re.compile(r"^(changes|report)\.json$")
 PART = re.compile(r"^(sources/.+)/\d+\.json$")
 
 

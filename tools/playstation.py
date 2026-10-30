@@ -18,7 +18,7 @@ PS4; Q63184502, the PS5):
 - upcoming.json: the games whose first day is still to come, within a
   year, [YYYYMMDD, name].
 
-No prices, no store's figures: nothing is asked of the PlayStation Store
+No store's figures: nothing is asked of the PlayStation Store
 nor of playstation.com, whose terms forbid collecting their data. The
 store ids are Wikidata's (CC0), kept as plain identifiers; links.json ties
 a game to its other platforms (Steam, Switch…) by its Wikidata item.

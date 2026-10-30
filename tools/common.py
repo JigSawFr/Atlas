@@ -2,8 +2,7 @@
 Wikidata's query service (sparql), a score's log scale, and publishing a
 data file (publish) with its guard: a file that has lost too many games
 against the last run's (a source down, not the world changed) is not
-published, the last run's is kept and said. Also the lowest price a game
-has had, day after day, weighed against the last run's file (with_lowest).
+published, the last run's is kept and said.
 """
 import json
 import math
@@ -136,24 +135,6 @@ def summary(report, path=None):
         with open(path, "a", encoding="utf-8") as f:
             f.write("### The data files\n\n" + text)
     return text
-
-
-def with_lowest(games, previous, today):
-    """Each game's [regular, sale, until] row with its lowest price so far
-    and that price's last day, from the last run's rows (`previous`, {} on a
-    first run): [regular, sale, until, lowest, lowest_day]."""
-    day = int(today.replace("-", ""))
-    out = {}
-    for tid, row in games.items():
-        regular, sale, until = row[:3]
-        now = sale or regular
-        lowest, lowest_day = now, day
-        last = previous.get(tid)
-        if isinstance(last, list) and len(last) >= 5 and isinstance(last[3], (int, float)) and isinstance(last[4], int):
-            if last[3] < now:
-                lowest, lowest_day = last[3], last[4]
-        out[tid] = [regular, sale, until, lowest, lowest_day]
-    return out
 
 
 def previous_file(previous_dir, name):

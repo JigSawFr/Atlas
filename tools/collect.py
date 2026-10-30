@@ -17,16 +17,13 @@ is kept and said (common.publish_source).
     (the 3DS's games' Japanese labels, English aliases, dates and GameTDB
     codes, for tools/n3ds.py's match);
   - daily: switch-pages (the best known Switch games' pages in LANGS).
-- titledb (daily): blawar/titledb's US, GB and JP lists, by titledb's key.
-- eshop (daily): prices/<country>.json, the eShop's answer by eShop id.
-- steam-store: weekly apps.json (GetItems, by app id), tags.json,
-  most-played.json; daily prices/<country>.json, every country or the ones
-  named (steam-store:FR,DE: daily.yml asks each country in a job of its own).
+- titledb (weekly): blawar/titledb's US, GB and JP lists, by titledb's key.
+- steam-store (weekly): apps.json (GetItems, by app id), tags.json,
+  most-played.json.
 - steamspy (weekly): apps.json, its owners and players by app id.
-- gog: catalog/<country>.json, the catalog's products by product id in its
-  trending order (weekly: US; daily: every country).
-- msstore: weekly products.json and gamepass.json; daily
-  prices/<country>.json ([list price, MSRP] by product id).
+- gog (weekly): catalog/US.json, the catalog's products by product id in its
+  trending order.
+- msstore (weekly): products.json and gamepass.json.
 - igdb (weekly, with its keys): games.json and popularity.json, IGDB's records
   of the Switch's games; others.json, of every other platform's games
   Wikidata links to IGDB (tools/igdb.py).
@@ -36,7 +33,7 @@ is kept and said (common.publish_source).
 - wikipedia: weekly monthly.json (the best known games' English pages'
   views a month), daily daily.json (their pages' views a day, LANGS).
 
-Usage: tools/collect.py <source>[:<country>,…] weekly|daily <out-dir> <previous-dir> [fresh-dir…]
+Usage: tools/collect.py <source> weekly|daily <out-dir> <previous-dir> [fresh-dir…]
   (fresh-dir: this run's collected sources a source needs, e.g. wikidata's)
 """
 import datetime
@@ -54,17 +51,16 @@ import igdb
 import links
 import n3ds
 import playstation
-import prices
 import retro
 import steam
-import steam_prices
 import trends
 import xbox
 
 TITLEDB_REGIONS = ("US.en.json", "GB.en.json", "JP.ja.json")
-TITLEDB_FIELDS = ("id", "nsuId", "name", "releaseDate", "isDemo", "publisher", "category", "intro", "description")
-# The other regions' lists give the eShop's ids there (prices.eshop_ids): no need of their texts.
-TITLEDB_SHORT = ("id", "nsuId", "name", "releaseDate", "isDemo")
+TITLEDB = "https://raw.githubusercontent.com/blawar/titledb/master/{file}"
+TITLEDB_FIELDS = ("id", "name", "releaseDate", "isDemo", "publisher", "category", "intro", "description")
+# The other regions' lists give the names the US one lacks: no need of their texts.
+TITLEDB_SHORT = ("id", "name", "releaseDate", "isDemo")
 
 
 def payload(name, today, source, licence, **records):
@@ -123,7 +119,7 @@ def collect_wikidata(what, out_dir, previous_dir, fresh, today, report):
 
 def collect_titledb(what, out_dir, previous_dir, fresh, today, report):
     for file in TITLEDB_REGIONS:
-        titles = common.fetch(prices.TITLEDB.format(file=file), timeout=600) or {}
+        titles = common.fetch(TITLEDB.format(file=file), timeout=600) or {}
         fields = TITLEDB_FIELDS if file.startswith("US.") else TITLEDB_SHORT
         games = {}
         for key, entry in titles.items():
@@ -133,53 +129,6 @@ def collect_titledb(what, out_dir, previous_dir, fresh, today, report):
         common.publish_source(out_dir, f"{common.SOURCES}/titledb/{region}.json", payload(
             "titledb", today, f"blawar/titledb ({file})", "as published by blawar/titledb", file=file, games=games),
             previous_dir, report)
-
-
-def read_eshop(country, nsus, fetch, workers=prices.WORKERS, pause=prices.PAUSE):
-    """{eShop id: {status, regular, discount, until, currency}} of the eShop's
-    answers for `nsus`, in the order they came (prices.read_country's)."""
-    import concurrent.futures
-    numbers = sorted(nsus)
-    batches = [numbers[i:i + prices.BATCH] for i in range(0, len(numbers), prices.BATCH)]
-
-    def ask(batch):
-        time.sleep(pause)
-        try:
-            body = fetch(prices.PRICE.format(country=country, ids=",".join(map(str, batch))))
-        except (urllib.error.URLError, TimeoutError, ValueError) as e:
-            print(f"eshop: {country}: {e}", file=sys.stderr)
-            return []
-        rows = []
-        for p in (body or {}).get("prices", []):
-            if p.get("title_id") is None:
-                continue
-            discount = p.get("discount_price")
-            rows.append((str(p["title_id"]), {
-                "status": p.get("sales_status"), "regular": prices.amount(p.get("regular_price")),
-                "currency": (p.get("regular_price") or {}).get("currency"),
-                "discount": prices.amount(discount) if discount else None,
-                "until": prices.day_of(discount.get("end_datetime")) if discount else 0}))
-        return rows
-
-    out = {}
-    with concurrent.futures.ThreadPoolExecutor(workers) as pool:
-        for rows in pool.map(ask, batches):
-            for nsu, row in rows:
-                out.setdefault(nsu, row)
-    return out
-
-
-def collect_eshop(what, out_dir, previous_dir, fresh, today, report):
-    fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
-    for file, countries in prices.REGIONS.items():
-        region = file.split(".")[0]
-        titles = common.source(f"{common.SOURCES}/titledb/{region}.json", *fresh, previous_dir).get("games") or {}
-        ids = prices.eshop_ids(titles, build.base_id)
-        print(f"eshop: {file}: {len(ids)} games with an eShop id", file=sys.stderr)
-        for country in countries:
-            common.publish_source(out_dir, f"{common.SOURCES}/eshop/prices/{country}.json", payload(
-                "eshop", today, "Nintendo eShop's prices (api.ec.nintendo.com)", "Nintendo's terms of use",
-                country=country, region=file, games=read_eshop(country, ids, fetch)), previous_dir, report)
 
 
 STEAM_ITEM = {"basic_info": ("franchises", "developers", "publishers"),
@@ -194,46 +143,30 @@ def steam_item(item):
         part = item.get(k)
         if isinstance(part, dict):
             out[k] = {f: part[f] for f in fields if f in part}
-    if "best_purchase_option" in item:
-        option = item["best_purchase_option"] or {}
-        out["best_purchase_option"] = {f: option[f] for f in (
-            "final_price_in_cents", "original_price_in_cents", "active_discounts", "lowest_recent_price_in_cents")
-            if f in option}
     return out
 
 
-def collect_steam_store(what, out_dir, previous_dir, fresh, today, report, countries=None):
+def collect_steam_store(what, out_dir, previous_dir, fresh, today, report):
     fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
     store = "Steam's store (api.steampowered.com)"
     terms = "Steam's terms of use (Valve)"
-    if what == "weekly":
-        rows = common.bindings(common.source(f"{common.SOURCES}/wikidata/steam.json", *fresh).get("rows") or [])
-        switch_rows = common.bindings(common.source(f"{common.SOURCES}/wikidata/switch-steam.json", *fresh).get("rows") or [])
-        known = build.games(rows, ident=steam.app_id)
-        played = steam.most_played(fetch(steam.MOST_PLAYED))
-        tags = steam.tag_names(fetch(steam.TAGS))
-        switch_apps = {str(app) for app in features.steam_ids(switch_rows, build.base_id).values()}
-        items = steam.read_items(set(known) | set(played) | switch_apps, fetch)
-        base = f"{common.SOURCES}/steam-store"
-        common.publish_source(out_dir, f"{base}/apps.json", payload(
-            "steam-store", today, store + ": IStoreBrowseService/GetItems", terms,
-            games={app: steam_item(item) for app, item in items.items()}), previous_dir, report)
-        common.publish_source(out_dir, f"{base}/tags.json", payload(
-            "steam-store", today, store + ": IStoreService/GetTagList", terms,
-            items={str(k): v for k, v in tags.items()}), previous_dir, report)
-        common.publish_source(out_dir, f"{base}/most-played.json", payload(
-            "steam-store", today, store + ": ISteamChartsService/GetMostPlayedGames", terms, items=played),
-            previous_dir, report)
-        return
-    games = common.previous_file(previous_dir, f"platforms/{steam.STEAM}/games.json").get("games") or {}
-    if not games:
-        print("steam-store prices: no steam/games.json in the last run's files, nothing to ask", file=sys.stderr)
-        return
-    for country in countries or steam_prices.COUNTRIES:
-        items = steam_prices.read_items(country, games, fetch)
-        common.publish_source(out_dir, f"{common.SOURCES}/steam-store/prices/{country}.json", payload(
-            "steam-store", today, store + ": IStoreBrowseService/GetItems", terms, country=country,
-            games={app: steam_item(item) for app, item in items.items()}), previous_dir, report)
+    rows = common.bindings(common.source(f"{common.SOURCES}/wikidata/steam.json", *fresh).get("rows") or [])
+    switch_rows = common.bindings(common.source(f"{common.SOURCES}/wikidata/switch-steam.json", *fresh).get("rows") or [])
+    known = build.games(rows, ident=steam.app_id)
+    played = steam.most_played(fetch(steam.MOST_PLAYED))
+    tags = steam.tag_names(fetch(steam.TAGS))
+    switch_apps = {str(app) for app in features.steam_ids(switch_rows, build.base_id).values()}
+    items = steam.read_items(set(known) | set(played) | switch_apps, fetch)
+    base = f"{common.SOURCES}/steam-store"
+    common.publish_source(out_dir, f"{base}/apps.json", payload(
+        "steam-store", today, store + ": IStoreBrowseService/GetItems", terms,
+        games={app: steam_item(item) for app, item in items.items()}), previous_dir, report)
+    common.publish_source(out_dir, f"{base}/tags.json", payload(
+        "steam-store", today, store + ": IStoreService/GetTagList", terms,
+        items={str(k): v for k, v in tags.items()}), previous_dir, report)
+    common.publish_source(out_dir, f"{base}/most-played.json", payload(
+        "steam-store", today, store + ": ISteamChartsService/GetMostPlayedGames", terms, items=played),
+        previous_dir, report)
 
 
 def collect_steamspy(what, out_dir, previous_dir, fresh, today, report):
@@ -255,17 +188,16 @@ def collect_steamspy(what, out_dir, previous_dir, fresh, today, report):
 
 
 GOG_FIELDS = ("id", "title", "slug", "releaseDate", "productType", "reviewsCount", "reviewsRating",
-              "developers", "publishers", "genres", "tags", "price")
+              "developers", "publishers", "genres", "tags")
 
 
 def collect_gog(what, out_dir, previous_dir, fresh, today, report):
     fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
-    for country in (["US"] if what == "weekly" else list(gog.COUNTRIES)):
-        found = gog.read_catalog(country, fetch)
-        games = {str(p["id"]): {f: p[f] for f in GOG_FIELDS if f in p} for p, _ in found}
-        common.publish_source(out_dir, f"{common.SOURCES}/gog/catalog/{country}.json", payload(
-            "gog", today, "GOG's catalog (catalog.gog.com), in its trending order", "GOG's terms of use",
-            country=country, currency=gog.COUNTRIES[country], games=games), previous_dir, report)
+    found = gog.read_catalog(fetch)
+    games = {str(p["id"]): {f: p[f] for f in GOG_FIELDS if f in p} for p, _ in found}
+    common.publish_source(out_dir, f"{common.SOURCES}/gog/catalog/US.json", payload(
+        "gog", today, "GOG's catalog (catalog.gog.com), in its trending order", "GOG's terms of use",
+        country="US", games=games), previous_dir, report)
 
 
 def ms_product(p):
@@ -284,30 +216,16 @@ def collect_msstore(what, out_dir, previous_dir, fresh, today, report):
     store = "Microsoft Store's catalog (displaycatalog.mp.microsoft.com)"
     terms = "Microsoft's terms of use"
     base = f"{common.SOURCES}/msstore"
-    if what == "weekly":
-        rows = common.bindings(common.source(f"{common.SOURCES}/wikidata/xbox.json", *fresh).get("rows") or [])
-        known = build.games(rows, ident=xbox.big_id)
-        gamepass = xbox.read_gamepass(fetch)
-        found = xbox.read_products(set(known) | set(gamepass), "US", fetch)
-        common.publish_source(out_dir, f"{base}/gamepass.json", payload(
-            "msstore", today, "Game Pass's lists (catalog.gamepass.com: console, PC)", terms, games=gamepass),
-            previous_dir, report)
-        common.publish_source(out_dir, f"{base}/products.json", payload(
-            "msstore", today, store, terms, country="US",
-            games={pid: ms_product(p) for pid, p in found.items()}), previous_dir, report)
-        return
-    games = common.previous_file(previous_dir, f"platforms/{xbox.XBOX}/games.json").get("games") or {}
-    if not games:
-        print("msstore prices: no xbox/games.json in the last run's files, nothing to ask", file=sys.stderr)
-        return
-    for country, currency in xbox.COUNTRIES.items():
-        found = xbox.read_products(games, country, fetch, template="browse")
-        rows = {}
-        for pid, product in found.items():
-            got = xbox.purchase(product)
-            rows[pid] = list(got) if got else None
-        common.publish_source(out_dir, f"{base}/prices/{country}.json", payload(
-            "msstore", today, store, terms, country=country, currency=currency, games=rows), previous_dir, report)
+    rows = common.bindings(common.source(f"{common.SOURCES}/wikidata/xbox.json", *fresh).get("rows") or [])
+    known = build.games(rows, ident=xbox.big_id)
+    gamepass = xbox.read_gamepass(fetch)
+    found = xbox.read_products(set(known) | set(gamepass), "US", fetch)
+    common.publish_source(out_dir, f"{base}/gamepass.json", payload(
+        "msstore", today, "Game Pass's lists (catalog.gamepass.com: console, PC)", terms, games=gamepass),
+        previous_dir, report)
+    common.publish_source(out_dir, f"{base}/products.json", payload(
+        "msstore", today, store, terms, country="US",
+        games={pid: ms_product(p) for pid, p in found.items()}), previous_dir, report)
 
 
 def collect_igdb(what, out_dir, previous_dir, fresh, today, report, client=None):
@@ -385,34 +303,19 @@ def collect_nlib_ctr(what, out_dir, previous_dir, fresh, today, report):
     n3ds.collect(out_dir, previous_dir, fresh, today, report)
 
 
-COLLECTORS = {"nlib-ctr": collect_nlib_ctr, "wikidata": collect_wikidata, "titledb": collect_titledb, "eshop": collect_eshop,
+COLLECTORS = {"nlib-ctr": collect_nlib_ctr, "wikidata": collect_wikidata, "titledb": collect_titledb,
               "steam-store": collect_steam_store, "steamspy": collect_steamspy, "gog": collect_gog,
               "msstore": collect_msstore, "igdb": collect_igdb, "wikipedia": collect_wikipedia}
 
 
-def parts(name):
-    """(source, its collector's options) of a source's name: steam-store:FR,DE
-    asks only those countries' prices."""
-    source, _, only = name.partition(":")
+def main():
+    source, what, out_dir, previous_dir = sys.argv[1:5]
+    fresh = sys.argv[5:]
     if source not in COLLECTORS:
         sys.exit(f"collect: no source {source!r}")
-    if not only:
-        return source, {}
-    countries = only.split(",")
-    unknown = [c for c in countries if c not in steam_prices.COUNTRIES]
-    if source != "steam-store" or unknown:
-        sys.exit(f"collect: {name!r}: only steam-store's prices are asked by country, of {', '.join(steam_prices.COUNTRIES)}")
-    return source, {"countries": countries}
-
-
-def main():
-    name, what, out_dir, previous_dir = sys.argv[1:5]
-    fresh = sys.argv[5:]
-    source, extra = parts(name)
     report = []
-    # The step's name is a file's (out/.runtimes/), uploaded as an artifact: no colon.
-    common.timed(out_dir, f"collect {name.replace(':', ' ')} {what}",
-                 lambda: COLLECTORS[source](what, out_dir, previous_dir, fresh, datetime.date.today(), report, **extra))
+    common.timed(out_dir, f"collect {source} {what}",
+                 lambda: COLLECTORS[source](what, out_dir, previous_dir, fresh, datetime.date.today(), report))
     print(common.summary(report), file=sys.stderr)
 
 
