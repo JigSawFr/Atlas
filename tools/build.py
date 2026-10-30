@@ -2,16 +2,16 @@
 """Builds PlayInsights' data files, by Nintendo Switch title id, from open
 sources that need no key:
 
-- data/popular.json: how well known each game is (a score from 0 to 100),
+- switch/popular.json: how well known each game is (a score from 0 to 100),
   whether it is read more lately (a trend, in percent) and what the critics
   gave it (0 to 100, 0 when unknown);
-- data/upcoming.json: the games whose release date is still to come, with
+- switch/upcoming.json: the games whose release date is still to come, with
   their name and date (and how many follow them on IGDB, when known);
-- data/games.json: each game's traits (series, developers, publishers,
+- switch/games.json: each game's traits (series, developers, publishers,
   genres, modes) and, for one also sold on Steam, its Steam audience;
-- data/editions.json: a game's other editions (a Deluxe, a Complete
+- switch/editions.json: a game's other editions (a Deluxe, a Complete
   Edition…), each with the game it is one of (tools/editions.py);
-- data/similar.json: the games most like each one, by their traits
+- switch/similar.json: the games most like each one, by their traits
   (tools/features.py), and for the others by what the eShop says of them
   (tools/text.py).
 
@@ -36,7 +36,7 @@ the most of all, and its popularity on IGDB. When
 Wikimedia turns too many view requests away (fewer than half read), every
 game is scored without views and none has a trend: no mixing of scales.
 
-Usage: tools/build.py [out-dir] [previous-dir]   (default: out/; previous-dir:
+Usage: tools/build.py [out-dir] [previous-dir]   (writes out-dir/switch/; previous-dir:
 the last run's files, whose Steam figures are kept for the games not asked)
 """
 import datetime
@@ -74,6 +74,7 @@ TRENDING_VIEWS = 500   # last month's views below which the trend says nothing
 VIEWED = 400           # the games whose views are asked, the most sitelinks first
 PAUSE = 0.25           # seconds between two of them
 UPCOMING_DAYS = 365    # how far ahead upcoming.json looks
+SWITCH = "switch"      # the folder of the Switch's files, in the data branch
 
 
 
@@ -251,7 +252,7 @@ def upcoming(titles, today, days=UPCOMING_DAYS, hypes=None):
 def previous_games(directory):
     """The last run's games.json's games, {} when there is none."""
     try:
-        with open(os.path.join(directory, "games.json"), encoding="utf-8") as f:
+        with open(os.path.join(directory, SWITCH, "games.json"), encoding="utf-8") as f:
             body = json.load(f)
         return body.get("games", {}) if body.get("schema") == 1 else {}
     except (OSError, ValueError, AttributeError):
@@ -305,7 +306,7 @@ def main():
         if tid in steam:
             entry["steam"] = steam[tid]
         table[tid] = entry
-    publish(out_dir, "games.json", {
+    publish(out_dir, f"{SWITCH}/games.json", {
         "schema": 1, "generated": today.isoformat(),
         "source": "Wikidata (P179, P178, P123, P136, P404, P1733), SteamSpy" + (" and IGDB" if found["traits"] else ""),
         "games": table}, previous_dir, report)
@@ -316,23 +317,23 @@ def main():
     by_text = text.similar(titles, base_id)
     # A game's other editions: one game, not one like it.
     of = editions.editions(titles, base_id)
-    publish(out_dir, "similar.json", {
+    publish(out_dir, f"{SWITCH}/similar.json", {
         "schema": 1, "generated": today.isoformat(),
         "source": "games.json's traits" + (" and titledb's descriptions" if by_text else ""),
         "games": editions.apart(text.merged(features.similar(game_traits), by_text), of)}, previous_dir, report)
     if of:
-        publish(out_dir, "editions.json", {
+        publish(out_dir, f"{SWITCH}/editions.json", {
             "schema": 1, "generated": today.isoformat(), "source": "blawar/titledb (US.en.json)",
             "games": of}, previous_dir, report)
 
-    publish(out_dir, "popular.json", {
+    publish(out_dir, f"{SWITCH}/popular.json", {
         "schema": 1, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
         "views": bool(read),
         "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), SteamSpy"
                   + (" and IGDB" if found["popularity"] else ""),
         "games": popular(known, critics, read, steam, found["popularity"])}, previous_dir, report)
 
-    publish(out_dir, "upcoming.json", {
+    publish(out_dir, f"{SWITCH}/upcoming.json", {
         "schema": 1, "generated": today.isoformat(),
         "source": "blawar/titledb (US.en.json)" + (" and IGDB" if found["hypes"] else ""),
         "games": upcoming(titles, today, hypes=found["hypes"])}, previous_dir, report)

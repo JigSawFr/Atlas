@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Each game's price in the eShop of a few countries, and its sale when it
-has one: data/prices/<country>.json, made every day (daily.yml).
+has one: switch/prices/<country>.json, made every day (daily.yml).
 
 The eShop's price service (api.ec.nintendo.com/v1/price) answers by the
 eShop's own ids, which differ from one region to the next: titledb's list of
 each region gives them with each game's title id (REGIONS). It is asked 50
 games at a time, a few requests at once.
 
-prices/<country>.json:
+switch/prices/<country>.json:
   {"schema": 1, "generated": "YYYY-MM-DD", "country": "FR", "currency": "EUR",
    "since": "YYYY-MM-DD",
    "games": {"<title id>": [regular, sale, until, lowest, lowest_day], ...}}
@@ -19,7 +19,7 @@ and `lowest_day` (YYYYMMDD) the last day it had it: each day's price is
 weighed against the last run's file. A game no longer sold, or not in that
 eShop, is left out.
 
-Usage: tools/prices.py [out-dir] [previous-dir]   (writes out-dir/prices/)
+Usage: tools/prices.py [out-dir] [previous-dir]   (writes out-dir/switch/prices/)
 """
 import concurrent.futures
 import datetime
@@ -120,8 +120,7 @@ def read_country(country, ids, fetch, workers=WORKERS, pause=PAUSE):
 
 def main():
     out_dir = sys.argv[1] if len(sys.argv) > 1 else "out"
-    previous_dir = os.path.join(sys.argv[2], "prices") if len(sys.argv) > 2 else None
-    os.makedirs(os.path.join(out_dir, "prices"), exist_ok=True)
+    previous_dir = sys.argv[2] if len(sys.argv) > 2 else None
     today = datetime.date.today().isoformat()
     fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
     report = []
@@ -134,8 +133,9 @@ def main():
             games, currency = read_country(country, ids, fetch)
             print(f"{country}: {len(games)} games, {sum(1 for r in games.values() if r[1])} on sale, "
                   f"{time.monotonic() - started:.0f} s", file=sys.stderr)
-            last = common.previous_file(previous_dir, f"{country}.json") if previous_dir else {}
-            common.publish(os.path.join(out_dir, "prices"), f"{country}.json", {
+            name = f"{build.SWITCH}/prices/{country}.json"
+            last = common.previous_file(previous_dir, name) if previous_dir else {}
+            common.publish(out_dir, name, {
                 "schema": 1, "generated": today, "country": country, "currency": currency or "",
                 "since": last.get("since") or last.get("generated") or today,
                 "source": f"Nintendo eShop's prices, by titledb's {file} eShop ids",

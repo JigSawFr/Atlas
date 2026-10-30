@@ -10,7 +10,7 @@ pages in each language, Wikimedia their views a day. A game read fewer than
 MIN_VIEWS times in the week has no trend; one whose views could not be read
 keeps the trend it had. When Wikimedia turns too many away, nothing changes.
 
-Usage: tools/trends.py <out-dir> <previous-dir>   (popular.json from previous-dir)
+Usage: tools/trends.py <out-dir> <previous-dir>   (switch/popular.json from previous-dir)
 """
 import datetime
 import json
@@ -131,7 +131,7 @@ def updated(popular, trends, today):
 
 def main():
     out_dir, previous_dir = sys.argv[1], sys.argv[2]
-    with open(os.path.join(previous_dir, "popular.json"), encoding="utf-8") as f:
+    with open(os.path.join(previous_dir, build.SWITCH, "popular.json"), encoding="utf-8") as f:
         popular = json.load(f)
     if popular.get("schema") != 1:
         sys.exit("trends: popular.json is not of schema 1")
@@ -142,9 +142,8 @@ def main():
     trends = read_trends(by_game, start, end, lambda url: common.fetch(url, tries=2, patient=False, timeout=30))
     if trends is None:
         return
-    os.makedirs(out_dir, exist_ok=True)
     report = []
-    common.publish(out_dir, "popular.json", updated(popular, trends, today), previous_dir, report)
+    common.publish(out_dir, f"{build.SWITCH}/popular.json", updated(popular, trends, today), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
 
 

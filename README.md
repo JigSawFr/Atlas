@@ -15,24 +15,32 @@ too.
 
 They live on the [`data`](../../tree/data) branch, made again every Monday by
 [`build.yml`](.github/workflows/build.yml) (and on demand), and are served by
-jsDelivr:
+jsDelivr. Each platform has a folder of its own; the Switch's is `switch/`:
 
 | File | Address |
 |---|---|
-| `popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/popular.json` |
-| `upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/upcoming.json` |
-| `games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/games.json` |
-| `similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/similar.json` |
+| `switch/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/popular.json` |
+| `switch/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/upcoming.json` |
+| `switch/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/games.json` |
+| `switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/similar.json` |
+| `switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/editions.json` |
+| `switch/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/prices/FR.json` |
+| `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/index.json` |
+
+Until 2026-10-30 the Switch's files were at the branch's root (`popular.json`,
+`prices/FR.json`…); the first run after it moved them into `switch/`
+(`tools/migrate.py`), keeping them as the last run's for the guard, the
+trends and the lowest prices.
 
 `index.json` lists every file with the day it was made, its size and a hash of its content: a reader can ask for it every day and fetch only the files whose hash changed.
 
 The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`): each run only needs the last files, and keeping every day's prices would grow the repository by hundreds of MB a year.
 
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
-meaning), the day it was `generated` and its `source`. A game is a base
-game's title id (16 hex digits, upper case, ending in `000`).
+meaning), the day it was `generated` and its `source`. In `switch/`, a game
+is a base game's title id (16 hex digits, upper case, ending in `000`).
 
-`popular.json`:
+`switch/popular.json`:
 
 ```json
 {"schema": 1, "generated": "2026-10-28", "month": "2026-09", "views": true, "source": "...",
@@ -47,7 +55,7 @@ Each game is `[score, trend, critics]`:
 
 Wikimedia's pageviews are asked for the 400 best known games, one at a time. When too many are turned away (fewer than half read), `views` is false: every game is scored by its sitelinks and reviews alone, and none has a trend.
 
-`upcoming.json`:
+`switch/upcoming.json`:
 
 ```json
 {"schema": 1, "generated": "2026-10-28", "source": "blawar/titledb (US.en.json)",
@@ -56,7 +64,7 @@ Wikimedia's pageviews are asked for the 400 best known games, one at a time. Whe
 
 The games whose release date, as the US eShop gives it, is in the next year: `[YYYYMMDD, name]`, or `[YYYYMMDD, name, hypes]` when IGDB says how many people follow the game.
 
-`games.json`:
+`switch/games.json`:
 
 ```json
 {"schema": 1, "generated": "2026-10-29", "source": "...",
@@ -67,7 +75,7 @@ The games whose release date, as the US eShop gives it, is in the next year: `[Y
 
 Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`, and `igdb_rating`: `[players' rating 0..100, how many rated]` (IGDB's users, not the critics). `steam` is there for a game also sold on Steam: its reviews, the lower bound of its owners and its players at once when SteamSpy last saw it. SteamSpy allows a request a second, so each run asks it for as many games as 45 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
 
-`similar.json`:
+`switch/similar.json`:
 
 ```json
 {"schema": 1, "generated": "2026-10-29", "source": "games.json's traits",
@@ -84,7 +92,7 @@ likeness by words counts four fifths of one by traits, 10 at most a game and
 25 at least; a game's list keeps the best 12 of both. That brings
 `similar.json` from some 2,400 games to some 14,000.
 
-`editions.json`:
+`switch/editions.json`:
 
 ```json
 {"schema": 1, "generated": "2026-10-30", "source": "blawar/titledb (US.en.json)",
@@ -93,7 +101,7 @@ likeness by words counts four fifths of one by traits, 10 at most a game and
 
 A game's other editions (a Deluxe, a Complete Edition, a Game of the Year, the game with a DLC pack), each with the game it is one of: the edition out first, under the same publisher and a name that differs only by its edition words (`tools/editions.py`). Words that make another game (Remastered, Special, Enhanced, a second title after "+") keep the games apart. `similar.json` leaves a game's own editions out of its list.
 
-`prices/<country>.json`, made every day ([`daily.yml`](.github/workflows/daily.yml)) for US, CA, MX, BR, GB, FR, DE, ES, IT, NL, PT, AU and JP:
+`switch/prices/<country>.json`, made every day ([`daily.yml`](.github/workflows/daily.yml)) for US, CA, MX, BR, GB, FR, DE, ES, IT, NL, PT, AU and JP:
 
 ```json
 {"schema": 1, "generated": "2026-10-30", "country": "FR", "currency": "EUR", "since": "2026-10-29", "source": "...",
@@ -107,7 +115,8 @@ Each game the country's eShop sells is `[regular, sale, until, lowest, lowest_da
 The `data` branch keeps only the last files. Every Monday's build also keeps
 them as a [release](../../releases), `data-YYYY-MM-DD`, tagged on the commit
 that made them: each file the branch had that day, attached on its own
-(`prices/FR.json` as `prices-FR.json`, a release's files having no folders),
+(`switch/prices/FR.json` as `switch-prices-FR.json`, a release's files having
+no folders),
 all of them in one zip with their folders (`playinsights-data-YYYY-MM-DD.zip`,
 about 3 MB), and their `SHA256SUMS.txt`. Some 17 MB a week, kept for good, as the data's
 history: the prices of a Monday, the trends of a week.
@@ -116,15 +125,15 @@ The last week's files have addresses of their own, which follow each new
 release:
 
 ```
-https://github.com/JigSawFr/PlayInsights/releases/latest/download/popular.json
-https://github.com/JigSawFr/PlayInsights/releases/download/data-2026-11-02/prices-FR.json
+https://github.com/JigSawFr/PlayInsights/releases/latest/download/switch-popular.json
+https://github.com/JigSawFr/PlayInsights/releases/download/data-2026-11-02/switch-prices-FR.json
 https://github.com/JigSawFr/PlayInsights/releases/download/data-2026-11-02/playinsights-data-2026-11-02.zip
 ```
 
 Each file, and the zip, is attested:
 
 ```sh
-gh attestation verify popular.json -R JigSawFr/PlayInsights
+gh attestation verify switch-popular.json -R JigSawFr/PlayInsights
 ```
 
 ## The sources
@@ -135,7 +144,7 @@ gh attestation verify popular.json -R JigSawFr/PlayInsights
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
 | [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
-| [Nintendo eShop's prices](https://api.ec.nintendo.com/v1/price) | Each game's price and sale, by country (`prices/`) | as published there |
+| [Nintendo eShop's prices](https://api.ec.nintendo.com/v1/price) | Each game's price and sale, by country (`switch/prices/`) | as published there |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
 ## When a source fails
@@ -153,7 +162,18 @@ so it does not go unseen.
 
 GitHub turns off a public repository's schedules after 60 days without activity: the daily run enables both workflows again each day, which starts those 60 days over.
 
-## IGDB's keys
+## Keys
+
+Every source works without a key, but IGDB, which needs one:
+
+| Platform | Source | Key | Where | Secret |
+|---|---|---|---|---|
+| Switch | IGDB | optional (more traits, popularity, hype, players' rating) | [Twitch's developer console](https://dev.twitch.tv/console/apps) | `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` |
+
+Each key is read only when its secret is set; without it, the files are made
+from the other sources.
+
+### IGDB
 
 IGDB is asked only when `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` are set: a
 [Twitch application](https://dev.twitch.tv/console/apps)'s client id and
@@ -165,9 +185,10 @@ to.
 ## Running it
 
 ```sh
-python3 tools/build.py out/ [last/]  # writes out/*.json; last/: the last run's files, for Steam
-python3 tools/prices.py out/ [last/] # writes out/prices/*.json, every country's (some 20 minutes)
-python3 tools/trends.py out/ last/   # last/popular.json with today's trends, as out/popular.json
+python3 tools/migrate.py last/       # a data branch from before switch/: its Switch files moved there
+python3 tools/build.py out/ [last/]  # writes out/switch/*.json; last/: the last run's files, for Steam
+python3 tools/prices.py out/ [last/] # writes out/switch/prices/*.json, every country's (some 20 minutes)
+python3 tools/trends.py out/ last/   # last/switch/popular.json with today's trends, as out/switch/popular.json
 python3 -m unittest discover -s tests
 ```
 
