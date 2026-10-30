@@ -10,7 +10,7 @@
   rel="noreferrer"), nothing the Content-Security-Policy blocks, Umami's
   tracker, no e-mail address, the explorer's texts (its application/json
   data) read as JSON;
-- the catalogs of site/i18n/ and boreale-site's: the same keys as en.json,
+- the catalogs of site/i18n/ and boreale-site's: the same keys as en-US.json,
   none empty, the same {placeholders} and <em> as English's, no common text
   repeated here;
 - sitemap.xml reads; with a data copy built in, each platform's

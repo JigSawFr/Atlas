@@ -59,7 +59,7 @@ DAILY = re.compile(r"^platforms/(switch|steam)/popular\.json$|^sources/wikipedia
 
 # Numbers and sizes as each language writes them: the thousands' and the
 # decimals' marks, the units.
-MARKS = {"en": (",", "."), "fr": (" ", ","), "fr-CA": (" ", ","), "de": (".", ","), "es": (".", ","),
+MARKS = {"en-US": (",", "."), "fr": (" ", ","), "fr-CA": (" ", ","), "de": (".", ","), "es": (".", ","),
          "es-419": (",", "."), "it": (".", ","), "nl": (".", ","), "pt": (" ", ","), "pt-BR": (".", ","),
          "ru": (" ", ","), "ja": (",", "."), "ko": (",", "."), "zh-Hans": (",", "."), "zh-Hant": (",", ".")}
 UNITS = {"fr": ("ko", "Mo"), "fr-CA": ("ko", "Mo"), "ru": ("КБ", "МБ")}
@@ -263,7 +263,7 @@ def strings(catalog: dict, language: str, summary: dict) -> str:
 
 def page_html(template: str, language: str, catalog: dict, path: str, page: str, summary: dict, index: dict,
               report: dict = None) -> str:
-    depth = path.count("/") + (1 if language != "en" else 0)
+    depth = path.count("/") + (1 if language != "en-US" else 0)
     root = "../" * depth
     body = (SITE / f"{page}.html").read_text(encoding="utf-8")
     hl = next(h for c, _, _, h in LANGUAGES if c == language)
@@ -273,7 +273,7 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
         "url": SITE_URL + folder(language) + path,
         "title": catalog[f"title_{page}"], "description": html.escape(catalog[f"description_{page}"], quote=True),
         "og_locale": OG_LOCALES[language],
-        "first_visit": ' data-first-visit=""' if language == "en" and path == "" else "",
+        "first_visit": ' data-first-visit=""' if language == "en-US" and path == "" else "",
         "indexing": ATLAS.indexing(language, path),
         "languages": ATLAS.languages(language, catalog, root, path),
         "switcher": ATLAS.switcher(language, catalog, root),
