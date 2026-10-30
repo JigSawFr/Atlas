@@ -130,16 +130,19 @@ def trends_of(by_game, views_of, sleep=time.sleep):
 
 def fetch_daily(by_game, start, end, fetch, sleep=time.sleep):
     """{"lang:title": [views a day]} of the games' pages, asked in turn
-    (read_trends' order); after five refusals from Wikimedia, no more."""
+    (read_trends' order); a page refused or not reached (a network error,
+    an answer not read) is left out, and after five, no more: the ones read
+    so far kept."""
     out, refused = {}, 0
     for tid, langs in by_game.items():
         for lang, title in langs:
             try:
                 out[f"{lang}:{title}"] = daily(lang, title, start, end, fetch)
-            except urllib.error.HTTPError as e:
+            except common.NOT_READ as e:
                 refused += 1
+                print(f"trends: {lang}:{title}: {common.why(e)}", file=sys.stderr)
                 if refused >= 5:
-                    print(f"trends: refused ({e.code}) after {len(out)} pages", file=sys.stderr)
+                    print(f"trends: {refused} pages not read, stopped after {len(out)} pages", file=sys.stderr)
                     return out
                 sleep(30)
                 continue

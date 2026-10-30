@@ -129,5 +129,40 @@ class Main(unittest.TestCase):
         self.run_main()
 
 
+class NetworkErrors(unittest.TestCase):
+    """A page not reached (network, timeout, an answer not JSON) is left out
+    and the others read, as a page refused; after a few, no more."""
+
+    def test_daily(self):
+        by_game = {"A": [("en", "Lantern Tale"), ("fr", "Lantern Tale")], "B": [("en", "Quiet Pond")],
+                   "C": [("ja", "Echo")], "D": [("en", "Moss Road")]}
+        wrong = {"fr": urllib.error.URLError("Name or service not known"), "ja": TimeoutError("timed out")}
+
+        def daily(lang, title, start, end, fetch):
+            if lang in wrong:
+                raise wrong[lang]
+            if title == "Quiet Pond":
+                raise ValueError("not JSON")
+            return [len(title)] * trends.DAYS
+        start, end = trends.window(datetime.date(2026, 10, 30))
+        with mock.patch.object(trends, "daily", daily):
+            pages = trends.fetch_daily(by_game, start, end, None, sleep=lambda s: None)
+            self.assertEqual(sorted(pages), ["en:Lantern Tale", "en:Moss Road"])
+            wrong["en"] = ConnectionResetError("reset")
+            self.assertEqual(trends.fetch_daily(by_game, start, end, None, sleep=lambda s: None), {})
+
+    def test_monthly(self):
+        import build
+        starts, end = build.months(datetime.date(2026, 10, 30))
+
+        def views(article, starts_, end_):
+            if article == "Echo":
+                raise urllib.error.URLError("Temporary failure in name resolution")
+            return [1, 2, 3]
+        with mock.patch.object(build, "views", views), mock.patch.object(build.time, "sleep"):
+            self.assertEqual(sorted(build.fetch_views(["Lantern Tale", "Echo", "Moss Road"], starts, end)),
+                             ["Lantern Tale", "Moss Road"])
+
+
 if __name__ == "__main__":
     unittest.main()
