@@ -90,7 +90,7 @@ HERE = "atlas"
 # ("nav" for the header's sites menu, "footer"). A link to this site carries none.
 UTM_SOURCE = "atlas"
 # A file made every day; the others every week (late past 2 and 9 days).
-DAILY = re.compile(r"(^|/)prices/|^platforms/switch/popular\.json$|^sources/(eshop|titledb|gog|wikipedia)/")
+DAILY = re.compile(r"(^|/)prices/|^platforms/(switch|steam)/popular\.json$|^sources/(eshop|titledb|gog|wikipedia)/|^sources/wikidata/[a-z0-9]+-pages\.json$")
 
 # Numbers and sizes as each language writes them: the thousands' and the
 # decimals' marks, the units.
