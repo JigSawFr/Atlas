@@ -23,7 +23,8 @@ The sources:
 - Wikimedia's pageviews: how often each English page was read in each of the
   last three whole months, for the best known games (VIEWED);
 - blawar/titledb's US eShop list: the release dates, for upcoming.json;
-- SteamSpy: the reviews, owners and players of the games also on Steam
+- Steam's store (tools/steam.py): the reviews of the games also on Steam,
+  all of them every run; SteamSpy: their owners and players
   (Wikidata's Steam id), a request a second within a time budget, the rest
   kept from the last run (`previous`);
 - IGDB, only when IGDB_CLIENT_ID and IGDB_CLIENT_SECRET are set (the
@@ -299,8 +300,15 @@ def main():
     for tid, kinds in found["traits"].items():
         game_traits.setdefault(tid, {}).update(kinds)
     apps = features.steam_ids(sparql(features.STEAM_QUERY), base_id)
-    steam = features.read_steam(apps, {t: g["steam"] for t, g in before.items() if "steam" in g},
+    # The reviews from Steam's store, 200 games a request; the owners and
+    # players from SteamSpy, a request a second, within its budget.
+    import steam as steam_store   # here: steam.py itself reads this module
+    items = steam_store.read_items({str(app) for app in apps.values()},
+                                   lambda url: fetch(url, tries=3, patient=False, timeout=60))
+    store_reviews = {tid: features.reviews_of(items.get(str(app))) for tid, app in apps.items()}
+    spied = features.read_steam(apps, {t: g["steam"] for t, g in before.items() if "steam" in g},
                                 lambda url: fetch(url, tries=2, patient=False, timeout=30))
+    steam = features.with_reviews(spied, {tid: r for tid, r in store_reviews.items() if r}, apps)
     table = {}
     for tid in sorted(set(game_traits) | set(steam) | set(found["ratings"])):
         entry = dict(game_traits.get(tid, {}))
@@ -311,7 +319,7 @@ def main():
         table[tid] = entry
     publish(out_dir, f"{SWITCH}/games.json", {
         "schema": 1, "platform": SWITCH, "generated": today.isoformat(),
-        "source": "Wikidata (P179, P178, P123, P136, P404, P1733), SteamSpy" + (" and IGDB" if found["traits"] else ""),
+        "source": "Wikidata (P179, P178, P123, P136, P404, P1733), Steam's store, SteamSpy" + (" and IGDB" if found["traits"] else ""),
         "games": table}, previous_dir, report)
     # The games alike: by their traits, then by what the eShop says of them
     # (titledb's names, descriptions, categories and publishers) for the
@@ -332,7 +340,7 @@ def main():
     publish(out_dir, f"{SWITCH}/popular.json", {
         "schema": 1, "platform": SWITCH, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
         "views": bool(read),
-        "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), SteamSpy"
+        "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), Steam's store"
                   + (" and IGDB" if found["popularity"] else ""),
         "games": popular(known, critics, read, steam, found["popularity"])}, previous_dir, report)
 

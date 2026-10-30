@@ -108,7 +108,7 @@ The games whose release date, as the US eShop gives it, is in the next year: `[Y
    "steam": {"app": 504230, "positive": 117545, "negative": 3057, "owners": 2000000, "ccu": 1174}}}}
 ```
 
-Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`, and `igdb_rating`: `[players' rating 0..100, how many rated]` (IGDB's users, not the critics). `steam` is there for a game also sold on Steam: its reviews, the lower bound of its owners and its players at once when SteamSpy last saw it. SteamSpy allows a request a second, so each run asks it for as many games as 45 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
+Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`, and `igdb_rating`: `[players' rating 0..100, how many rated]` (IGDB's users, not the critics). `steam` is there for a game also sold on Steam: its reviews (`positive`, `negative`), from Steam's store at every run (its count and share of positive reviews), and the lower bound of its `owners` and its players at once (`ccu`) when SteamSpy last saw it (0 when it never did). SteamSpy allows a request a second, so each run asks it for as many games as 10 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
 
 `switch/similar.json`:
 
@@ -254,7 +254,7 @@ gh attestation verify switch-popular.json -R JigSawFr/Atlas
 | [Wikidata](https://www.wikidata.org/) | The stores' ids for `links.json` ([P1733](https://www.wikidata.org/wiki/Property:P1733) Steam, [P12332](https://www.wikidata.org/wiki/Property:P12332), [P5944](https://www.wikidata.org/wiki/Property:P5944), [P5971](https://www.wikidata.org/wiki/Property:P5971), [P5999](https://www.wikidata.org/wiki/Property:P5999) PlayStation, [P5885](https://www.wikidata.org/wiki/Property:P5885) Microsoft, [P2725](https://www.wikidata.org/wiki/Property:P2725) GOG, [P6278](https://www.wikidata.org/wiki/Property:P6278) Epic); Switch title ids ([P11072](https://www.wikidata.org/wiki/Property:P11072)), sitelinks, English pages, review scores ([P444](https://www.wikidata.org/wiki/Property:P444)) and their number of reviews ([P7887](https://www.wikidata.org/wiki/Property:P7887)) | CC0 |
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
-| [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
+| [SteamSpy](https://steamspy.com/api.php) | Steam owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
 | [Steam's store](https://store.steampowered.com/) (`IStoreBrowseService/GetItems`, `IStoreService/GetTagList`, `ISteamChartsService/GetMostPlayedGames`, no key) | Steam's games: names, reviews, releases, franchises, developers, publishers, tags, most played; their prices and sales by country (`steam/prices/`) | [Steam Web API terms](https://steamcommunity.com/dev/apiterms); data from Valve, not endorsed by it |
 | [GOG's catalog](https://www.gog.com/) (`catalog.gog.com`, no key) | GOG's games: names, releases, reviews, developers, publishers, genres, tags, trending order; prices and sales by country (`gog/prices/`) | as published there; data from GOG |
 | [Microsoft Store's catalog](https://www.xbox.com/) (`displaycatalog.mp.microsoft.com`, `catalog.gamepass.com`, no key) | The Xbox and PC games: names, releases, players' ratings, developers, publishers, genres, the Game Pass; prices and sales by country (`xbox/prices/`) | as published there; data from Microsoft |
@@ -320,5 +320,5 @@ python3 -m unittest discover -s tests
 service, the guard and publishing a file, the lowest price kept from run to
 run.
 
-Python 3.10 or later, no package to install. It takes up to an hour: SteamSpy's
-45 minutes, the pageviews, and titledb's list (about 90 MB).
+Python 3.10 or later, no package to install. `build.py` takes some 25 minutes:
+SteamSpy's 10, the pageviews, and titledb's list (about 90 MB).
