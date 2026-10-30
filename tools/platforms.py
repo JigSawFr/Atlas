@@ -19,7 +19,7 @@ FOLDER = "platforms"
 STORES = [
     ("switch", "Nintendo Switch", "Q19610114", "switch", "switch", "store"),
     ("steam", "Steam", "Q337535", "win", None, "store"),
-    ("gog", "GOG", "Q2584232", "win", None, "store"),
+    ("gog", "GOG", None, "win", None, "store"),
     ("xbox", "Xbox and Microsoft Store", "Q13361286", "xboxone", None, "store"),
 ]
 # The machines no store Atlas reads sells games of any more (tools/retro.py).
