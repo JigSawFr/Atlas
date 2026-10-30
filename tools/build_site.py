@@ -292,9 +292,9 @@ def main() -> None:
     shutil.copytree(SITE / "assets", out / "assets")
     summary, index = {}, {}
     if data:
-        # The sources (sources/) are not the explorer's: left on the data branch, the site smaller.
+        # The sources and the prices' history are not the explorer's: left on the data branch, the site smaller.
         shutil.copytree(data, out / "data", ignore=lambda d, names: [n for n in names if n.startswith(".git")
-                                                                   or (Path(d) == data and n == "sources")])
+                                                                   or (Path(d) == data and n in ("sources", "history"))])
         summary = site_data.build(str(data), str(out))
         index = site_data.read(str(data / "index.json")) or {}
     catalogs = {c: json.loads((SITE / "i18n" / f"{c}.json").read_text(encoding="utf-8")) for c, _, _, _ in LANGUAGES}

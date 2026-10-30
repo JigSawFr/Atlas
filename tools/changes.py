@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""What a run changed, once its files are in the data branch's worktree
+(before they are committed: the branch's last commit is the last run's):
+
+- changes.json, by platform: the new games, the sales that started and
+  ended and the new lowest prices (by country), the games out today, and
+  the trends that moved the most;
+- history/<platform>/YYYY-MM.json: each game's price, by country, on each
+  day it changed (only those days), the month's file kept from day to day;
+- platforms/<id>/games.lite.json for a games.json larger than LITE_FROM:
+  each game's name, Wikidata item, release and reviews (or rating) alone.
+
+Usage: tools/changes.py <data-dir>   (a git worktree of the data branch, the run's files in it)
+"""
+import datetime
+import json
+import os
+import subprocess
+import sys
+
+import common
+
+KEEP = 200            # of each kind of change, a platform's first ones
+TREND_MOVE = 100      # points a trend moved by, at least, to be said
+LITE_FROM = 1_000_000  # bytes of a games.json above which a light one is made too
+
+
+def read(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            body = json.load(f)
+        return body if isinstance(body, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def last(directory, path):
+    """The file as the branch's last commit has it (the last run's), {} when it had none."""
+    got = subprocess.run(["git", "-C", directory, "show", f"HEAD:{path}"], capture_output=True)
+    if got.returncode:
+        return {}
+    try:
+        body = json.loads(got.stdout)
+        return body if isinstance(body, dict) else {}
+    except ValueError:
+        return {}
+
+
+def platform_ids(directory):
+    base = os.path.join(directory, "platforms")
+    return sorted(os.listdir(base)) if os.path.isdir(base) else []
+
+
+def prices_of(directory, pid):
+    folder = os.path.join(directory, "platforms", pid, "prices")
+    return sorted(f[:-5] for f in os.listdir(folder) if f.endswith(".json")) if os.path.isdir(folder) else []
+
+
+def changes(directory, today, previous=None):
+    """{platform: {kind: [...]}}, and the day's prices that changed for history."""
+    previous = previous or (lambda path: last(directory, path))
+    day = int(today.strftime("%Y%m%d"))
+    out = {}
+    for pid in platform_ids(directory):
+        base = f"platforms/{pid}"
+        mine = {}
+        now = read(os.path.join(directory, base, "games.json")).get("games") or {}
+        before = previous(f"{base}/games.json").get("games") or {}
+        if before:
+            mine["new"] = sorted(g for g in now if g not in before)[:KEEP]
+        coming = previous(f"{base}/upcoming.json").get("games") or {}
+        mine["out_today"] = sorted(g for g, row in coming.items() if row and row[0] == day)[:KEEP]
+        popular = read(os.path.join(directory, base, "popular.json")).get("games") or {}
+        was = previous(f"{base}/popular.json").get("games") or {}
+        moved = [(g, was[g][1], row[1]) for g, row in popular.items() if g in was and abs(row[1] - was[g][1]) >= TREND_MOVE]
+        mine["trends"] = [[g, a, b] for g, a, b in sorted(moved, key=lambda m: -abs(m[2] - m[1]))[:KEEP]]
+        for country in prices_of(directory, pid):
+            rows = read(os.path.join(directory, base, "prices", f"{country}.json")).get("games") or {}
+            old = previous(f"{base}/prices/{country}.json").get("games") or {}
+            if not old:
+                continue
+            started = sorted(g for g, r in rows.items() if r[1] and not (old.get(g) or [0, 0])[1])
+            ended = sorted(g for g, r in old.items() if r[1] and g in rows and not rows[g][1])
+            lowest = sorted(g for g, r in rows.items() if r[4] == day and g in old and r[3] < old[g][3])
+            if started or ended or lowest:
+                mine.setdefault("sales", {})[country] = {"started": started[:KEEP], "ended": ended[:KEEP],
+                                                         "lowest": lowest[:KEEP]}
+        out[pid] = {k: v for k, v in mine.items() if v}
+    return out
+
+
+def history(directory, today, previous=None):
+    """history/<platform>/YYYY-MM.json with today's prices, for the games whose price changed."""
+    previous = previous or (lambda path: last(directory, path))
+    day = int(today.strftime("%Y%m%d"))
+    written = []
+    for pid in platform_ids(directory):
+        countries = prices_of(directory, pid)
+        if not countries:
+            continue
+        name = f"history/{pid}/{today.strftime('%Y-%m')}.json"
+        path = os.path.join(directory, name)
+        body = read(path) or {"schema": 1, "platform": pid, "month": today.strftime("%Y-%m"),
+                              "source": f"platforms/{pid}/prices/", "games": {}}
+        games = body["games"]
+        changed = False
+        for country in countries:
+            rows = read(os.path.join(directory, "platforms", pid, "prices", f"{country}.json")).get("games") or {}
+            old = previous(f"platforms/{pid}/prices/{country}.json").get("games") or {}
+            for g, r in rows.items():
+                seen = games.get(g, {}).get(country)
+                was = seen[-1][1:] if seen else ((old.get(g) or [None, None])[:2])
+                if [r[0], r[1]] != list(was):
+                    games.setdefault(g, {}).setdefault(country, [])
+                    if seen and seen[-1][0] == day:
+                        seen[-1] = [day, r[0], r[1]]
+                    else:
+                        games[g][country].append([day, r[0], r[1]])
+                    changed = True
+        if changed or not os.path.exists(path):
+            body["generated"] = today.isoformat()
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            common._dump(path, body)
+            written.append(name)
+    return written
+
+
+def lite(directory):
+    """games.lite.json beside each games.json larger than LITE_FROM."""
+    written = []
+    for pid in platform_ids(directory):
+        path = os.path.join(directory, "platforms", pid, "games.json")
+        if not os.path.exists(path) or os.path.getsize(path) <= LITE_FROM:
+            continue
+        body = read(path)
+        light = {}
+        for g, e in (body.get("games") or {}).items():
+            if isinstance(e, dict):
+                light[g] = {k: e[k] for k in ("name", "qid", "release", "reviews", "rating") if k in e}
+        common._dump(os.path.join(directory, "platforms", pid, "games.lite.json"), {
+            "schema": 1, "platform": pid, "generated": body.get("generated"),
+            "source": f"platforms/{pid}/games.json (name, Wikidata item, release, reviews or rating)", "games": light})
+        written.append(pid)
+    return written
+
+
+def main():
+    directory = sys.argv[1]
+    today = datetime.date.today()
+    found = changes(directory, today)
+    common._dump(os.path.join(directory, "changes.json"), {
+        "schema": 1, "generated": today.isoformat(), "source": "Atlas (the run's files against the last run's)",
+        "platforms": found})
+    print(f"changes: {sum(len(v) for v in found.values())} kinds of change; history: {len(history(directory, today))} "
+          f"files; lite: {', '.join(lite(directory)) or 'none'}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
