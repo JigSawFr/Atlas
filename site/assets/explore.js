@@ -20,6 +20,7 @@
     epic: (id) => `https://store.epicgames.com/p/${id}`,
   };
   const STORE_NAMES = { switch: "Nintendo Switch", steam: "Steam", ps: "PlayStation", ps_product: "PlayStation",
+    ps4: "PlayStation 4", ps5: "PlayStation 5", "3ds": "Nintendo 3DS",
     xbox: "Xbox", gog: "GOG", epic: "Epic Games" };
   const status = $("x-status"), results = $("x-results"), sheet = $("x-sheet");
   const countrySelect = $("x-country"), search = $("x-search"), machine = $("x-machine");

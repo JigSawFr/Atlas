@@ -2,7 +2,7 @@
 # - each source asked once, side by side where nothing else is needed first
 #   (tools/collect.py: sources/<source>/, its own guard);
 # - the platforms' files made from them, asking nothing (links, switch,
-#   steam, gog, xbox, 3ds, the old machines), then everything committed to the `data`
+#   steam, gog, xbox, 3ds, ps4 and ps5, the old machines), then everything committed to the `data`
 #   branch, where PlayShelf reads it through jsDelivr, and kept as a release
 #   (tools/archive.sh). A source that fails leaves its last run's files, and
 #   the platforms are made from those; a platform that fails keeps its own.
@@ -185,6 +185,10 @@ jobs:
         id: n3ds
         continue-on-error: true
         run: python3 tools/n3ds.py out data-branch fresh
+      - name: PS4 and PS5
+        id: playstation
+        continue-on-error: true
+        run: python3 tools/playstation.py out data-branch fresh
       - name: Publish to the data branch
         run: |
           for f in fresh/.alerts-*; do [ -f "$f" ] && cat "$f" >> "$ALERTS" && rm "$f"; done
@@ -222,5 +226,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_STATUS: ${{ job.status }}
-          OUTCOMES: "sources=${{ needs.first.result }} stores=${{ needs.stores.result }} wikipedia=${{ needs.wikipedia.result }} links=${{ steps.links.outcome }} switch=${{ steps.switch.outcome }} steam=${{ steps.steam.outcome }} gog=${{ steps.gog.outcome }} xbox=${{ steps.xbox.outcome }} retro=${{ steps.retro.outcome }} 3ds=${{ steps.n3ds.outcome }} archive=${{ steps.archive.outcome }} attestation=${{ steps.attest.outcome }}"
+          OUTCOMES: "sources=${{ needs.first.result }} stores=${{ needs.stores.result }} wikipedia=${{ needs.wikipedia.result }} links=${{ steps.links.outcome }} switch=${{ steps.switch.outcome }} steam=${{ steps.steam.outcome }} gog=${{ steps.gog.outcome }} xbox=${{ steps.xbox.outcome }} retro=${{ steps.retro.outcome }} 3ds=${{ steps.n3ds.outcome }} playstation=${{ steps.playstation.outcome }} archive=${{ steps.archive.outcome }} attestation=${{ steps.attest.outcome }}"
         run: tools/alert.sh "${{ github.workflow }}"

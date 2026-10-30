@@ -36,6 +36,8 @@
   "platform_gog_text": "GOG 전체 카탈로그와 가격, 리뷰.",
   "platform_xbox_text": "Microsoft Store 가격과 Game Pass 목록.",
   "platform_3ds_text": "모든 지역의 3DS 게임과 타이틀 ID(Nlib API와 Wikidata 기준, eShop이 2023년에 종료되어 가격 없음).",
+  "platform_ps4_text": "Wikidata 기준 PS4 게임: 출시일, 특징, PlayStation Store ID(소니 약관이 스토어 데이터 수집을 금지하므로 가격 없음).",
+  "platform_ps5_text": "Wikidata 기준 PS5 게임: 출시일, 특징, PlayStation Store ID(소니 약관이 스토어 데이터 수집을 금지하므로 가격 없음).",
   "platform_retro_text": "더 이상 어느 스토어에서도 팔지 않는 게임, Wikidata에서.",
   "files_eyebrow": "파일",
   "files_title": "무엇이 언제 공개되는지",

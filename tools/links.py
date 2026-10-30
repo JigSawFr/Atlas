@@ -14,7 +14,9 @@ Each platform's ids as its store writes them: a Switch base game's title id
 products (ps_product: North America, Europe, Japan), a Microsoft Store
 product id (upper case), a GOG page's slug, an Epic Games Store page's slug.
 A game may have several of a platform (editions, regions); a platform it has
-none of is left out.
+none of is left out. The 3DS's games are by their family (tools/n3ds.py),
+the PS4's and PS5's by their Wikidata item (ps4, ps5: tools/playstation.py's
+folders), for the games tied to another platform.
 
 One query to Wikidata's query service a run; when it turns the run away,
 QLever's copy of Wikidata (qlever.dev) is asked the same.
@@ -114,6 +116,13 @@ def main():
     import n3ds
     for qid, family in n3ds.built(src)[1].items():
         games.setdefault(qid, {})[n3ds.N3DS] = [family]
+    # The PS4's and PS5's games, by their Wikidata item: tied to the ones it has
+    # ids of elsewhere, or to each other when a game is on both.
+    import playstation
+    for qid, machines in playstation.machines_by_game(src).items():
+        if qid in games or len(machines) > 1:
+            for pid in machines:
+                games.setdefault(qid, {})[pid] = [qid]
     games = dict(sorted(games.items(), key=lambda kv: int(kv[0][1:]) if kv[0][1:].isdigit() else 0))
     report = []
     common.publish(out_dir, "links.json", {

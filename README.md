@@ -42,6 +42,7 @@ jsDelivr. Each platform has a folder of its own in `platforms/`, by its id
 | `platforms/xbox/popular.json`, `platforms/xbox/games.json`, `platforms/xbox/gamepass.json`, `platforms/xbox/upcoming.json`, `platforms/xbox/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/xbox/popular.json`… |
 | `platforms/xbox/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/xbox/prices/FR.json` |
 | `platforms/3ds/games.json`, `popular.json`, `similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/3ds/games.json`… |
+| `platforms/ps4/games.json`, `popular.json`, `similar.json`, `upcoming.json` (and `platforms/ps5/`) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/ps4/games.json`… |
 | `platforms/<machine>/popular.json`, `games.json`, `similar.json` (the old machines: `nes`, `snes`, `gba`, `ps2`…) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/nes/popular.json`… |
 | `platforms.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms.json` |
 | `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/links.json` |
@@ -57,8 +58,9 @@ the trends and the lowest prices; `retro/` made way for a folder a machine.
 `platforms.json` is the platforms' registry, `{"platforms": {id: {name,
 qid, igdb, aurore, kind}}}`: its Wikidata item, its IGDB platform (slug),
 [Aurore](https://github.com/JigSawFr/Aurore)'s id when Aurore runs there
-(`switch`, `3ds`, `psv`…: the same ids), and its kind: `store`, `console`
-(no store sells its games any more, but it has a source of its own: the 3DS)
+(`switch`, `3ds`, `psv`, `ps4`…: the same ids), and its kind: `store`, `console`
+(a folder of its own but no store's data: the 3DS, whose eShop closed; the
+PS4 and the PS5, whose store Atlas does not read)
 or `retro` (Wikidata alone). It has a
 `schema` like every file: a reader skips an entry's fields, and a kind, it
 does not know.
@@ -132,7 +134,7 @@ Each game is `[score, trend, critics]`:
 - **trend**, -100 to 999: how much more (or less) the game was read on Wikipedia in the last seven days than in a week of the four before, in percent, its pages in English, French, German, Spanish, Italian, Japanese, Dutch and Portuguese added up. It is measured every day for the 400 best known games ([`daily.yml`](.github/workflows/daily.yml), `tools/trends.py`; a page Wikimedia turns away for too many requests is asked again after the time it says, up to 10 minutes of waiting a day), and `trends` gives the day; it is 0 when the game was read fewer than 300 times in the week. Between two measures, and for the others, it is the weekly build's: last month's English views against the two months before.
 - **critics**, 0 to 100: the critics' score that counts the most reviews (0 when none is known).
 
-Wikimedia's pageviews are asked for the 400 best known games, one at a time. When too many are turned away (fewer than half read), `views` is false: every game is scored by its sitelinks and reviews alone, and none has a trend.
+Wikimedia's pageviews are asked for the 400 best known games, one at a time (a page turned away for too many requests asked again once, after the time Wikimedia says, 30 s to 2 minutes). When too many are turned away (fewer than half read), `views` is false: every game is scored by its sitelinks and reviews alone, and none has a trend.
 
 `platforms/switch/upcoming.json`:
 
@@ -296,6 +298,39 @@ family by its English name, only when exactly one of each has that name;
 2,198 families; of Wikidata's 814 3DS games, 478 matched (59 %; 22 % of the
 families), the others left without `qid` rather than matched wrong.
 
+### PlayStation 4 and PlayStation 5
+
+`platforms/ps4/` and `platforms/ps5/`, every Monday (`tools/playstation.py`),
+their games by Wikidata item (`"Q900001"`), from Wikidata and Wikipedia
+alone: Wikidata's games of the machine (P400 = Q5014725, the PS4;
+Q63184502, the PS5). A game on both is in both folders, and `links.json`
+ties them (`ps4`, `ps5`: its item) to each other and to its other
+platforms (Steam, Switch…).
+
+- `games.json`: each game's `name`, its first day on the machine
+  (`release`, YYYYMMDD: its earliest publication date,
+  [P577](https://www.wikidata.org/wiki/Property:P577), said to the day,
+  for every machine or for this one), its PlayStation Store ids as Wikidata
+  has them, plain identifiers (`ps`: concept ids,
+  [P12332](https://www.wikidata.org/wiki/Property:P12332); `ps_product`:
+  the machine's products, P5944, P5971, P5999: `CUSA…` for the PS4,
+  `PPSA…` for the PS5), and its traits as `[QID, name]`: `series`,
+  `developers`, `publishers`, `genres`, `modes`.
+- `popular.json`: `[score, trend, critics]` as `platforms/switch/popular.json`,
+  from the game's renown on Wikipedia alone (its sitelinks, and its English
+  page's views for the 400 best known of both machines), weighed among the
+  machine's games; `critics` is 0.
+- `similar.json`: the 12 most alike among the machine's games, by their traits.
+- `upcoming.json`: the games whose first day is still to come, within a
+  year, `[YYYYMMDD, name]` (a day Wikidata says only to the month or the
+  year is left out).
+
+No prices, sales, players' ratings nor sales ranks: nothing is asked of
+the PlayStation Store nor of any `playstation.com` address, whose terms of
+use forbid collecting their data and building a database of it. The PS3,
+PSP and Vita stay with the old machines below (Wikidata alone too, and their
+stores sell nothing new).
+
 ### Retro
 
 The consoles, handhelds and computers no store Atlas reads sells any more
@@ -382,7 +417,7 @@ branch: the platforms' files are then made from these, asking nothing more
 
 | Folder | What it keeps | When |
 |---|---|---|
-| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`; `switch-pages`, `steam-pages` (daily) | Monday, every day |
+| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`, `playstation`, `playstation-traits`, `playstation-dates`; `switch-pages`, `steam-pages` (daily) | Monday, every day |
 | `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers; the others with ids and names) | every day |
 | `sources/eshop/prices/` | The eShop's answer by eShop id: status, regular price, discount, its last day, currency | every day |
 | `sources/steam-store/` | `apps.json` (GetItems by app id), `tags.json`, `most-played.json`; `prices/<country>.json` (GetItems' prices) | Monday, every day |
@@ -402,7 +437,7 @@ left as it was), and skips the fields it does not know.
 
 | Source | What it gives | Licence |
 |---|---|---|
-| [Wikidata](https://www.wikidata.org/) | The stores' ids for `links.json` ([P1733](https://www.wikidata.org/wiki/Property:P1733) Steam, [P12332](https://www.wikidata.org/wiki/Property:P12332), [P5944](https://www.wikidata.org/wiki/Property:P5944), [P5971](https://www.wikidata.org/wiki/Property:P5971), [P5999](https://www.wikidata.org/wiki/Property:P5999) PlayStation, [P5885](https://www.wikidata.org/wiki/Property:P5885) Microsoft, [P2725](https://www.wikidata.org/wiki/Property:P2725) GOG, [P6278](https://www.wikidata.org/wiki/Property:P6278) Epic); Switch title ids ([P11072](https://www.wikidata.org/wiki/Property:P11072)), sitelinks, English pages, review scores ([P444](https://www.wikidata.org/wiki/Property:P444)) and their number of reviews ([P7887](https://www.wikidata.org/wiki/Property:P7887)) | CC0 |
+| [Wikidata](https://www.wikidata.org/) | The stores' ids for `links.json` ([P1733](https://www.wikidata.org/wiki/Property:P1733) Steam, [P12332](https://www.wikidata.org/wiki/Property:P12332), [P5944](https://www.wikidata.org/wiki/Property:P5944), [P5971](https://www.wikidata.org/wiki/Property:P5971), [P5999](https://www.wikidata.org/wiki/Property:P5999) PlayStation, [P5885](https://www.wikidata.org/wiki/Property:P5885) Microsoft, [P2725](https://www.wikidata.org/wiki/Property:P2725) GOG, [P6278](https://www.wikidata.org/wiki/Property:P6278) Epic); Switch title ids ([P11072](https://www.wikidata.org/wiki/Property:P11072)), sitelinks, English pages, review scores ([P444](https://www.wikidata.org/wiki/Property:P444)) and their number of reviews ([P7887](https://www.wikidata.org/wiki/Property:P7887)); the games of each machine ([P400](https://www.wikidata.org/wiki/Property:P400)), their traits and, for the PS4 and PS5, their publication dates ([P577](https://www.wikidata.org/wiki/Property:P577)) | CC0 |
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
 | [SteamSpy](https://steamspy.com/api.php) | Steam owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
@@ -488,6 +523,7 @@ python3 tools/gog.py catalog out/ last/ out/    # out/platforms/gog/*.json
 python3 tools/xbox.py catalog out/ last/ out/   # out/platforms/xbox/*.json
 python3 tools/retro.py out/ last/ out/          # out/platforms/<machine>/*.json
 python3 tools/n3ds.py out/ last/ out/           # out/platforms/3ds/*.json
+python3 tools/playstation.py out/ last/ out/    # out/platforms/ps4/*.json, out/platforms/ps5/*.json
 python3 tools/trends.py out/ last/ out/         # last/platforms/{switch,steam}/popular.json with today's trends
 python3 tools/prices.py out/ last/ out/         # out/platforms/switch/prices/*.json
 python3 tools/steam_prices.py out/ last/ out/   # out/platforms/steam/prices/*.json

@@ -7,8 +7,10 @@ The ids are Aurore's where the two meet (switch, 3ds, psv, ps4, ios,
 android), a store's name for a store (steam, gog, xbox: the Microsoft
 Store's games, Xbox and PC), and a machine's short name for the others
 (the retro ones, a folder a machine, from Wikidata's P400). Each has its
-kind: store, console (a machine whose games no store sells any more, with
-a source of its own: the 3DS) or retro (Wikidata alone).
+kind: store, console (a machine with a folder of its own but no store's
+data: the 3DS, whose eShop closed, from Nlib API and Wikidata; the PS4 and
+the PS5, whose store's terms forbid collecting it, from Wikidata alone) or
+retro (Wikidata alone).
 """
 import datetime
 import os
@@ -24,9 +26,12 @@ STORES = [
     ("gog", "GOG", None, "win", None, "store"),
     ("xbox", "Xbox and Microsoft Store", "Q13361286", "xboxone", None, "store"),
 ]
-# Consoles with files of their own though no store sells their games any more (tools/n3ds.py).
+# Machines with files of their own but no store's data: the 3DS (tools/n3ds.py), the
+# PS4 and the PS5 (tools/playstation.py: Wikidata alone, nothing of the PlayStation Store).
 CONSOLES = [
     ("3ds", "Nintendo 3DS", "Q203597", "3ds", "3ds", "console"),
+    ("ps4", "PlayStation 4", "Q5014725", "ps4--1", "ps4", "console"),
+    ("ps5", "PlayStation 5", "Q63184502", "ps5", None, "console"),
 ]
 # The machines no store Atlas reads sells games of any more (tools/retro.py).
 RETRO = [
@@ -71,8 +76,9 @@ RETRO = [
     ("dos", "MS-DOS", "Q47604", None, None),
 ]
 RETRO_BY_QID = {qid: pid for pid, _, qid, _, _ in RETRO}
-# What a machine of retro.py's query is not RETRO's: its own folder, its own tool.
-OWN = {qid for _, _, qid, _, _, _ in CONSOLES}
+# What a machine of retro.py's query is not RETRO's: its own folder, its own tool (the 3DS's
+# games are retro.py's rows, n3ds.py's folder; the PS4's and PS5's, playstation.py's own).
+OWN = {"Q203597"}
 
 
 def path(platform, name):

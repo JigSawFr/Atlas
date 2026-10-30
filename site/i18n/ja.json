@@ -36,6 +36,8 @@
   "platform_gog_text": "GOG の全カタログを、価格とレビューつきで。",
   "platform_xbox_text": "Microsoft Store の価格と Game Pass の内容。",
   "platform_3ds_text": "全地域の3DSソフトとそのタイトルID（Nlib APIとWikidataより。ニンテンドーeショップは2023年に終了したため価格なし）。",
+  "platform_ps4_text": "WikidataによるPS4のゲーム：発売日、特徴、PlayStation StoreのID（ソニーの規約がストアのデータ収集を禁じているため価格なし）。",
+  "platform_ps5_text": "WikidataによるPS5のゲーム：発売日、特徴、PlayStation StoreのID（ソニーの規約がストアのデータ収集を禁じているため価格なし）。",
   "platform_retro_text": "どのストアでも売られていないゲームを Wikidata から。",
   "files_eyebrow": "ファイル",
   "files_title": "何が、いつ公開されるか",
