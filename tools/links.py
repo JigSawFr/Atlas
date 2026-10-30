@@ -112,7 +112,7 @@ def main():
     games = links(common.bindings(src("wikidata/links.json").get("rows") or []))
     report = []
     common.publish(out_dir, "links.json", {
-        "schema": 1, "generated": datetime.date.today().isoformat(),
+        "schema": common.SCHEMA, "generated": datetime.date.today().isoformat(),
         "source": "Wikidata (" + ", ".join(PROPERTIES) + ")", "games": games}, previous_dir, report)
     platforms.write_registry(out_dir)
     print(common.summary(report), file=sys.stderr)

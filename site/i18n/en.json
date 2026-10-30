@@ -10,6 +10,7 @@
   "language": "Language",
   "footer_label": "More",
   "footer_releases": "Weekly releases",
+  "footer_legal": "Privacy and legal notice",
   "footer_made": "A Boréale project. Code under GPL-3.0, data from open sources.",
   "footer_trademarks": "Nintendo Switch, Steam and the games named here are their owners' trademarks. Atlas is not affiliated with them.",
   "hero_eyebrow": "Open data · every platform",
@@ -139,5 +140,16 @@
   "x_keywords": "Keywords",
   "x_perspectives": "Perspectives",
   "x_tags": "Tags",
-  "x_not_found": "This game is not on the map."
+  "x_not_found": "This game is not on the map.",
+  "sites_label": "Boréale's projects",
+  "sites_homebrew": "Switch homebrew",
+  "sites_libraries": "Libraries",
+  "sites_boreale": "Homebrew for the long nights",
+  "sites_playguard": "Parental controls, on the console",
+  "sites_playshelf": "Your game library, on the console",
+  "sites_aurore": "The interface library behind them",
+  "sites_soon": "Coming soon",
+  "sites_open": "Open data and protocols",
+  "sites_atlas": "A map of every game, on every platform",
+  "sites_lantern": "The protocol between servers and consoles"
 }

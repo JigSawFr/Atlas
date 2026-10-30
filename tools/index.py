@@ -14,6 +14,8 @@ import json
 import os
 import sys
 
+import common
+
 
 def entry(path):
     with open(path, "rb") as f:
@@ -35,7 +37,7 @@ def index(directory):
                 path = os.path.join(root, name)
                 files[os.path.relpath(path, directory).replace(os.sep, "/")] = entry(path)
     # No day of its own: it changes only when a file does.
-    return {"schema": 1, "files": dict(sorted(files.items()))}
+    return {"schema": common.SCHEMA, "files": dict(sorted(files.items()))}
 
 
 def main():

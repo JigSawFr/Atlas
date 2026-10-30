@@ -56,7 +56,9 @@ the trends and the lowest prices; `retro/` made way for a folder a machine.
 `platforms.json` is the platforms' registry, `{"platforms": {id: {name,
 qid, igdb, aurore, kind}}}`: its Wikidata item, its IGDB platform (slug),
 [Aurore](https://github.com/JigSawFr/Aurore)'s id when Aurore runs there
-(`switch`, `3ds`, `psv`…: the same ids), and `store` or `retro`.
+(`switch`, `3ds`, `psv`…: the same ids), and `store` or `retro`. It has a
+`schema` like every file: a reader skips an entry's fields, and a kind, it
+does not know.
 
 `index.json` lists every file with the day it was made, its size and a hash of its content: a reader can ask for it every day and fetch only the files whose hash changed.
 
@@ -66,6 +68,17 @@ Each has a `schema` (1 for now: a new field may come, an old one keeps its
 meaning), the day it was `generated` and its `source`; a platform's files
 also have their `platform` (its id in `platforms.json`: `switch`, `steam`, `gog`, `xbox`, `nes`…). In `platforms/switch/`, a game is a base game's
 title id (16 hex digits, upper case, ending in `000`).
+
+The schema moves up only when a field changes meaning (its unit, its type,
+or it goes). A reader skips the fields it does not know, and takes a file
+of another schema as no file. Schema 2 of a file will be published at a
+path of its own, `platforms/switch/v2/popular.json` next to
+`platforms/switch/popular.json`,
+both made at each run until the readers of schema 1 (PlayShelf's
+installed versions) are gone; only then does the old path stop. The tools
+read the last run's files back the same way: one of another schema counts
+as none (the guard lets the new file through, the lowest prices start over,
+the daily trends wait for the weekly build).
 
 `links.json`, made every Monday:
 
@@ -278,7 +291,7 @@ gh attestation verify switch-popular.json -R JigSawFr/Atlas
 
 ## Website
 
-Atlas's website, [atlas.boreale.dev](https://atlas.boreale.dev/), shows the project and an explorer of the data (the best known games, the trends, the deals by country, the games coming soon, each game's sheet), in fifteen languages. It is built from `site/` with a copy of the `data` branch, served with it under `data/` (`.github/workflows/site.yml`, after each run); see [`site/README.md`](site/README.md).
+Atlas's website, [atlas.boreale.dev](https://atlas.boreale.dev/?utm_source=github&utm_medium=readme), shows the project and an explorer of the data (the best known games, the trends, the deals by country, the games coming soon, each game's sheet), in fifteen languages. It is built from `site/` with a copy of the `data` branch, served with it under `data/` (`.github/workflows/site.yml`, after each run); see [`site/README.md`](site/README.md).
 
 ## The sources
 
@@ -301,8 +314,12 @@ branch: the platforms' files are then made from these, asking nothing more
 | `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records (with its keys only) | Monday |
 | `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (their pages' views a day, 8 languages) | Monday, every day |
 
-Each file says its source, its licence or terms, and the day it was
-collected (`generated`).
+Each file says its source, its licence or terms, the day it was
+collected (`generated`) and its `schema` (1), which moves up like a
+platform file's: a new field keeps it, a field changing meaning moves it.
+A tool reads a source file of another schema as no file (the guard lets
+the new one through, the platform's file is made from the last run's or
+left as it was), and skips the fields it does not know.
 
 | Source | What it gives | Licence |
 |---|---|---|
