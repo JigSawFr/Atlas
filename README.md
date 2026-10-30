@@ -427,7 +427,10 @@ collected that day, else left as it was.
 
 Whatever goes wrong in a run — the job failing, one of the daily steps
 failing on its own, a source's job failing or running out of time (it says
-which), a file kept by the guard — opens an issue labelled
+which), a file kept by the guard, a published file that more than doubled
+or fell under half its size against the last run's (`tools/index.py`:
+still published, but worth a look; files under 50 kB, `changes.json`,
+`report.json` and `history/` not weighed) — opens an issue labelled
 `data-alert` (`tools/alert.sh`), or adds a comment to the one still open,
 so it does not go unseen.
 
