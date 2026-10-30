@@ -38,6 +38,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test
+        env:
+          ALERTS: ""   # the run's alerts are not the tests' (tests/test_common.py)
         run: python3 -m unittest discover -s tests
       - name: The data branch
         run: tools/data-branch.sh
@@ -68,6 +70,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test
+        env:
+          ALERTS: ""   # the run's alerts are not the tests' (tests/test_common.py)
         run: python3 -m unittest discover -s tests
       - name: The data branch
         run: tools/data-branch.sh
