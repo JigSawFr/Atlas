@@ -1,0 +1,31 @@
+# Temporary: why GITHUB_TOKEN cannot create a release here. Deleted after.
+name: probe
+on:
+  push:
+    branches: [ci/release-probe]
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Draft release, no tag
+        continue-on-error: true
+        run: |
+          id=$(gh api -X POST "repos/$GITHUB_REPOSITORY/releases" -f tag_name=probe-draft -f name=probe -F draft=true --jq .id)
+          echo "draft ok: $id"; gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id"
+      - name: Tag by git, then release on it
+        continue-on-error: true
+        run: |
+          git push origin "$GITHUB_SHA:refs/tags/probe-tag" && echo "tag pushed"
+          gh release create probe-tag --verify-tag --title probe --notes probe && echo "release ok"
+          gh release delete probe-tag --yes --cleanup-tag || git push origin :refs/tags/probe-tag
+      - name: Release with a new tag by the API
+        continue-on-error: true
+        run: |
+          gh release create probe-api --target "$GITHUB_SHA" --title probe --notes probe && echo "api release ok"
+          gh release delete probe-api --yes --cleanup-tag || true
