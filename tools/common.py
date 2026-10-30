@@ -22,9 +22,17 @@ GUARD_FLOOR = 50       # games the last run's file had at least, for that to cou
 # The data files' schema (README): a new field keeps it, a field changing
 # meaning moves it up. A file of another schema is read as no file at all.
 SCHEMA = 1
+# report.json's own (tools/report.py): 2 since 2026-10-30, when `priced` and
+# `countries` went (a required field gone moves it up). Its one reader is
+# the website's status page (tools/build_site.py), which reads no other.
+REPORT_SCHEMA = 2
 # The sources' files' schema: a new field keeps it, a field changing
 # meaning moves it up; one of another schema is read as no file.
 SOURCE_SCHEMA = 1
+# report.json's own (tools/report.py): 2 since 2026-10-30, when `priced` and
+# `countries` went (a required field gone moves it up). Its one reader is
+# the website's status page (tools/build_site.py), which reads no other.
+REPORT_SCHEMA = 2
 SOURCES = "sources"    # each source's answers, as collected (tools/collect.py)
 SHARD_BYTES = 15_000_000   # a source file larger than this is cut in parts (jsDelivr serves 20 MB at most)
 

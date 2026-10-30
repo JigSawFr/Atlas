@@ -56,6 +56,11 @@ class Schemas(unittest.TestCase):
             schemas.put_back(d, "platforms/switch/popular.json")   # not on a branch: removed
             self.assertFalse(os.path.exists(os.path.join(d, "platforms/switch/popular.json")))
             put(d, "schemas/platforms/switch/prices/FR.schema.json", {})   # a file gone: its schema goes too
+            # The last run's report.json, of schema 1: wrong when publishing, left out of a look at the branch.
+            put(d, "report.json", {"schema": 1, "generated": "2026-10-30", "sources": {}, "platforms": {}})
+            self.assertIn("report.json", schemas.check(d))
+            self.assertNotIn("report.json", schemas.check(d, strict=False))
+            os.remove(os.path.join(d, "report.json"))
             schemas.write(d)
             self.assertTrue(os.path.exists(os.path.join(d, "schemas/links.schema.json")))
             self.assertFalse(os.path.exists(os.path.join(d, "schemas/platforms/switch/prices")))
@@ -75,7 +80,10 @@ class Report(unittest.TestCase):
                                                           "reviewed": 0.5, "generated": "2026-10-30"})
             self.assertEqual(got["sources"]["titledb"]["records"], 2)
             self.assertEqual(got["steps"], {"switch": 12.3})
+            self.assertEqual(got["schema"], 2)
             self.assertEqual(schemas.errors(got, schemas.KINDS["report"]), [])
+            # A report of schema 1 (with `priced`) is not one of today's.
+            self.assertTrue(schemas.errors({**got, "schema": 1}, schemas.KINDS["report"]))
             # A file of a later schema counts as none, and is left as it was.
             later = {"schema": 2, "generated": "2026-11-09", "games": {A: [1, 0, 0], B: [2, 0, 0]}}
             put(d, "platforms/switch/popular.json", later)

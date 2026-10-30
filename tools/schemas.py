@@ -11,7 +11,8 @@ propertyNames, items, prefixItems, minItems, maxItems, minimum, maximum,
 pattern, anyOf and $ref to $defs.
 
 Usage:
-  tools/schemas.py check <data-dir>     every file checked, the wrong ones said (exit 1)
+  tools/schemas.py check <data-dir>     every file checked, the wrong ones said (exit 1); a file of
+                                        an older schema than its kind's left out
   tools/schemas.py publish <data-dir>   the same; a wrong file put back as it was on the
                                         branch (or removed when new), said in the run's
                                         alerts; then schemas/ written again
@@ -101,7 +102,8 @@ KINDS = {
                                                                             {"type": "integer"}]}}}}}}},
     "report": {"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "How the data is", "type": "object",
                "required": ["schema", "generated", "sources", "platforms"],
-               "properties": {"schema": {"const": common.SCHEMA}, "generated": DATE, "run": {"enum": ["build", "daily"]},
+               "properties": {"schema": {"const": common.REPORT_SCHEMA}, "generated": DATE,
+                              "run": {"enum": ["build", "daily"]},
                               "source": {"type": "string"},
                               "sources": {"type": "object", "additionalProperties": {
                                   "type": "object", "required": ["files", "records", "generated"]}},
@@ -216,8 +218,10 @@ def data_files(directory):
     return out
 
 
-def check(directory):
-    """{path: [messages]} of the wrong files."""
+def check(directory, strict=True):
+    """{path: [messages]} of the wrong files. Not strict (`check`, the tests'
+    look at the data branch as it is): a file of an older schema than its
+    kind's, which the next run makes again in the new one, is left out."""
     wrong = {}
     for path in data_files(directory):
         kind = kind_of(path)
@@ -228,6 +232,10 @@ def check(directory):
                 body = json.load(f)
         except (OSError, ValueError) as e:
             wrong[path] = [f"not JSON: {e}"]
+            continue
+        known = KINDS[kind].get("properties", {}).get("schema", {}).get("const")
+        if not strict and isinstance(body, dict) and isinstance(body.get("schema"), int) \
+                and isinstance(known, int) and body["schema"] < known:
             continue
         found = errors(body, KINDS[kind])
         if found:
@@ -259,7 +267,7 @@ def put_back(directory, path):
 
 def main():
     what, directory = sys.argv[1], sys.argv[2]
-    wrong = check(directory)
+    wrong = check(directory, strict=what != "check")
     for path, found in wrong.items():
         print(f"::error::{path}: " + "; ".join(found[:5]), file=sys.stderr)
     if what == "check":

@@ -80,7 +80,9 @@ files against this branch's schemas.
 size and the last day it answered; for each platform its games, how many
 have a name, a score, a link to another platform (`linked`) and reviews or
 a rating (`reviewed`), as shares of 1; and how long each step of the run took. A file of another schema
-counts as none there.
+counts as none there. Its own `schema` is 2 since 2026-10-30, when its
+`priced` and `countries` went (no schema 1 kept: its one reader is the
+website's status page, which reads 2 and takes any other as no report).
 
 The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`): each run only needs the last files, and keeping every day's files would grow the repository by hundreds of MB a year.
 

@@ -4,8 +4,10 @@ the website's health table): for each source, its files, records, size and
 the day it last answered; for each platform, its games, how many of them
 links.json ties to another platform, how many have reviews or a rating,
 and the day its files were made; and how long each step of the run took.
+Its schema is its own (common.REPORT_SCHEMA): 2 since `priced` and
+`countries` went (2026-10-30).
 
-{"schema": 1, "generated": "YYYY-MM-DD", "run": "build"|"daily",
+{"schema": 2, "generated": "YYYY-MM-DD", "run": "build"|"daily",
  "sources": {"steam-store": {"files": 16, "records": 131000, "bytes": 41000000, "generated": "YYYY-MM-DD"}, …},
  "platforms": {"switch": {"games": 2600, "names": 37000, "popular": 2500, "linked": 0.71,
                           "reviewed": 0.42, "generated": "YYYY-MM-DD"}, …},
@@ -96,7 +98,7 @@ def steps(directories):
 
 
 def report(directory, run, runtimes):
-    return {"schema": common.SCHEMA, "generated": datetime.date.today().isoformat(), "run": run,
+    return {"schema": common.REPORT_SCHEMA, "generated": datetime.date.today().isoformat(), "run": run,
             "source": "Atlas (its own files: sources/, platforms/, links.json)",
             "sources": sources(directory), "platforms": platforms(directory), "steps": steps(runtimes)}
 

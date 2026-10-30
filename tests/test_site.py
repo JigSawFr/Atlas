@@ -136,7 +136,7 @@ class Build(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             data = os.path.join(tmp, "data")
             sample(data)
-            put(data, "report.json", {"schema": 1, "generated": "2026-11-02", "run": "build", "sources": {
+            put(data, "report.json", {"schema": 2, "generated": "2026-11-02", "run": "build", "sources": {
                 "wikipedia": {"files": 2, "records": 2000, "bytes": 9000, "generated": "2026-11-02"},
                 "wikidata": {"files": 30, "records": 900, "bytes": 5000, "generated": "2026-10-28"},
                 "steamspy": {"files": 1, "records": 500, "bytes": 3000, "generated": "2026-10-28"},
@@ -162,6 +162,16 @@ class Build(unittest.TestCase):
             self.assertIn('href="../data/report.json"', page)
             with open(os.path.join(out, "fr/status/index.html"), encoding="utf-8") as f:
                 self.assertIn("50\u202f%", f.read())
+            # A report of another schema (1: with `priced`; a later one) reads as none: the page says so.
+            for other in (1, 3):
+                put(data, "report.json", {"schema": other, "generated": "2026-11-02", "run": "build", "sources": {},
+                                          "platforms": {"switch": {"games": 2, "linked": 0.5, "priced": 1, "reviewed": 0.5}}})
+                subprocess.run([sys.executable, os.path.join(ROOT, "tools/build_site.py"), out, data], check=True,
+                               capture_output=True)
+                with open(os.path.join(out, "status/index.html"), encoding="utf-8") as f:
+                    page = f.read()
+                self.assertIn('class="note empty"', page)
+                self.assertNotIn("<code>wikipedia</code>", page)
 
     def test_build_without_data(self):
         with tempfile.TemporaryDirectory() as tmp:

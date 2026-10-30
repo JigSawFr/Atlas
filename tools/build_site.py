@@ -30,6 +30,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import platforms  # noqa: E402
+from common import REPORT_SCHEMA  # noqa: E402
 import site_data  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -463,7 +464,8 @@ def main() -> None:
                                                                    or (Path(d) == data and n == "sources")])
         summary = site_data.build(str(data), str(out))
         index = site_data.read(str(data / "index.json")) or {}
-        report = site_data.read(str(data / "report.json")) or {}
+        # report.json has its own schema (common.REPORT_SCHEMA): one of another reads as none.
+        report = site_data.read(str(data / "report.json"), REPORT_SCHEMA) or {}
     catalogs = {c: json.loads((SITE / "i18n" / f"{c}.json").read_text(encoding="utf-8")) for c, _, _, _ in LANGUAGES}
     template = (SITE / "template.html").read_text(encoding="utf-8")
     urls = []

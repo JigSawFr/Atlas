@@ -37,14 +37,14 @@ def shard(game_id: str, shards: int) -> int:
     return h % shards
 
 
-def read(path):
-    """A data file, None when there is none (or it is of another schema)."""
+def read(path, schema=SCHEMA):
+    """A data file, None when there is none (or it is of another schema than `schema`)."""
     try:
         with open(path, encoding="utf-8") as f:
             body = json.load(f)
     except (OSError, ValueError):
         return None
-    return body if isinstance(body, dict) and body.get("schema") == SCHEMA else None
+    return body if isinstance(body, dict) and body.get("schema") == schema else None
 
 
 def platforms(data_dir: str) -> list:
