@@ -23,6 +23,11 @@ def row(tid, url):
     return {"tid": {"value": tid}, "article": {"value": url}}
 
 
+def flat(tid, url):
+    """A row as the sources keep it (tools/collect.py: {variable: value})."""
+    return {"tid": tid, "article": url}
+
+
 class Trends(unittest.TestCase):
     def test_pages(self):
         rows = [row(A, "https://en.wikipedia.org/wiki/Lantern_Tale"), row(A, "https://fr.wikipedia.org/wiki/Lantern_Tale_%28jeu%29"),
@@ -31,6 +36,37 @@ class Trends(unittest.TestCase):
         self.assertEqual(trends.pages(rows, build.base_id), {A: [("en", "Lantern_Tale"), ("fr", "Lantern_Tale_(jeu)")]})
         self.assertIn('"0100000000010000"', trends.pages_query([A]))
         self.assertIn("<https://ja.wikipedia.org/>", trends.pages_query([A]))
+
+    def test_steam_pages(self):
+        rows = [row("400", "https://en.wikipedia.org/wiki/Portal_Like"), row("x1", "https://en.wikipedia.org/wiki/Not_An_App")]
+        self.assertEqual(trends.pages(rows, trends.app_id), {"400": [("en", "Portal_Like")]})
+        query = trends.pages_query(["400"], "P1733")
+        self.assertIn("wdt:P1733 ?tid", query)
+        self.assertIn('"400"', query)
+        self.assertEqual([p[0] for p in trends.PLATFORMS], [build.SWITCH, "steam"])
+
+    def test_top(self):
+        popular = {"games": {A: [10, 0, 0], B: [90, 0, 0], C: "not a row"}}
+        self.assertEqual(trends.top(popular), [B, A])
+        self.assertEqual(trends.top({}), [])
+
+    def test_page_read_once(self):
+        asked = []
+
+        def daily(lang, title, start, end, fetch):
+            asked.append(title)
+            return [1] * trends.DAYS
+        start, end = trends.window(datetime.date(2026, 10, 30))
+        by_game = {f"switch:{A}": [("en", "Lantern Tale")], "steam:400": [("en", "Lantern Tale"), ("fr", "Lantern")]}
+        with mock.patch.object(trends, "daily", daily):
+            pages = trends.fetch_daily(by_game, start, end, None, sleep=lambda s: None)
+        self.assertEqual(asked, ["Lantern Tale", "Lantern"])
+        self.assertEqual(set(pages), {"en:Lantern Tale", "fr:Lantern"})
+
+    def test_steam_updated(self):
+        got = trends.updated({"schema": 1, "platform": "steam", "games": {"400": [80, 3, 70]}}, {"400": 25},
+                             datetime.date(2026, 10, 30), "steam")
+        self.assertEqual((got["platform"], got["games"]), ("steam", {"400": [80, 25, 70]}))
 
     def test_batches(self):
         asked = []
@@ -127,6 +163,36 @@ class Main(unittest.TestCase):
     def test_no_rows(self):
         self.put({"schema": common.SCHEMA, "games": {A: [90]}})
         self.run_main()
+
+
+class Consolidate(unittest.TestCase):
+    """Both platforms' trends from one day's sources; a platform without its
+    last popular.json is left alone."""
+
+    def test_switch_and_steam(self):
+        today = datetime.date(2026, 10, 30)
+        views = [100] * 28 + [300] * 7
+        sources = {
+            "wikidata/switch-pages.json": {"rows": [flat(A, "https://en.wikipedia.org/wiki/Lantern_Tale")]},
+            "wikidata/steam-pages.json": {"rows": [flat("400", "https://en.wikipedia.org/wiki/Lantern_Tale"),
+                                                   flat("500", "https://fr.wikipedia.org/wiki/Quiet_Pond")]},
+            "wikipedia/daily.json": {"generated": today.isoformat(),
+                                     "pages": {"en:Lantern_Tale": views, "fr:Quiet_Pond": [10] * 35}},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            last, out = os.path.join(tmp, "last"), os.path.join(tmp, "out")
+            for platform, games in (("switch", {A: [90, 5, 80]}), ("steam", {"400": [80, 1, 0], "500": [70, 9, 0]})):
+                os.makedirs(os.path.join(last, "platforms", platform))
+                with open(os.path.join(last, "platforms", platform, "popular.json"), "w", encoding="utf-8") as f:
+                    json.dump({"schema": common.SCHEMA, "platform": platform, "games": games}, f)
+            with contextlib.redirect_stderr(io.StringIO()):
+                trends.consolidate(lambda name: sources.get(name, {}), out, last, today)
+            with open(os.path.join(out, "platforms", "steam", "popular.json"), encoding="utf-8") as f:
+                got = json.load(f)
+            self.assertEqual(got["games"], {"400": [80, 200, 0], "500": [70, 0, 0]})
+            self.assertEqual((got["platform"], got["trends"]), ("steam", "2026-10-30"))
+            with open(os.path.join(out, "platforms", "switch", "popular.json"), encoding="utf-8") as f:
+                self.assertEqual(json.load(f)["games"], {A: [90, 200, 80]})
 
 
 class NetworkErrors(unittest.TestCase):

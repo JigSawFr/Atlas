@@ -194,7 +194,7 @@ Each game the country's eShop sells is `[regular, sale, until, lowest, lowest_da
 `platforms/steam/` has the Switch's files' formats, by Steam app id (`"620"`), made every
 Monday by `tools/steam.py` in a job of its own:
 
-- `platforms/steam/popular.json`: `[score, trend, critics]` as `platforms/switch/popular.json`.
+- `platforms/steam/popular.json`: `[score, trend, critics]` as `platforms/switch/popular.json`; its 400 best known games' trend is measured every day as the Switch's (their pages found by their Steam app id, P1733).
   The score weighs half the game's renown on Wikipedia (as the Switch's:
   sitelinks, critics, the English page's views for the 400 best known) and
   half its Steam reviews, on a log scale against the most; Steam's 100 most
@@ -382,7 +382,7 @@ branch: the platforms' files are then made from these, asking nothing more
 
 | Folder | What it keeps | When |
 |---|---|---|
-| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`; `switch-pages` (daily) | Monday, every day |
+| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`; `switch-pages`, `steam-pages` (daily) | Monday, every day |
 | `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers; the others with ids and names) | every day |
 | `sources/eshop/prices/` | The eShop's answer by eShop id: status, regular price, discount, its last day, currency | every day |
 | `sources/steam-store/` | `apps.json` (GetItems by app id), `tags.json`, `most-played.json`; `prices/<country>.json` (GetItems' prices) | Monday, every day |
@@ -391,7 +391,7 @@ branch: the platforms' files are then made from these, asking nothing more
 | `sources/msstore/` | `products.json`, `gamepass.json`; `prices/<country>.json` ([list price, MSRP] by product id) | Monday, every day |
 | `sources/nlib-ctr/` | `categories.json` (the 3DS's title ids by category), `titles.json` (each base game's name, region, publisher, product code, first day; kept from run to run) | Monday |
 | `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records (with its keys only) | Monday |
-| `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (their pages' views a day, 8 languages) | Monday, every day |
+| `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (the Switch's and Steam's best known games' pages' views a day, 8 languages) | Monday, every day |
 
 Each file says its source, its licence or terms, the day it was
 collected (`generated`) and its `schema` (1), which moves up like a
@@ -471,7 +471,7 @@ python3 tools/collect.py msstore weekly out/ last/ out/
 python3 tools/collect.py igdb weekly out/ last/ out/        # with IGDB_CLIENT_ID and IGDB_CLIENT_SECRET only
 python3 tools/collect.py nlib-ctr weekly out/ last/         # the 3DS's titles not known yet (the first time some 25 minutes)
 python3 tools/collect.py wikipedia weekly out/ last/ out/   # after the stores: their best known games' pages
-python3 tools/collect.py wikidata daily out/ last/          # the pages of last/platforms/switch/popular.json's best known
+python3 tools/collect.py wikidata daily out/ last/          # the pages of last/platforms/{switch,steam}/popular.json's best known
 python3 tools/collect.py wikipedia daily out/ last/ out/
 python3 tools/collect.py eshop daily out/ last/ out/        # after titledb (some 20 minutes)
 python3 tools/collect.py steam-store daily out/ last/       # last/platforms/steam/games.json's prices (some 4 minutes a country)
@@ -486,7 +486,7 @@ python3 tools/gog.py catalog out/ last/ out/    # out/platforms/gog/*.json
 python3 tools/xbox.py catalog out/ last/ out/   # out/platforms/xbox/*.json
 python3 tools/retro.py out/ last/ out/          # out/platforms/<machine>/*.json
 python3 tools/n3ds.py out/ last/ out/           # out/platforms/3ds/*.json
-python3 tools/trends.py out/ last/ out/         # last/platforms/switch/popular.json with today's trends
+python3 tools/trends.py out/ last/ out/         # last/platforms/{switch,steam}/popular.json with today's trends
 python3 tools/prices.py out/ last/ out/         # out/platforms/switch/prices/*.json
 python3 tools/steam_prices.py out/ last/ out/   # out/platforms/steam/prices/*.json
 python3 tools/gog.py prices out/ last/ out/     # out/platforms/gog/prices/*.json

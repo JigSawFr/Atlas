@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Each popular game's trend, every day: how much more (or less) it was read
-on the Wikipedias of PlayShelf's languages (LANGS) in the last seven days
-than in a week of the four before. It goes into popular.json's `trend`, the
-weekly build's scores kept (tools/build.py), with the day it was measured
-(`trends`).
+"""Each popular game's trend, every day, on the Switch and on Steam
+(PLATFORMS): how much more (or less) it was read on the Wikipedias of
+PlayShelf's languages (LANGS) in the last seven days than in a week of the
+four before. It goes into the platform's popular.json's `trend`, the weekly
+build's scores kept (tools/build.py, tools/steam.py), with the day it was
+measured (`trends`).
 
-The best known games (TOP, by score) are measured: Wikidata gives their
-pages in each language, Wikimedia their views a day. A game read fewer than
+Each platform's best known games (TOP, by score) are measured: Wikidata
+gives their pages in each language (by the platform's id: the Switch's title
+id, Steam's app id), Wikimedia their views a day. A game read fewer than
 MIN_VIEWS times in the week has no trend; one whose views could not be read
 keeps the trend it had. When Wikimedia turns too many away, nothing changes.
 
-Usage: tools/trends.py <out-dir> <previous-dir> <sources-dir>   (platforms/switch/popular.json from
+Usage: tools/trends.py <out-dir> <previous-dir> <sources-dir>   (each platform's popular.json from
 previous-dir, the pages and their views from the sources tools/collect.py keeps)
 """
 import datetime
@@ -21,6 +23,7 @@ import urllib.parse
 
 import build
 import common
+import steam
 
 LANGS = ("en", "fr", "de", "es", "it", "ja", "nl", "pt")
 TOP = 400            # the best known games measured
@@ -36,26 +39,41 @@ DAILY = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{lang}
 PAGES = """
 SELECT ?tid ?article WHERE {{
   VALUES ?tid {{ {tids} }}
-  ?game wdt:P11072 ?tid.
+  ?game wdt:{prop} ?tid.
   ?article schema:about ?game; schema:isPartOf ?wiki.
   FILTER(?wiki IN ({wikis}))
 }}
 """
 
 
-def all_pages(tids, sparql, sleep=time.sleep):
-    """{title id: [(language, page title)]} for `tids`, asked of Wikidata BATCH at a time."""
+def app_id(value):
+    """A Steam app id as Wikidata gives it (P1733), or None."""
+    value = (value or "").strip()
+    return value if value.isdigit() else None
+
+
+# The platforms measured: (id, the Wikidata property of a game's id there, that id from Wikidata's value).
+PLATFORMS = ((build.SWITCH, "P11072", build.base_id), (steam.STEAM, "P1733", app_id))
+
+
+def all_pages(tids, sparql, sleep=time.sleep, prop="P11072", base_id=build.base_id):
+    """{game id: [(language, page title)]} for `tids`, asked of Wikidata BATCH at a time."""
     out = {}
     for i in range(0, len(tids), BATCH):
         if i:
             sleep(5)
-        out.update(pages(sparql(pages_query(tids[i:i + BATCH])), build.base_id))
+        out.update(pages(sparql(pages_query(tids[i:i + BATCH], prop)), base_id))
     return out
 
 
-def pages_query(tids):
+def pages_query(tids, prop="P11072"):
     wikis = ", ".join(f"<https://{lang}.wikipedia.org/>" for lang in LANGS)
-    return PAGES.format(tids=" ".join(f'"{t}"' for t in tids), wikis=wikis)
+    return PAGES.format(tids=" ".join(f'"{t}"' for t in tids), wikis=wikis, prop=prop)
+
+
+def top(popular):
+    """popular.json's TOP best known games, by score."""
+    return [tid for tid, _ in sorted(rows(popular).items(), key=lambda kv: -kv[1][0])[:TOP]]
 
 
 def pages(rows, base_id):
@@ -141,6 +159,8 @@ def fetch_daily(by_game, start, end, fetch, sleep=time.sleep):
     out, missed, waited = {}, 0, 0
     for tid, langs in by_game.items():
         for lang, title in langs:
+            if f"{lang}:{title}" in out:   # the same game on two platforms: its page read once
+                continue
             for again in (False, True):
                 try:
                     out[f"{lang}:{title}"] = daily(lang, title, start, end, fetch)
@@ -193,34 +213,36 @@ def rows(popular):
             if isinstance(row, list) and len(row) >= 3 and isinstance(row[0], (int, float))}
 
 
-def updated(popular, trends, today):
+def updated(popular, trends, today, platform=build.SWITCH):
     """popular.json with the trends measured put in, the others' kept (and
     a row not of the shape known, as it is)."""
     known = rows(popular)
     games = {tid: [row[0], trends.get(tid, row[1]), *row[2:]] if tid in known else row
              for tid, row in popular["games"].items()}
-    return {**popular, "platform": build.SWITCH, "trends": today.isoformat(), "games": games}
+    return {**popular, "platform": platform, "trends": today.isoformat(), "games": games}
 
 
 def consolidate(src, out_dir, previous_dir, today):
-    """platforms/switch/popular.json with today's trends, from the sources collected."""
-    # None, or one of another schema: the weekly build makes the next one.
-    popular = common.previous_file(previous_dir, f"platforms/{build.SWITCH}/popular.json")
-    if not rows(popular):
-        print(f"trends: no platforms/{build.SWITCH}/popular.json of schema {common.SCHEMA} in {previous_dir}, nothing to redo",
-              file=sys.stderr)
-        return
-    by_game = pages(common.bindings(src("wikidata/switch-pages.json").get("rows") or []), build.base_id)
-    collected = common.collected_today(src, "wikipedia/daily.json", today)
-    if not by_game or not collected:
-        print("trends: no pages or views collected today, nothing changes", file=sys.stderr)
-        return
-    trends = from_pages(by_game, collected.get("pages") or {})
-    if trends is None:
-        return
+    """Each platform's popular.json with today's trends, from the sources collected."""
     report = []
-    common.publish(out_dir, f"platforms/{build.SWITCH}/popular.json", updated(popular, trends, today), previous_dir, report)
-    print(common.summary(report), file=sys.stderr)
+    for platform, _, base_id in PLATFORMS:
+        name = f"platforms/{platform}/popular.json"
+        # None, or one of another schema: the weekly build makes the next one.
+        popular = common.previous_file(previous_dir, name)
+        if not rows(popular):
+            print(f"trends: no {name} of schema {common.SCHEMA} in {previous_dir}, nothing to redo", file=sys.stderr)
+            continue
+        by_game = pages(common.bindings(src(f"wikidata/{platform}-pages.json").get("rows") or []), base_id)
+        collected = common.collected_today(src, "wikipedia/daily.json", today)
+        if not by_game or not collected:
+            print(f"trends: {platform}: no pages or views collected today, nothing changes", file=sys.stderr)
+            continue
+        trends = from_pages(by_game, collected.get("pages") or {})
+        if trends is None:
+            continue
+        common.publish(out_dir, name, updated(popular, trends, today, platform), previous_dir, report)
+    if report:
+        print(common.summary(report), file=sys.stderr)
 
 
 def main():
