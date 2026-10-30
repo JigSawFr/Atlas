@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Each game's price in the eShop of a few countries, and its sale when it
-has one: switch/prices/<country>.json, made every day (daily.yml).
+has one: platforms/switch/prices/<country>.json, made every day (daily.yml).
 
 The eShop's price service (api.ec.nintendo.com/v1/price) answers by the
 eShop's own ids, which differ from one region to the next: titledb's list of
 each region gives them with each game's title id (REGIONS). It is asked 50
 games at a time, a few requests at once.
 
-switch/prices/<country>.json:
+platforms/switch/prices/<country>.json:
   {"schema": 1, "platform": "switch", "generated": "YYYY-MM-DD", "country": "FR", "currency": "EUR",
    "since": "YYYY-MM-DD",
    "games": {"<title id>": [regular, sale, until, lowest, lowest_day], ...}}
@@ -19,7 +19,7 @@ and `lowest_day` (YYYYMMDD) the last day it had it: each day's price is
 weighed against the last run's file. A game no longer sold, or not in that
 eShop, is left out.
 
-Usage: tools/prices.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/switch/prices/,
+Usage: tools/prices.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/platforms/switch/prices/,
 from the sources tools/collect.py keeps: titledb, eshop)
 """
 import concurrent.futures
@@ -137,7 +137,7 @@ def from_answers(rows, ids):
 
 
 def consolidate(src, out_dir, previous_dir, today):
-    """switch/prices/<country>.json from the eShop's answers and titledb's ids collected."""
+    """platforms/switch/prices/<country>.json from the eShop's answers and titledb's ids collected."""
     report = []
     for file, countries in REGIONS.items():
         titles = src(f"titledb/{file.split('.')[0]}.json").get("games") or {}

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Each Steam game's price and sale in a few countries' stores, every day
-(daily.yml): steam/prices/<country>.json, the games of the last run's
-steam/games.json (the best known 40,000 and the upcoming ones).
+(daily.yml): platforms/steam/prices/<country>.json, the games of the last run's
+platforms/steam/games.json (the best known 40,000 and the upcoming ones).
 
-steam/prices/<country>.json:
+platforms/steam/prices/<country>.json:
   {"schema": 1, "platform": "steam", "generated": "YYYY-MM-DD", "country": "FR", "currency": "EUR",
    "since": "YYYY-MM-DD",
    "games": {"<app id>": [regular, sale, until, lowest, lowest_day, lowest_30], ...}}
 
-The first five as switch/prices/: the price, the sale price (0: not on
+The first five as platforms/switch/prices/: the price, the sale price (0: not on
 sale), the sale's last day (YYYYMMDD, 0: none), the lowest price since
 `since` and the last day it had it. `lowest_30` is Steam's own: the lowest
 price of the last 30 days, as the store shows it in Europe (0 when it says
@@ -17,7 +17,7 @@ none). A free game, or one not sold in the country, is left out.
 Steam's store (IStoreBrowseService/GetItems, no key) answers 200 apps a
 request; a few requests at once.
 
-Usage: tools/steam_prices.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/steam/prices/,
+Usage: tools/steam_prices.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/platforms/steam/prices/,
 from sources/steam-store/prices/, tools/collect.py's)
 """
 import concurrent.futures
@@ -122,7 +122,7 @@ def with_lowest(rows, previous, today):
 
 
 def consolidate(src, out_dir, previous_dir, today):
-    """steam/prices/<country>.json from the store's answers collected today."""
+    """platforms/steam/prices/<country>.json from the store's answers collected today."""
     report = []
     for country, currency in COUNTRIES.items():
         collected = common.collected_today(src, f"steam-store/prices/{country}.json", today)
