@@ -381,7 +381,8 @@ def main():
     fresh = sys.argv[5:]
     source, extra = parts(name)
     report = []
-    common.timed(out_dir, f"collect {name} {what}",
+    # The step's name is a file's (out/.runtimes/), uploaded as an artifact: no colon.
+    common.timed(out_dir, f"collect {name.replace(':', ' ')} {what}",
                  lambda: COLLECTORS[source](what, out_dir, previous_dir, fresh, datetime.date.today(), report, **extra))
     print(common.summary(report), file=sys.stderr)
 

@@ -203,6 +203,14 @@ class SteamCountries(unittest.TestCase):
         self.assertEqual(asked, ["NL", "JP"])
         self.assertEqual(written, ["JP.json", "NL.json"])
 
+    def test_runtime_file_name(self):
+        """An artifact's paths may not hold a colon (run 41070253734)."""
+        with tempfile.TemporaryDirectory() as out, \
+                mock.patch.object(sys, "argv", ["collect.py", "steam-store:FR", "daily", out, out]), \
+                mock.patch.dict(collect.COLLECTORS, {"steam-store": lambda *a, **k: None}):
+            collect.main()
+            self.assertEqual(os.listdir(os.path.join(out, ".runtimes")), ["collect steam-store FR daily.json"])
+
     def test_daily_asks_every_country(self):
         import re
         with open(os.path.join(os.path.dirname(__file__), "..", ".github", "workflows", "daily.yml"), encoding="utf-8") as f:
