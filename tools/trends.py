@@ -10,7 +10,7 @@ pages in each language, Wikimedia their views a day. A game read fewer than
 MIN_VIEWS times in the week has no trend; one whose views could not be read
 keeps the trend it had. When Wikimedia turns too many away, nothing changes.
 
-Usage: tools/trends.py <out-dir> <previous-dir> <sources-dir>   (switch/popular.json from
+Usage: tools/trends.py <out-dir> <previous-dir> <sources-dir>   (platforms/switch/popular.json from
 previous-dir, the pages and their views from the sources tools/collect.py keeps)
 """
 import datetime
@@ -178,7 +178,7 @@ def updated(popular, trends, today):
 
 
 def consolidate(src, out_dir, previous_dir, today):
-    """switch/popular.json with today's trends, from the sources collected."""
+    """platforms/switch/popular.json with today's trends, from the sources collected."""
     # None, or one of another schema: the weekly build makes the next one.
     popular = common.previous_file(previous_dir, f"platforms/{build.SWITCH}/popular.json")
     if not rows(popular):
