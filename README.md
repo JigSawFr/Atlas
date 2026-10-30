@@ -102,6 +102,19 @@ A game's other editions (a Deluxe, a Complete Edition, a Game of the Year, the g
 
 Each game the country's eShop sells is `[regular, sale, until, lowest, lowest_day]`: its price, its sale price (0 when not on sale), the sale's last day (YYYYMMDD, 0 when none), the lowest price it has had since `since` (the day the files began) and the last day it had it, in the country's currency. Each day's price is weighed against the last run's file. The eShop's price service answers by its own ids, which differ from one region to the next: titledb's list of each region (US, GB, JP) gives them with the title ids. A game no longer sold is left out.
 
+## The archives
+
+The `data` branch keeps only the last files. Every Monday's build also keeps
+them as a [release](../../releases), `data-YYYY-MM-DD`: one archive of every
+file the branch had that day (`playinsights-data-YYYY-MM-DD.tar.gz`, about
+3 MB) and its `SHA256SUMS.txt`, tagged on the commit that made them. They are
+kept for good, as the data's history: the prices of a Monday, the trends of a
+week. The archive is attested:
+
+```sh
+gh attestation verify playinsights-data-2026-11-02.tar.gz -R JigSawFr/PlayInsights
+```
+
 ## The sources
 
 | Source | What it gives | Licence |
