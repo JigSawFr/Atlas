@@ -1,0 +1,22 @@
+  <section class="explorer" id="explorer" aria-live="polite">
+    <div class="controls">
+      <div class="group" role="group" aria-label="{{x_platform}}" id="x-platforms">
+{{platform_buttons}}
+      </div>
+      <div class="group" role="group" aria-label="{{x_view}}" id="x-views">
+        <button type="button" data-view="popular">{{x_popular}}</button>
+        <button type="button" data-view="trending">{{x_trending}}</button>
+        <button type="button" data-view="deals">{{x_deals}}</button>
+        <button type="button" data-view="upcoming">{{x_upcoming}}</button>
+      </div>
+      <div class="fields">
+        <label class="field" id="x-country-field"><span>{{x_country}}</span><select id="x-country"></select></label>
+        <label class="field search"><span>{{x_search}}</span><input id="x-search" type="search" autocomplete="off" spellcheck="false" placeholder="{{x_search_hint}}"></label>
+      </div>
+    </div>
+    <p class="status" id="x-status">{{x_loading}}</p>
+    <ol class="results" id="x-results"></ol>
+    <article class="sheet" id="x-sheet" hidden></article>
+    <noscript><p class="status">{{x_noscript}}</p></noscript>
+  </section>
+  <script type="application/json" id="x-strings">{{strings}}</script>

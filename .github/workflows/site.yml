@@ -1,0 +1,93 @@
+# Atlas's website (site/README.md) on GitHub Pages, its source GitHub
+# Actions (Settings › Pages): the pages, plus a copy of the data branch under
+# data/ and cut for the explorer under x/, so the explorer reads its data from
+# the site itself. Made again after each successful build or daily run (the
+# data changed), at each push to main touching the site, and on demand; a
+# pull request only builds and checks it.
+name: site
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ "site/**", "tools/build_site.py", "tools/site_data.py", "tools/check_site.py", "tools/site_layout.py", ".github/workflows/site.yml" ]
+  pull_request:
+    paths: [ "site/**", "tools/build_site.py", "tools/site_data.py", "tools/check_site.py", "tools/site_layout.py", ".github/workflows/site.yml" ]
+  workflow_run:
+    workflows: [ build, daily ]
+    types: [ completed ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PLAYWRIGHT_VERSION: 1.64.0
+  AXE_VERSION: 4.13.0
+  AXE_SHA256: 096912f6e77b4b695fc9304b7be65091db42d98de054da674ae222a11cb33f70
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # After a build or daily run, only one that succeeded on main.
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && 'main' || '' }}
+      - name: The data branch
+        run: git clone --quiet --depth 1 --branch data "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/data"
+      - name: The pages
+        run: python3 tools/build_site.py build "$RUNNER_TEMP/data"
+      - name: Their links, catalogs and Content-Security-Policy
+        run: python3 tools/check_site.py build
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/.cache/playwright-venv
+          key: playwright-ubuntu-${{ env.PLAYWRIGHT_VERSION }}
+      - name: The pages on phones, a tablet and a desktop
+        timeout-minutes: 10
+        run: |
+          VENV="$HOME/.cache/playwright-venv"
+          if [ ! -x "$VENV/bin/python" ]; then
+            python3 -m venv "$VENV"
+            "$VENV/bin/pip" install -q "playwright==$PLAYWRIGHT_VERSION"
+          fi
+          sudo "$VENV/bin/python" -m playwright install-deps chromium
+          "$VENV/bin/python" -m playwright install chromium
+          curl -sfL --retry 3 -o "$RUNNER_TEMP/axe.tgz" "https://registry.npmjs.org/axe-core/-/axe-core-$AXE_VERSION.tgz"
+          echo "$AXE_SHA256  $RUNNER_TEMP/axe.tgz" | sha256sum -c --quiet
+          python3 -c 'import sys, tarfile; open(sys.argv[2], "wb").write(tarfile.open(sys.argv[1]).extractfile("package/axe.min.js").read())' \
+            "$RUNNER_TEMP/axe.tgz" "$RUNNER_TEMP/axe.min.js"
+          SITE_AXE="$RUNNER_TEMP/axe.min.js" "$VENV/bin/python" -u tools/site_layout.py build
+      - name: Its size
+        run: du -sh build build/data build/x | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: github.event_name != 'pull_request'
+        with:
+          path: build
+          include-hidden-files: true
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
