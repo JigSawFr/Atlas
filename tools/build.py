@@ -178,18 +178,20 @@ def best_articles(known):
 
 
 def fetch_views(articles, starts, end):
-    """{article: [views a month]} of `articles`, asked in turn; after three
-    refusals from Wikimedia, no more (the ones read so far kept)."""
+    """{article: [views a month]} of `articles`, asked in turn; a page
+    refused or not reached is left out (common.NOT_READ), and after three,
+    no more (the ones read so far kept)."""
     read, refused = {}, 0
     for article in articles:
         if article in read:
             continue
         try:
             read[article] = views(article, starts, end)
-        except urllib.error.HTTPError as e:
+        except common.NOT_READ as e:
             refused += 1
+            print(f"views: {article}: {common.why(e)}", file=sys.stderr)
             if refused >= 3:
-                print(f"views: refused ({e.code}) after {len(read)}", file=sys.stderr)
+                print(f"views: {refused} pages not read, stopped after {len(read)}", file=sys.stderr)
                 break
             time.sleep(30)
             continue

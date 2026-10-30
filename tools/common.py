@@ -30,6 +30,16 @@ SOURCES = "sources"    # each source's answers, as collected (tools/collect.py)
 SHARD_BYTES = 15_000_000   # a source file larger than this is cut in parts (jsDelivr serves 20 MB at most)
 
 
+# What a request may not be answered for: refused (HTTPError, a URLError),
+# the network (URLError, a timeout, a connection reset: OSError), an answer
+# that is not JSON (ValueError).
+NOT_READ = (urllib.error.URLError, OSError, ValueError)
+
+
+def why(error):
+    return f"refused ({error.code})" if isinstance(error, urllib.error.HTTPError) else f"not reached ({error})"
+
+
 def fetch(url, tries=4, patient=True, timeout=120, data=None, headers=None):
     """`url`'s JSON answer; None for a 404. A 429 waits as long as the
     service says (`patient`) or is raised at once. `data` (bytes) makes it
