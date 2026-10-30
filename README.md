@@ -51,7 +51,7 @@ The files have moved twice: until 2026-10-30 the Switch's were at the
 branch's root (`popular.json`, `prices/FR.json`…), then each platform's
 folder was (`switch/`, `steam/`, `gog/`, `xbox/`, and `retro/` for every old
 machine together). The first run after each move put them in their new
-place (`tools/migrate.py`), keeping them as the last run's for the guard,
+place, keeping them as the last run's for the guard,
 the trends and the lowest prices; `retro/` made way for a folder a machine.
 
 `platforms.json` is the platforms' registry, `{"platforms": {id: {name,
@@ -463,7 +463,6 @@ to.
 ## Running it
 
 ```sh
-python3 tools/migrate.py last/       # a data branch from before platforms/: its files moved there (goes after 2026-11-02)
 # Each source, asked once: writes out/sources/<source>/ (fresh/: this run's sources one needs)
 python3 tools/collect.py wikidata weekly out/ last/
 python3 tools/collect.py titledb weekly out/ last/          # about 90 MB a region, some 10 s
