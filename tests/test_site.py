@@ -120,6 +120,11 @@ class Build(unittest.TestCase):
                 page = f.read()
             self.assertIn('<html lang="fr"', page)
             self.assertIn('"_country":"FR"', page)
+            # The header's menu of Boréale's sites: Atlas leads home, the others carry their UTM tags.
+            self.assertIn('<a href="../../fr/" aria-current="true"><img src="../../assets/marks/atlas.svg"', page)
+            self.assertIn('href="https://lantern.boreale.dev/fr/?utm_source=atlas&amp;utm_medium=nav" '
+                          'referrerpolicy="strict-origin"', page)
+            self.assertIn('<p class="sites-title">Données et protocoles ouverts</p>', page)
             self.assertTrue(os.path.isfile(os.path.join(out, "data/switch/prices/FR.json")))
             with open(os.path.join(out, "CNAME"), encoding="utf-8") as f:
                 self.assertEqual(f.read().strip(), "atlas.boreale.dev")
