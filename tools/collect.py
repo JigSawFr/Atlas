@@ -15,7 +15,8 @@ is kept and said (common.publish_source).
 - titledb (daily): blawar/titledb's US, GB and JP lists, by titledb's key.
 - eshop (daily): prices/<country>.json, the eShop's answer by eShop id.
 - steam-store: weekly apps.json (GetItems, by app id), tags.json,
-  most-played.json; daily prices/<country>.json.
+  most-played.json; daily prices/<country>.json, every country or the ones
+  named (steam-store:FR,DE: daily.yml asks each country in a job of its own).
 - steamspy (weekly): apps.json, its owners and players by app id.
 - gog: catalog/<country>.json, the catalog's products by product id in its
   trending order (weekly: US; daily: every country).
@@ -28,7 +29,7 @@ is kept and said (common.publish_source).
 - wikipedia: weekly monthly.json (the best known games' English pages'
   views a month), daily daily.json (their pages' views a day, LANGS).
 
-Usage: tools/collect.py <source> weekly|daily <out-dir> <previous-dir> [fresh-dir…]
+Usage: tools/collect.py <source>[:<country>,…] weekly|daily <out-dir> <previous-dir> [fresh-dir…]
   (fresh-dir: this run's collected sources a source needs, e.g. wikidata's)
 """
 import datetime
@@ -185,7 +186,7 @@ def steam_item(item):
     return out
 
 
-def collect_steam_store(what, out_dir, previous_dir, fresh, today, report):
+def collect_steam_store(what, out_dir, previous_dir, fresh, today, report, countries=None):
     fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
     store = "Steam's store (api.steampowered.com)"
     terms = "Steam's terms of use (Valve)"
@@ -212,7 +213,7 @@ def collect_steam_store(what, out_dir, previous_dir, fresh, today, report):
     if not games:
         print("steam-store prices: no steam/games.json in the last run's files, nothing to ask", file=sys.stderr)
         return
-    for country in steam_prices.COUNTRIES:
+    for country in countries or steam_prices.COUNTRIES:
         items = steam_prices.read_items(country, games, fetch)
         common.publish_source(out_dir, f"{common.SOURCES}/steam-store/prices/{country}.json", payload(
             "steam-store", today, store + ": IStoreBrowseService/GetItems", terms, country=country,
@@ -360,12 +361,28 @@ COLLECTORS = {"nlib-ctr": collect_nlib_ctr, "wikidata": collect_wikidata, "title
               "msstore": collect_msstore, "igdb": collect_igdb, "wikipedia": collect_wikipedia}
 
 
+def parts(name):
+    """(source, its collector's options) of a source's name: steam-store:FR,DE
+    asks only those countries' prices."""
+    source, _, only = name.partition(":")
+    if source not in COLLECTORS:
+        sys.exit(f"collect: no source {source!r}")
+    if not only:
+        return source, {}
+    countries = only.split(",")
+    unknown = [c for c in countries if c not in steam_prices.COUNTRIES]
+    if source != "steam-store" or unknown:
+        sys.exit(f"collect: {name!r}: only steam-store's prices are asked by country, of {', '.join(steam_prices.COUNTRIES)}")
+    return source, {"countries": countries}
+
+
 def main():
     name, what, out_dir, previous_dir = sys.argv[1:5]
     fresh = sys.argv[5:]
+    source, extra = parts(name)
     report = []
     common.timed(out_dir, f"collect {name} {what}",
-                 lambda: COLLECTORS[name](what, out_dir, previous_dir, fresh, datetime.date.today(), report))
+                 lambda: COLLECTORS[source](what, out_dir, previous_dir, fresh, datetime.date.today(), report, **extra))
     print(common.summary(report), file=sys.stderr)
 
 

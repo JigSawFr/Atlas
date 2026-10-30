@@ -224,6 +224,9 @@ Monday by `tools/steam.py` in a job of its own:
   `lowest_30` Steam's own lowest price of the last 30 days (as its store
   shows it in Europe; 0 when it gives none). A free game, or one a country's
   store does not sell (Germany's sells some 4,000 fewer), is left out.
+  Each country is asked in a job of its own (`steam-store:FR`, 45 minutes
+  at most): a country whose job fails or runs out of time keeps its last
+  file, and the others are published.
 
 The games are those Wikidata gives a Steam app id (some 128,000 items) and
 Steam's most played; Steam's store says which are games (not a DLC, a tool or
@@ -470,7 +473,8 @@ python3 tools/collect.py wikipedia weekly out/ last/ out/   # after the stores: 
 python3 tools/collect.py wikidata daily out/ last/          # the pages of last/platforms/switch/popular.json's best known
 python3 tools/collect.py wikipedia daily out/ last/ out/
 python3 tools/collect.py eshop daily out/ last/ out/        # after titledb (some 20 minutes)
-python3 tools/collect.py steam-store daily out/ last/       # last/platforms/steam/games.json's prices (some 10 minutes)
+python3 tools/collect.py steam-store daily out/ last/       # last/platforms/steam/games.json's prices (some 4 minutes a country)
+python3 tools/collect.py steam-store:FR,DE daily out/ last/ # only those countries (daily.yml: a country a job)
 python3 tools/collect.py gog daily out/ last/               # every country's catalog (some 6 minutes)
 python3 tools/collect.py msstore daily out/ last/           # last/platforms/xbox/games.json's prices (some 4 minutes)
 # Each platform's files from the sources (out/ this run's, else last/'s), asking nothing:
