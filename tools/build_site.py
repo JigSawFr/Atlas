@@ -34,6 +34,12 @@ import site_data  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 SITE_URL = os.environ.get("SITE_URL", "https://atlas.boreale.dev/").rstrip("/") + "/"
+# The audience, counted by Umami Cloud (site/README.md): its tracker, served from
+# assets/, sends each page seen to gateway.umami.is, without cookie, and only from
+# the site's own address (not a local copy). Its site in Umami is Boréale's,
+# shared by its projects' sites: Umami's Hostname filter tells them apart.
+UMAMI_WEBSITE = "6410ffdd-ae2e-4ddb-8e18-0a77e9fa374e"
+UMAMI_DOMAIN = urlparse(SITE_URL).hostname
 # Boréale's sites' languages: the catalog's code, the folder ('' for the
 # root), the name in its own words, the html lang.
 LANGUAGES = [
@@ -256,6 +262,8 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
         "current_project": ' aria-current="page"' if page == "home" else "",
         "current_explore": ' aria-current="page"' if page == "explore" else "",
         "scripts": f'<script src="{root}assets/explore.js" defer></script>' if page == "explore" else "",
+        "audience": f'<script src="{root}assets/umami.js" defer data-website-id="{UMAMI_WEBSITE}" '
+                    f'data-domains="{UMAMI_DOMAIN}"></script>',
         "hero": hero(page, catalog, root, language),
         "platform_cards": platform_cards(language, catalog, root, summary) if page == "home" else "",
         "file_rows": file_rows(language, catalog, index) if page == "home" else "",

@@ -9,7 +9,9 @@
 - every link and image to the site leads to a file, and every #anchor to an id;
 - nothing the Content-Security-Policy blocks: no inline script (but the
   schema.org data, which runs nothing), no <style>, no style="" attribute,
-  nothing loaded from another site;
+  nothing loaded from another site; the one address a page may send to is
+  Umami's (connect-src), whose tracker (assets/umami.js, the site's own copy)
+  every page carries;
 - no referrer: every page says `<meta name="referrer" content="no-referrer">`
   and every link to another site has rel="noreferrer", so a store or a
   source never learns a visitor came from Atlas (the explorer's store links
@@ -118,6 +120,11 @@ def main() -> None:
         parsed = Page()
         parsed.feed(html)
         errors += [f"{name}: {p}" for p in parsed.problems]
+        if not any(attr == "src" and link.endswith("assets/umami.js") for attr, link in parsed.links):
+            errors.append(f"{name}: no Umami tracker (assets/umami.js)")
+        csp = re.search(r'http-equiv="Content-Security-Policy" content="([^"]*)"', html)
+        if not csp or "connect-src 'self' https://gateway.umami.is;" not in csp.group(1):
+            errors.append(f"{name}: its policy's connect-src is not 'self' and Umami's alone")
         if not parsed.no_referrer:
             errors.append(f"{name}: no <meta name=\"referrer\" content=\"no-referrer\">")
         try:
