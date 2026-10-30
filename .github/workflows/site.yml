@@ -45,12 +45,13 @@ jobs:
         run: python3 tools/build_site.py build "$RUNNER_TEMP/data"
       - name: Their links, catalogs and Content-Security-Policy
         run: python3 tools/check_site.py build
+      # The runner in the key: the venv holds its Python (3.14 on 26.04)
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/ms-playwright
             ~/.cache/playwright-venv
-          key: playwright-ubuntu-${{ env.PLAYWRIGHT_VERSION }}
+          key: playwright-ubuntu-26.04-${{ env.PLAYWRIGHT_VERSION }}
       - name: The pages on phones, a tablet and a desktop
         timeout-minutes: 10
         run: |
