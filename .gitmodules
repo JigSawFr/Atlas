@@ -1,0 +1,3 @@
+[submodule "library/boreale-site"]
+	path = library/boreale-site
+	url = https://github.com/JigSawFr/boreale-site.git

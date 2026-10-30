@@ -9,9 +9,9 @@ name: site
 on:
   push:
     branches: [ main ]
-    paths: [ "site/**", "tools/build_site.py", "tools/site_data.py", "tools/common.py", "tools/check_site.py", "tools/site_layout.py", ".github/workflows/site.yml" ]
+    paths: [ "site/**", "tools/build_site.py", "tools/site_data.py", "tools/common.py", "tools/check_site.py", "library/boreale-site", ".github/workflows/site.yml" ]
   pull_request:
-    paths: [ "site/**", "tools/build_site.py", "tools/site_data.py", "tools/common.py", "tools/check_site.py", "tools/site_layout.py", ".github/workflows/site.yml" ]
+    paths: [ "site/**", "tools/build_site.py", "tools/site_data.py", "tools/common.py", "tools/check_site.py", "library/boreale-site", ".github/workflows/site.yml" ]
   workflow_run:
     workflows: [ build, daily ]
     types: [ completed ]
@@ -39,6 +39,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event_name == 'workflow_run' && 'main' || '' }}
+          submodules: true   # library/boreale-site, what Boréale's sites share
       - name: The data branch
         run: git clone --quiet --depth 1 --branch data "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/data"
       - name: The pages
@@ -66,7 +67,13 @@ jobs:
           echo "$AXE_SHA256  $RUNNER_TEMP/axe.tgz" | sha256sum -c --quiet
           python3 -c 'import sys, tarfile; open(sys.argv[2], "wb").write(tarfile.open(sys.argv[1]).extractfile("package/axe.min.js").read())' \
             "$RUNNER_TEMP/axe.tgz" "$RUNNER_TEMP/axe.min.js"
-          SITE_AXE="$RUNNER_TEMP/axe.min.js" "$VENV/bin/python" -u tools/site_layout.py build
+          # The explorer is also opened on a list, the trending and a game's
+          # sheet, in English and another language, once its data is built (x/).
+          SITE_AXE="$RUNNER_TEMP/axe.min.js" "$VENV/bin/python" -u library/boreale-site/tools/site_layout.py build \
+            --skip data --skip x --wait networkidle --extra-if x \
+            --extra "explore/#steam/popular" --extra "explore/#switch/trending" \
+            --extra "fr/explore/#switch/game/0100000000010000" \
+            --extra "explore/#steam/search/portal" --extra "explore/#steam/game/620"
       - name: Its size
         run: du -sh build build/data build/x | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
