@@ -87,11 +87,13 @@ def base_id(value):
     return tid if TID.match(tid) else None
 
 
-def games(bindings):
-    """{title id: (sitelinks, English article or None)}, the most sitelinks of an item's ids."""
+def games(bindings, ident=None):
+    """{title id: (sitelinks, English article or None)}, the most sitelinks of
+    an item's ids; `ident` reads another platform's ids (base_id: the Switch's)."""
+    ident = ident or base_id
     out = {}
     for b in bindings:
-        tid = base_id(b["tid"]["value"])
+        tid = ident(b["tid"]["value"])
         if not tid:
             continue
         links = int(b["links"]["value"])
@@ -128,12 +130,13 @@ def count_of(text):
         return 0
 
 
-def reviews(bindings):
+def reviews(bindings, ident=None):
     """{title id: (reviews, critics' score)}: the most reviews any of its
     scores counts, and the score that counts the most reviews."""
+    ident = ident or base_id
     out = {}
     for b in bindings:
-        tid = base_id(b["tid"]["value"])
+        tid = ident(b["tid"]["value"])
         score = score_of(b["score"]["value"]) if "score" in b else None
         if not tid or score is None:
             continue

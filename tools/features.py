@@ -24,7 +24,9 @@ KINDS = {
 }
 # IGDB's (tools/igdb.py), when the repository has its keys.
 IGDB_WEIGHT = {"themes": 1.0, "keywords": 1.0, "perspectives": 0.5}
-WEIGHT = {**{kind: w for kind, (_, w) in KINDS.items()}, **IGDB_WEIGHT}
+# Steam's (tools/steam.py): its players' tags.
+STEAM_WEIGHT = {"tags": 1.0}
+WEIGHT = {**{kind: w for kind, (_, w) in KINDS.items()}, **IGDB_WEIGHT, **STEAM_WEIGHT}
 WEAK = {"modes", "publishers", "perspectives"}   # not enough alone to make two games alike
 SIMILAR = 12                     # the games kept as like each one
 MAX_TRAITS = 12                  # of a kind, a game's first ones
@@ -126,8 +128,11 @@ def read_steam(apps, previous, fetch, budget=STEAM_BUDGET, now=time.monotonic, s
     return out
 
 
-def similar(game_traits, keep=SIMILAR):
-    """{title id: [[title id, 1..100], ...]}: each game's most similar, the most first."""
+def similar(game_traits, keep=SIMILAR, max_shared=None):
+    """{title id: [[title id, 1..100], ...]}: each game's most similar, the most first.
+    With `max_shared`, a trait more than that many games have does not make
+    two games candidates (it still counts between two that are), which keeps
+    tens of thousands of games quick."""
     # Each trait's weight: its kind's, times how rare it is.
     counts = {}
     for kinds in game_traits.values():
@@ -150,7 +155,16 @@ def similar(game_traits, keep=SIMILAR):
     for tid, (keys, norm) in vectors.items():
         scores = {}
         strong = {}
-        for k in keys:
+        if max_shared:
+            # The candidates by their rarer traits, then all the traits they share.
+            for k in keys:
+                if len(holders[k]) <= max_shared and k[0] not in WEAK:
+                    for other in holders[k]:
+                        if other != tid:
+                            strong[other] = True
+            for other in strong:
+                scores[other] = sum(weight[k] ** 2 for k in keys & vectors[other][0])
+        for k in keys if not max_shared else ():
             for other in holders[k]:
                 if other == tid:
                     continue
