@@ -23,13 +23,14 @@ Usage: tools/prices.py [out-dir] [previous-dir]   (writes out-dir/prices/)
 """
 import concurrent.futures
 import datetime
-import json
 import os
 import sys
 import time
 import urllib.error
 
 import build
+import common
+from common import with_lowest  # noqa: F401  (tests read it here)
 
 PRICE = "https://api.ec.nintendo.com/v1/price?country={country}&lang=en&ids={ids}"
 TITLEDB = "https://raw.githubusercontent.com/blawar/titledb/master/{file}"
@@ -113,31 +114,8 @@ def read_country(country, ids, fetch, workers=WORKERS, pause=PAUSE):
     return dict(sorted(games.items())), currency
 
 
-def with_lowest(games, previous, today):
-    """Each game's row with its lowest price so far and that price's last
-    day, from the last run's rows (`previous`, {} on a first run)."""
-    day = int(today.replace("-", ""))
-    out = {}
-    for tid, row in games.items():
-        regular, sale, until = row[:3]
-        now = sale or regular
-        lowest, lowest_day = now, day
-        last = previous.get(tid)
-        if isinstance(last, list) and len(last) >= 5 and isinstance(last[3], (int, float)) and isinstance(last[4], int):
-            if last[3] < now:
-                lowest, lowest_day = last[3], last[4]
-        out[tid] = [regular, sale, until, lowest, lowest_day]
-    return out
 
 
-def previous_file(previous_dir, country):
-    """The last run's file of `country`, {} when there is none."""
-    try:
-        with open(os.path.join(previous_dir, f"{country}.json"), encoding="utf-8") as f:
-            body = json.load(f)
-        return body if body.get("schema") == 1 else {}
-    except (OSError, ValueError, AttributeError, TypeError):
-        return {}
 
 
 def main():
@@ -145,10 +123,10 @@ def main():
     previous_dir = os.path.join(sys.argv[2], "prices") if len(sys.argv) > 2 else None
     os.makedirs(os.path.join(out_dir, "prices"), exist_ok=True)
     today = datetime.date.today().isoformat()
-    fetch = lambda url: build.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
+    fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
     report = []
     for file, countries in REGIONS.items():
-        titles = build.fetch(TITLEDB.format(file=file), timeout=600) or {}
+        titles = common.fetch(TITLEDB.format(file=file), timeout=600) or {}
         ids = eshop_ids(titles, build.base_id)
         print(f"{file}: {len(ids)} games with an eShop id", file=sys.stderr)
         for country in countries:
@@ -156,13 +134,13 @@ def main():
             games, currency = read_country(country, ids, fetch)
             print(f"{country}: {len(games)} games, {sum(1 for r in games.values() if r[1])} on sale, "
                   f"{time.monotonic() - started:.0f} s", file=sys.stderr)
-            last = previous_file(previous_dir, country) if previous_dir else {}
-            build.publish(os.path.join(out_dir, "prices"), f"{country}.json", {
+            last = common.previous_file(previous_dir, f"{country}.json") if previous_dir else {}
+            common.publish(os.path.join(out_dir, "prices"), f"{country}.json", {
                 "schema": 1, "generated": today, "country": country, "currency": currency or "",
                 "since": last.get("since") or last.get("generated") or today,
                 "source": f"Nintendo eShop's prices, by titledb's {file} eShop ids",
                 "games": with_lowest(games, last.get("games") or {}, today)}, previous_dir, report)
-    print(build.summary(report), file=sys.stderr)
+    print(common.summary(report), file=sys.stderr)
 
 
 if __name__ == "__main__":

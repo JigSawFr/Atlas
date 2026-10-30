@@ -21,6 +21,7 @@ import urllib.error
 import urllib.parse
 
 import build
+import common
 
 LANGS = ("en", "fr", "de", "es", "it", "ja", "nl", "pt")
 TOP = 400            # the best known games measured
@@ -136,15 +137,15 @@ def main():
         sys.exit("trends: popular.json is not of schema 1")
     today = datetime.date.today()
     top = [tid for tid, _ in sorted(popular["games"].items(), key=lambda kv: -kv[1][0])[:TOP]]
-    by_game = all_pages(top, build.sparql)
+    by_game = all_pages(top, common.sparql)
     start, end = window(today)
-    trends = read_trends(by_game, start, end, lambda url: build.fetch(url, tries=2, patient=False, timeout=30))
+    trends = read_trends(by_game, start, end, lambda url: common.fetch(url, tries=2, patient=False, timeout=30))
     if trends is None:
         return
     os.makedirs(out_dir, exist_ok=True)
     report = []
-    build.publish(out_dir, "popular.json", updated(popular, trends, today), previous_dir, report)
-    print(build.summary(report), file=sys.stderr)
+    common.publish(out_dir, "popular.json", updated(popular, trends, today), previous_dir, report)
+    print(common.summary(report), file=sys.stderr)
 
 
 if __name__ == "__main__":

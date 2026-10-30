@@ -171,5 +171,9 @@ python3 tools/trends.py out/ last/   # last/popular.json with today's trends, as
 python3 -m unittest discover -s tests
 ```
 
+`tools/common.py` holds what every tool shares: the requests, Wikidata's query
+service, the guard and publishing a file, the lowest price kept from run to
+run.
+
 Python 3.10 or later, no package to install. It takes up to an hour: SteamSpy's
 45 minutes, the pageviews, and titledb's list (about 90 MB).
