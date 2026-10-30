@@ -57,7 +57,9 @@ the trends and the lowest prices; `retro/` made way for a folder a machine.
 `platforms.json` is the platforms' registry, `{"platforms": {id: {name,
 qid, igdb, aurore, kind}}}`: its Wikidata item, its IGDB platform (slug),
 [Aurore](https://github.com/JigSawFr/Aurore)'s id when Aurore runs there
-(`switch`, `3ds`, `psv`…: the same ids), and `store` or `retro`. It has a
+(`switch`, `3ds`, `psv`…: the same ids), and its kind: `store`, `console`
+(no store sells its games any more, but it has a source of its own: the 3DS)
+or `retro` (Wikidata alone). It has a
 `schema` like every file: a reader skips an entry's fields, and a kind, it
 does not know.
 

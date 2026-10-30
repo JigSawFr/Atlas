@@ -81,7 +81,7 @@ def collect(out_dir, previous_dir, fresh, today, report, fetch=fetch, workers=WO
             if got:
                 titles[tid] = got
     print(f"nlib-ctr: {len(lists['base'])} base titles, {len(asked)} asked, {len(titles)} known", file=sys.stderr)
-    payload = {"schema": 1, "source_id": "nlib-ctr", "generated": today.isoformat(),
+    payload = {"schema": common.SOURCE_SCHEMA, "source_id": "nlib-ctr", "generated": today.isoformat(),
                "source": "Nlib API (api.nlib.cc/ctr/)", "license": "as published by Nlib API (no terms stated)"}
     common.publish_source(out_dir, f"{common.SOURCES}/nlib-ctr/categories.json", {**payload, "items": lists},
                           previous_dir, report)
@@ -197,7 +197,7 @@ def consolidate(src, out_dir, previous_dir, today):
     starts, _ = build.months(today)
 
     def payload(source, entries, **extra):
-        return {"schema": 1, "platform": N3DS, "generated": today.isoformat(), **extra, "source": source,
+        return {"schema": common.SCHEMA, "platform": N3DS, "generated": today.isoformat(), **extra, "source": source,
                 "games": entries}
     common.publish(out_dir, platforms.path(N3DS, "games.json"), payload(
         "Nlib API (api.nlib.cc/ctr/), Wikidata (P400, P179, P178, P123, P136)", games), previous_dir, report)
