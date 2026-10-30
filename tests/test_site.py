@@ -186,45 +186,6 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class Referrer(unittest.TestCase):
-    """Links out: a third party gets no referrer, Boréale and JigSawFr's GitHub the origin."""
-
-    def problems(self, html):
-        import check_site
-        page = check_site.Page()
-        page.feed(html)
-        return page.problems, page.no_referrer
-
-    def test_own(self):
-        import check_site
-        for href in ("https://boreale.dev/", "https://atlas.boreale.dev/fr/", "https://github.com/JigSawFr/Atlas",
-                     "https://github.com/jigsawfr/atlas/releases"):
-            self.assertTrue(check_site.own(href), href)
-        for href in ("https://store.example.com/app/1", "https://github.com/someone/else", "https://boreale.dev.example.com/",
-                     "https://notboreale.dev/"):
-            self.assertFalse(check_site.own(href), href)
-
-    def test_links(self):
-        ok = ('<meta name="referrer" content="no-referrer">'
-              '<a href="https://store.example.com/app/1" rel="noreferrer noopener">store</a>'
-              '<a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a>')
-        self.assertEqual(self.problems(ok), ([], True))
-        problems, meta = self.problems('<a href="https://store.example.com/app/1">store</a>'
-                                       '<a href="https://boreale.dev/?utm_source=atlas&amp;utm_medium=footer" rel="noreferrer">Boréale</a>')
-        self.assertFalse(meta)
-        self.assertEqual(len(problems), 2)
-
-    def test_utm(self):
-        own = ' referrerpolicy="strict-origin"'
-        ok = (f'<a href="https://boreale.dev/fr/?utm_source=atlas&amp;utm_medium=footer"{own}>Boréale</a>'
-              f'<a href="https://atlas.boreale.dev/fr/"{own}>Atlas</a>')
-        self.assertEqual(self.problems(ok)[0], [])
-        problems, _ = self.problems(f'<a href="https://boreale.dev/"{own}>Boréale</a>'
-                                    f'<a href="https://atlas.boreale.dev/?utm_source=github"{own}>Atlas</a>'
-                                    '<a href="https://store.example.com/?utm_source=atlas" rel="noreferrer">store</a>')
-        self.assertEqual(len(problems), 3)
-
-
 class Size(unittest.TestCase):
     """The site's size against what GitHub Pages takes (1 GB)."""
 

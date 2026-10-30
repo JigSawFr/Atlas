@@ -16,20 +16,14 @@
   }
 })();
 
-// Boréale's site switcher: the menu of Boréale's sites opens under the name
-// beside its button, wherever the header is. The same block in boreale.dev's,
-// PlayGuard's, PlayShelf's and Aurore's site.js; boreale's is the reference.
-// Without popovers (an old browser), the name still leads home.
+// The language a visitor chose before boreale-site's lang.js, which keeps it
+// as "boreale-lang": the old "atlas-lang" moved there once, then removed.
+// To delete after 2027-01-31 (workbench plans/atlas/suivi.md).
 (function () {
-  const menu = document.getElementById("sites");
-  const anchor = menu && menu.closest(".switcher");
-  if (!anchor || !menu.showPopover) return;
-  menu.addEventListener("beforetoggle", (event) => {
-    if (event.newState !== "open") return;
-    const box = anchor.getBoundingClientRect();
-    const screen = document.documentElement.clientWidth;
-    const width = Math.min(400, screen - 24); // site.css's width
-    menu.style.top = `${box.bottom + window.scrollY + 6}px`;
-    menu.style.left = `${Math.max(12, Math.min(box.left, screen - width - 12)) + window.scrollX}px`;
-  });
+  try {
+    const old = localStorage.getItem("atlas-lang");
+    if (old === null) return;
+    if (localStorage.getItem("boreale-lang") === null) localStorage.setItem("boreale-lang", old);
+    localStorage.removeItem("atlas-lang");
+  } catch (e) { /* storage refused: nothing kept */ }
 })();
