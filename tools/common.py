@@ -20,6 +20,9 @@ SPARQL = "https://query.wikidata.org/sparql"
 MAX_WAIT = 1800        # seconds a rate-limited service is waited for, at most
 GUARD_KEEP = 0.7       # a file with fewer games than this share of the last run's is not published
 GUARD_FLOOR = 50       # games the last run's file had at least, for that to count
+# The data files' schema (README): a new field keeps it, a field changing
+# meaning moves it up. A file of another schema is read as no file at all.
+SCHEMA = 1
 # The sources' files' schema: a new field keeps it, a field changing
 # meaning moves it up; one of another schema is read as no file.
 SOURCE_SCHEMA = 1
@@ -74,10 +77,14 @@ def write(path, payload):
 
 
 def count_in(path):
-    """How many games a data file has, None when there is no such file (or not one of ours)."""
+    """How many games a data file has, None when there is no such file (or
+    not one of ours, or of another schema)."""
     try:
         with open(path, encoding="utf-8") as f:
-            games_of = json.load(f).get("games")
+            body = json.load(f)
+        if body.get("schema") != SCHEMA:
+            return None
+        games_of = body.get("games")
         return len(games_of) if isinstance(games_of, dict) else None
     except (OSError, ValueError, AttributeError):
         return None
@@ -140,11 +147,12 @@ def with_lowest(games, previous, today):
 
 
 def previous_file(previous_dir, name):
-    """The last run's file `name` (in previous_dir), {} when there is none."""
+    """The last run's file `name` (in previous_dir), {} when there is none
+    (or it is of another schema)."""
     try:
         with open(os.path.join(previous_dir, name), encoding="utf-8") as f:
             body = json.load(f)
-        return body if body.get("schema") == 1 else {}
+        return body if body.get("schema") == SCHEMA else {}
     except (OSError, ValueError, AttributeError, TypeError):
         return {}
 

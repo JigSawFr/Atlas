@@ -91,6 +91,15 @@ class SiteData(unittest.TestCase):
         names = self.read("x/steam/names.json")
         self.assertEqual([n[1] for n in names], ["Amber Lantern", "Moss & Märchen"])
 
+    def test_another_schema(self):
+        # A file of a later schema, or with none, reads as no file: its platform is left out.
+        put(self.data, "gog/popular.json", {"schema": site_data.SCHEMA + 1, "games": {"900040": [60, 0, 0]}})
+        put(self.data, "xbox/popular.json", {"games": {"9N0000000001": [60, 0, 0]}})
+        self.assertIsNone(site_data.read(os.path.join(self.data, "gog", "popular.json")))
+        self.assertIsNone(site_data.read(os.path.join(self.data, "xbox", "popular.json")))
+        self.assertEqual(site_data.read(os.path.join(self.data, "index.json"))["schema"], site_data.SCHEMA)
+        self.assertEqual(site_data.platforms(self.data), ["steam", "switch"])
+
     def test_shard_matches_explorer(self):
         # explore.js: h = imul(h, 31) + code, unsigned 32 bits.
         self.assertEqual(site_data.shard("620", 256), (((ord("6") * 31 + ord("2")) * 31 + ord("0")) % 2 ** 32) % 256)
@@ -150,6 +159,16 @@ class Referrer(unittest.TestCase):
               '<a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a>')
         self.assertEqual(self.problems(ok), ([], True))
         problems, meta = self.problems('<a href="https://store.example.com/app/1">store</a>'
-                                       '<a href="https://boreale.dev/" rel="noreferrer">Boréale</a>')
+                                       '<a href="https://boreale.dev/?utm_source=atlas&amp;utm_medium=footer" rel="noreferrer">Boréale</a>')
         self.assertFalse(meta)
         self.assertEqual(len(problems), 2)
+
+    def test_utm(self):
+        own = ' referrerpolicy="strict-origin"'
+        ok = (f'<a href="https://boreale.dev/fr/?utm_source=atlas&amp;utm_medium=footer"{own}>Boréale</a>'
+              f'<a href="https://atlas.boreale.dev/fr/"{own}>Atlas</a>')
+        self.assertEqual(self.problems(ok)[0], [])
+        problems, _ = self.problems(f'<a href="https://boreale.dev/"{own}>Boréale</a>'
+                                    f'<a href="https://atlas.boreale.dev/?utm_source=github"{own}>Atlas</a>'
+                                    '<a href="https://store.example.com/?utm_source=atlas" rel="noreferrer">store</a>')
+        self.assertEqual(len(problems), 3)

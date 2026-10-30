@@ -23,12 +23,13 @@
   data copy built in, each platform's x/<platform>/lists.json and shards.
 """
 import json
+import os
 import re
 import sys
 import xml.etree.ElementTree as ElementTree
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -41,6 +42,9 @@ def own(href: str) -> bool:
         return True
     return host == "github.com" and url.path.lower().startswith("/jigsawfr/")
 
+
+# Atlas's own address (build_site.py's SITE_URL): its links to itself carry no UTM tags.
+SITE_HOST = (urlparse(os.environ.get("SITE_URL", "https://atlas.boreale.dev/")).hostname or "").lower()
 
 class Page(HTMLParser):
     def __init__(self):
@@ -66,6 +70,17 @@ class Page(HTMLParser):
                     self.problems.append(f"link to {a['href']} without referrerpolicy=\"strict-origin\" (or with noreferrer)")
             elif "noreferrer" not in rel:
                 self.problems.append(f"link to {a['href']} without rel=\"noreferrer\"")
+            # UTM tags (workbench's "Mesure d'audience"): a link to another of
+            # our sites says it comes from Atlas (utm_source=atlas, a
+            # utm_medium); one to Atlas itself or to anyone else carries none.
+            u = urlparse(a["href"])
+            host = (u.hostname or "").lower()
+            query = dict(parse_qsl(u.query))
+            if u.scheme == "https" and (host == "boreale.dev" or host.endswith(".boreale.dev")) and host != SITE_HOST:
+                if query.get("utm_source") != "atlas" or not query.get("utm_medium"):
+                    self.problems.append(f"link to {a['href']} without utm_source=atlas and a utm_medium")
+            elif any(k.startswith("utm_") for k in query):
+                self.problems.append(f"link to {a['href']} with utm_ parameters: only a link to another of our sites has them")
         if tag == "script":
             if a.get("type") == "application/json":
                 self.in_data = True

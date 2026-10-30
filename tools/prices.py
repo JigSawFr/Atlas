@@ -153,7 +153,7 @@ def consolidate(src, out_dir, previous_dir, today):
             name = f"{build.SWITCH}/prices/{country}.json"
             last = common.previous_file(previous_dir, name) if previous_dir else {}
             common.publish(out_dir, name, {
-                "schema": 1, "platform": build.SWITCH, "generated": today, "country": country, "currency": currency or "",
+                "schema": common.SCHEMA, "platform": build.SWITCH, "generated": today, "country": country, "currency": currency or "",
                 "since": last.get("since") or last.get("generated") or today,
                 "source": f"Nintendo eShop's prices, by titledb's {file} eShop ids",
                 "games": with_lowest(games, last.get("games") or {}, today)}, previous_dir, report)

@@ -97,7 +97,7 @@ def consolidate(src, out_dir, previous_dir, today):
     starts, end = build.months(today)
     read = build.views_from(known, src("wikipedia/monthly.json").get("pages") or {})
     def payload(source, entries, **extra):
-        return {"schema": 1, "platform": RETRO, "generated": today.isoformat(), **extra, "source": source,
+        return {"platform": RETRO, "generated": today.isoformat(), **extra, "schema": common.SCHEMA, "source": source,
                 "games": entries}
     by_id = lambda d: dict(sorted(d.items(), key=lambda kv: int(kv[0][1:])))   # noqa: E731
     common.publish(out_dir, f"{RETRO}/games.json", payload(

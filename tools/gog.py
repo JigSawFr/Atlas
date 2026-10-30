@@ -213,7 +213,7 @@ def catalog(src, out_dir, previous_dir, today):
     traits = {pid: {k: g[k] for k in ("developers", "publishers", "genres", "tags") if k in g} for pid, g in games.items()}
 
     def payload(source, entries, **extra):
-        return {"schema": 1, "platform": GOG, "generated": today.isoformat(), **extra, "source": source,
+        return {"platform": GOG, "generated": today.isoformat(), **extra, "schema": common.SCHEMA, "source": source,
                 "games": entries}
     by_id = lambda d: dict(sorted(d.items(), key=lambda kv: int(kv[0])))   # noqa: E731
     common.publish(out_dir, f"{GOG}/games.json", payload("GOG's catalog, Wikidata (P2725)", by_id(games)),
@@ -242,7 +242,7 @@ def prices(src, out_dir, previous_dir, today):
         name = f"{GOG}/prices/{country}.json"
         last = common.previous_file(previous_dir, name) if previous_dir else {}
         common.publish(out_dir, name, {
-            "schema": 1, "platform": GOG, "generated": today.isoformat(), "country": country, "currency": currency,
+            "schema": common.SCHEMA, "platform": GOG, "generated": today.isoformat(), "country": country, "currency": currency,
             "since": last.get("since") or last.get("generated") or today.isoformat(), "source": "GOG's catalog",
             "games": common.with_lowest(dict(sorted(rows.items(), key=lambda kv: int(kv[0]))),
                                         last.get("games") or {}, today.isoformat())}, previous_dir, report)

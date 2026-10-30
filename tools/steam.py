@@ -251,8 +251,8 @@ def consolidate(src, out_dir, previous_dir, today):
     table = popular(known, critics, read, games, played)
 
     def payload(source, entries, **extra):
-        return {"schema": 1, "platform": STEAM, "generated": today.isoformat(), **extra,
-                "source": source, "games": entries}
+        return {"platform": STEAM, "generated": today.isoformat(), **extra,
+                "schema": common.SCHEMA, "source": source, "games": entries}
 
     kept = set(sorted(table, key=lambda app: -table[app][0])[:GAMES_KEPT]) | set(upcoming(games, today))
     used = {t for app in kept for t in games[app].get("tags", [])}
