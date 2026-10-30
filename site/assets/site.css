@@ -312,3 +312,6 @@ main, .explorer, .explorer > *, .sheet > *, .ways > *, .platforms > * { min-widt
 .explorer, .sheet { grid-template-columns: minmax(0, 1fr); }
 main .sheet section { padding: 0; }
 .keys .k { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+/* Japanese: a long katakana word (プラットフォーム) breaks rather than widen a small phone. */
+:lang(ja) :is(h1, h2, h3, .eyebrow, .lede, .section-head p, .platform p) { overflow-wrap: anywhere; }
+.eyebrow { overflow-wrap: anywhere; }
