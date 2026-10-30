@@ -24,7 +24,8 @@ store ids are Wikidata's (CC0), kept as plain identifiers; links.json ties
 a game to its other platforms (Steam, Switch…) by its Wikidata item.
 
 Usage: tools/playstation.py <out-dir> <previous-dir> <sources-dir>   (from
-the sources tools/collect.py keeps: wikidata/playstation*.json,
+the sources tools/collect.py keeps: wikidata/playstation.json,
+playstation-<kind>.json, playstation-dates.json,
 wikidata/links.json, wikipedia/monthly.json)
 """
 import datetime
@@ -42,14 +43,9 @@ import retro
 MACHINES = {"ps4": ("Q5014725", "CUSA"), "ps5": ("Q63184502", "PPSA")}
 ITEMS = [item for item, _ in MACHINES.values()]
 KINDS = tuple(features.KINDS)   # series, developers, genres, publishers, modes
-BY_PROP = {prop: kind for kind, (prop, _) in features.KINDS.items()}
 GAMES = retro.games_query(ITEMS)
-TRAITS = retro.PREFIXES + """SELECT DISTINCT ?tid ?prop ?value ?valueLabel WHERE {
-  VALUES ?platform { %s }
-  VALUES ?prop { %s }
-  ?tid wdt:P400 ?platform; wdt:P31 wd:Q7889; ?prop ?value.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
-}""" % (retro.values(ITEMS), " ".join(f"wdt:{p}" for p in BY_PROP))
+# A query a kind (one for all of them runs past the query service's minute).
+TRAITS = retro.TRAITS_QUERY.replace("%s", retro.values(ITEMS))
 DATES = retro.PREFIXES + """PREFIX p: <http://www.wikidata.org/prop/>
 PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
 PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
@@ -65,14 +61,15 @@ DAY_PRECISION = 11   # Wikidata's precision of a date said to the day
 DATE = re.compile(r"^\+?(\d{4})-(\d{2})-(\d{2})T")
 
 
-def traits_of(rows):
-    """{QID: {kind: [[QID, name]]}} from TRAITS' rows (features.traits, a kind a property)."""
-    by_kind = {}
-    for b in rows:
-        kind = BY_PROP.get(b.get("prop", {}).get("value", "").rsplit("/", 1)[-1])
-        if kind:
-            by_kind.setdefault(kind, []).append(b)
-    return features.traits(by_kind, retro.qid)
+def query(kind):
+    """TRAITS for one kind (features.KINDS': series, developers…)."""
+    return TRAITS.replace("{prop}", features.KINDS[kind][0])
+
+
+def traits_of(src):
+    """{QID: {kind: [[QID, name]]}} from each kind's rows (wikidata/playstation-<kind>.json)."""
+    return features.traits({kind: common.bindings(src(f"wikidata/playstation-{kind}.json").get("rows") or [])
+                            for kind in KINDS}, retro.qid)
 
 
 def releases(rows, item):
@@ -117,7 +114,7 @@ def machines_of(src):
     """{folder: {QID: games.json's entry}} from the sources collected."""
     rows = common.bindings(src("wikidata/playstation.json").get("rows") or [])
     found = retro.games_of(rows)
-    traits = traits_of(common.bindings(src("wikidata/playstation-traits.json").get("rows") or []))
+    traits = traits_of(src)
     dates = common.bindings(src("wikidata/playstation-dates.json").get("rows") or [])
     ids = links.links(common.bindings(src("wikidata/links.json").get("rows") or []))
     out = {}

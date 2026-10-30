@@ -11,7 +11,7 @@ is kept and said (common.publish_source).
     (series, developers, publishers, genres, modes), switch-steam (P1733),
     switch-igdb (P5794), steam (P1733), gog (P2725), xbox (P5885), links
     (every store's ids), retro (P400) and retro-<kind>, playstation (the
-    PS4's and PS5's games, P400), playstation-traits (their series,
+    PS4's and PS5's games, P400), playstation-<kind> (their series,
     developers, publishers, genres, modes) and playstation-dates (P577);
   - daily: switch-pages (the best known Switch games' pages in LANGS).
 - titledb (daily): blawar/titledb's US, GB and JP lists, by titledb's key.
@@ -77,9 +77,10 @@ def wikidata_weekly():
     for kind in retro.KINDS:
         out.append((f"retro-{kind}", lambda kind=kind: retro.query(
             retro.TRAITS.replace("{prop}", features.KINDS[kind][0]))))
-    out += [("playstation", lambda: common.sparql(playstation.GAMES)),
-            ("playstation-traits", lambda: common.sparql(playstation.TRAITS)),
-            ("playstation-dates", lambda: common.sparql(playstation.DATES))]
+    out.append(("playstation", lambda: common.sparql(playstation.GAMES)))
+    for kind in playstation.KINDS:
+        out.append((f"playstation-{kind}", lambda kind=kind: common.sparql(playstation.query(kind))))
+    out.append(("playstation-dates", lambda: common.sparql(playstation.DATES)))
     return out
 
 

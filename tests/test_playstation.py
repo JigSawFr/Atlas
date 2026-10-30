@@ -31,9 +31,8 @@ def date(qid, value, precision=11, on=None):
     return b
 
 
-def trait(qid, prop, value, label):
-    return {"tid": E + qid, "prop": "http://www.wikidata.org/prop/direct/" + prop, "value": E + value,
-            "valueLabel": label}
+def trait(qid, value, label):
+    return {"tid": E + qid, "value": E + value, "valueLabel": label}
 
 
 def link(qid, prop, value):
@@ -44,10 +43,10 @@ SOURCES = {
     "wikidata/playstation.json": {"rows": [
         game("Q900001", PS4, "Lantern Tale", 40, "Lantern_Tale"), game("Q900001", PS5, "Lantern Tale", 40, "Lantern_Tale"),
         game("Q900002", PS4, "Quiet Pond", 5), game("Q900003", PS5, "Ember Vale", 20, "Ember_Vale")]},
-    "wikidata/playstation-traits.json": {"rows": [
-        trait("Q900001", "P179", "Q910001", "Lantern saga"), trait("Q900003", "P179", "Q910001", "Lantern saga"),
-        trait("Q900001", "P136", "Q910002", "puzzle"), trait("Q900003", "P404", "Q910003", "single-player"),
-        trait("Q900002", "P31", "Q7889", "video game")]},
+    "wikidata/playstation-series.json": {"rows": [
+        trait("Q900001", "Q910001", "Lantern saga"), trait("Q900003", "Q910001", "Lantern saga")]},
+    "wikidata/playstation-genres.json": {"rows": [trait("Q900001", "Q910002", "puzzle")]},
+    "wikidata/playstation-modes.json": {"rows": [trait("Q900003", "Q910003", "single-player")]},
     "wikidata/playstation-dates.json": {"rows": [
         date("Q900001", "2019-03-14T00:00:00Z"), date("Q900001", "2020-11-12T00:00:00Z", on=PS5),
         date("Q900001", "2018-01-01T00:00:00Z", precision=9),              # a year: not a day
@@ -77,7 +76,7 @@ class Machines(unittest.TestCase):
         self.assertEqual(lantern["series"], [["Q910001", "Lantern saga"]])
         self.assertEqual(lantern["genres"], [["Q910002", "puzzle"]])
         self.assertNotIn("release", got["ps4"]["Q900002"])   # only another machine's date
-        self.assertEqual(got["ps4"]["Q900002"], {"name": "Quiet Pond"})   # P31 is no trait
+        self.assertEqual(got["ps4"]["Q900002"], {"name": "Quiet Pond"})
 
     def test_releases(self):
         rows = common.bindings(SOURCES["wikidata/playstation-dates.json"]["rows"])
@@ -106,6 +105,11 @@ class Machines(unittest.TestCase):
             self.assertEqual(ps5["similar"]["games"]["Q900001"][0][0], "Q900003")   # the same series
             self.assertNotIn("PlayStation Store", ps5["games"]["source"])   # Wikidata's ids, nothing of the store
             self.assertEqual(read("ps4/upcoming.json")["games"], {})
+
+    def test_queries(self):
+        self.assertIn("wdt:P179 ?value", playstation.query("series"))
+        self.assertIn("wd:Q5014725 wd:Q63184502", playstation.query("modes"))
+        self.assertNotIn("{prop}", playstation.query("genres"))
 
     def test_by_game(self):
         self.assertEqual(playstation.machines_by_game(src), {"Q900001": ["ps4", "ps5"], "Q900002": ["ps4"],

@@ -417,7 +417,7 @@ branch: the platforms' files are then made from these, asking nothing more
 
 | Folder | What it keeps | When |
 |---|---|---|
-| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`, `playstation`, `playstation-traits`, `playstation-dates`; `switch-pages`, `steam-pages` (daily) | Monday, every day |
+| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`, `playstation`, `playstation-<kind>`, `playstation-dates`; `switch-pages`, `steam-pages` (daily) | Monday, every day |
 | `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers; the others with ids and names) | every day |
 | `sources/eshop/prices/` | The eShop's answer by eShop id: status, regular price, discount, its last day, currency | every day |
 | `sources/steam-store/` | `apps.json` (GetItems by app id), `tags.json`, `most-played.json`; `prices/<country>.json` (GetItems' prices) | Monday, every day |
