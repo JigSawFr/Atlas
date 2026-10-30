@@ -356,7 +356,8 @@ def main():
     name, what, out_dir, previous_dir = sys.argv[1:5]
     fresh = sys.argv[5:]
     report = []
-    COLLECTORS[name](what, out_dir, previous_dir, fresh, datetime.date.today(), report)
+    common.timed(out_dir, f"collect {name} {what}",
+                 lambda: COLLECTORS[name](what, out_dir, previous_dir, fresh, datetime.date.today(), report))
     print(common.summary(report), file=sys.stderr)
 
 

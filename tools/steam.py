@@ -262,7 +262,8 @@ def consolidate(src, out_dir, previous_dir, today):
 
 def main():
     out_dir, previous_dir, sources_dir = sys.argv[1], sys.argv[2], sys.argv[3]
-    consolidate(common.reader(sources_dir, previous_dir), out_dir, previous_dir, datetime.date.today())
+    common.timed(out_dir, "steam", lambda: consolidate(common.reader(sources_dir, previous_dir), out_dir, previous_dir,
+                                                        datetime.date.today()))
 
 
 if __name__ == "__main__":

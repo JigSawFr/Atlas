@@ -173,7 +173,11 @@ jobs:
         run: |
           for f in fresh/.alerts-*; do [ -f "$f" ] && cat "$f" >> "$ALERTS" && rm "$f"; done
           if [ -d fresh/sources ]; then cp -r fresh/sources data-branch/; fi
-          if [ -d out ]; then cp -r out/. data-branch/; fi
+          if [ -d out ]; then rsync -a --exclude .runtimes out/ data-branch/; fi
+          # How the data is (report.json), then every file checked against its
+          # schema (a wrong one put back as it was), schemas/ written again.
+          python3 tools/report.py data-branch build fresh out
+          python3 tools/schemas.py publish data-branch
           tools/publish.sh data-branch "data: $(date -u +%Y-%m-%d)"
       # The week's files kept as a release, each and their zip attested
       # (`gh attestation verify switch-popular.json -R JigSawFr/Atlas`).
