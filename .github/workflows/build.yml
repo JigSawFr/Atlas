@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  ALERTS: /tmp/playinsights-alerts.md   # runner.temp is not allowed at this level
+  ALERTS: /tmp/atlas-alerts.md   # runner.temp is not allowed at this level
 
 jobs:
   switch:
@@ -148,7 +148,7 @@ jobs:
           done
           tools/publish.sh data-branch "data: $(date -u +%Y-%m-%d)"
       # The week's files kept as a release, each and their zip attested
-      # (`gh attestation verify switch-popular.json -R JigSawFr/PlayInsights`).
+      # (`gh attestation verify switch-popular.json -R JigSawFr/Atlas`).
       - name: Archive
         id: archive
         continue-on-error: true

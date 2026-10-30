@@ -15,7 +15,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-AGENT = "PlayInsights/1.0 (https://github.com/JigSawFr/PlayInsights)"
+AGENT = "Atlas/1.0 (https://github.com/JigSawFr/Atlas)"
 SPARQL = "https://query.wikidata.org/sparql"
 MAX_WAIT = 1800        # seconds a rate-limited service is waited for, at most
 GUARD_KEEP = 0.7       # a file with fewer games than this share of the last run's is not published
