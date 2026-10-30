@@ -48,14 +48,16 @@ jobs:
           set -x
           for s in wikidata titledb; do python3 tools/collect.py $s weekly src data-branch || true; done
           for s in steam-store steamspy gog msstore igdb wikipedia; do python3 tools/collect.py $s weekly src data-branch src || true; done
-          python3 tools/collect.py wikidata daily src data-branch || true
-          for s in wikipedia eshop steam-store gog msstore; do python3 tools/collect.py $s daily src data-branch src || true; done
           python3 tools/links.py out-new data-branch src || true
           python3 tools/build.py out-new data-branch src || true
           python3 tools/steam.py out-new data-branch src || true
           python3 tools/gog.py catalog out-new data-branch src || true
           python3 tools/xbox.py catalog out-new data-branch src || true
           python3 tools/retro.py out-new data-branch src || true
+          # The daily sources after the weekly tools, as main's tools asked:
+          # a daily collection rewrites a weekly one's file (gog/catalog/US).
+          python3 tools/collect.py wikidata daily src data-branch || true
+          for s in wikipedia eshop steam-store gog msstore; do python3 tools/collect.py $s daily src data-branch src || true; done
           python3 tools/trends.py out-new data-branch src || true
           python3 tools/prices.py out-new data-branch src || true
           python3 tools/steam_prices.py out-new data-branch src || true
