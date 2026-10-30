@@ -12,7 +12,7 @@ permissions:
 jobs:
   compare:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -39,7 +39,7 @@ jobs:
           python3 tools/steam_prices.py ../out-old ../data-branch || true
           python3 tools/gog.py prices ../out-old ../data-branch || true
           python3 tools/xbox.py prices ../out-old ../data-branch || true
-          ls rec 2>/dev/null | wc -l; ls ../rec | wc -l
+          ls ../rec | wc -l
       - name: This branch's tools on the same answers
         env:
           PYTHONPATH: ${{ github.workspace }}/.github/proof
@@ -65,5 +65,16 @@ jobs:
         run: |
           python3 .github/proof/compare.py out-old out-new | tee -a "$GITHUB_STEP_SUMMARY"
           echo "Requests not recorded: $(wc -l < rec/misses.txt 2>/dev/null || echo 0)" | tee -a "$GITHUB_STEP_SUMMARY"
+          sort -u rec/misses.txt | wc -l
           sort rec/misses.txt 2>/dev/null | cut -c1-120 | uniq -c | sort -rn | head -20 || true
           du -sh src/sources/* | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: The two runs' platform files
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: compare-outputs
+          path: |
+            out-old
+            out-new
+            !out-new/sources
+          retention-days: 3
