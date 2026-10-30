@@ -17,6 +17,8 @@ Python's standard library only. Usage: see tools/build_site.py.
 import json
 import os
 
+from common import SCHEMA
+
 LIST = 200              # games a list holds
 SHARD_BYTES = 160_000   # about what a shard of sheets weighs, at most on average
 # A sale's regular price below this (in the country's currency) is left out
@@ -42,18 +44,20 @@ def shard(game_id: str, shards: int) -> int:
 
 
 def read(path):
+    """A data file, None when there is none (or it is of another schema)."""
     try:
         with open(path, encoding="utf-8") as f:
-            return json.load(f)
+            body = json.load(f)
     except (OSError, ValueError):
         return None
+    return body if isinstance(body, dict) and body.get("schema") == SCHEMA else None
 
 
 def platforms(data_dir: str) -> list:
-    """The platforms the data has: each folder with a popular.json."""
+    """The platforms the data has: each folder with a popular.json (of our schema)."""
     out = []
     for name in sorted(os.listdir(data_dir)):
-        if os.path.isfile(os.path.join(data_dir, name, "popular.json")):
+        if read(os.path.join(data_dir, name, "popular.json")) is not None:
             out.append(name)
     return out
 

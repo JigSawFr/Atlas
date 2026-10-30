@@ -1,5 +1,6 @@
 """tools/common.py's parts that need no network: a file published in a
 folder of its own (a platform's), with its guard, and the last run's file read."""
+import json
 import os
 import sys
 import tempfile
@@ -26,7 +27,7 @@ class Common(unittest.TestCase):
         self.tmp.cleanup()
 
     def payload(self, n):
-        return {"schema": 1, "games": {str(900000 + i): [1, 0, 0] for i in range(n)}}
+        return {"schema": common.SCHEMA, "games": {str(900000 + i): [1, 0, 0] for i in range(n)}}
 
     def test_publish_in_a_folder(self):
         report = []
@@ -44,6 +45,32 @@ class Common(unittest.TestCase):
         self.assertEqual(len(common.previous_file(self.last, "steam/prices/FR.json")["games"]), 3)
         self.assertEqual(common.previous_file(self.last, "gog/prices/FR.json"), {})
         self.assertEqual(common.previous_file(self.tmp.name, "nothing.json"), {})
+
+    def put(self, name, body):
+        path = os.path.join(self.last, name)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(body, f)
+        return path
+
+    def test_another_schema(self):
+        # A file of a later schema, or with none, is no last run's file.
+        games = self.payload(100)["games"]
+        for name, body in (("next.json", {"schema": common.SCHEMA + 1, "games": games}), ("none.json", {"games": games})):
+            path = self.put(name, body)
+            self.assertEqual(common.previous_file(self.last, name), {})
+            self.assertIsNone(common.count_in(path))
+        self.assertEqual(common.count_in(self.put("ours.json", {"schema": common.SCHEMA, "games": games})), 100)
+        self.assertIsNone(common.count_in(self.put("list.json", [1, 2])))
+
+    def test_guard_against_another_schema(self):
+        # Not counted: this run's file is published, whatever its size, and the other left as it was.
+        path = self.put("steam/popular.json", {"schema": common.SCHEMA + 1, "games": self.payload(100)["games"]})
+        report = []
+        self.assertTrue(common.publish(self.out, "steam/popular.json", self.payload(10), self.last, report))
+        self.assertEqual(report, [("steam/popular.json", None, 10, False)])
+        with open(path, encoding="utf-8") as f:
+            self.assertEqual(json.load(f)["schema"], common.SCHEMA + 1)
 
 
 class RunsAlerts(unittest.TestCase):

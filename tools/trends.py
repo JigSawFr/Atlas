@@ -13,8 +13,6 @@ keeps the trend it had. When Wikimedia turns too many away, nothing changes.
 Usage: tools/trends.py <out-dir> <previous-dir>   (switch/popular.json from previous-dir)
 """
 import datetime
-import json
-import os
 import sys
 import time
 import urllib.error
@@ -123,20 +121,32 @@ def read_trends(by_game, start, end, fetch, sleep=time.sleep):
     return out
 
 
+def rows(popular):
+    """popular.json's games whose row is [score, trend, ...], the others left out."""
+    games = popular.get("games")
+    return {tid: row for tid, row in (games.items() if isinstance(games, dict) else ())
+            if isinstance(row, list) and len(row) >= 3 and isinstance(row[0], (int, float))}
+
+
 def updated(popular, trends, today):
-    """popular.json with the trends measured put in, the others' kept."""
-    games = {tid: [row[0], trends.get(tid, row[1]), row[2]] for tid, row in popular["games"].items()}
+    """popular.json with the trends measured put in, the others' kept (and
+    a row not of the shape known, as it is)."""
+    known = rows(popular)
+    games = {tid: [row[0], trends.get(tid, row[1]), *row[2:]] if tid in known else row
+             for tid, row in popular["games"].items()}
     return {**popular, "platform": build.SWITCH, "trends": today.isoformat(), "games": games}
 
 
 def main():
     out_dir, previous_dir = sys.argv[1], sys.argv[2]
-    with open(os.path.join(previous_dir, build.SWITCH, "popular.json"), encoding="utf-8") as f:
-        popular = json.load(f)
-    if popular.get("schema") != 1:
-        sys.exit("trends: popular.json is not of schema 1")
+    # None, or one of another schema: the weekly build makes the next one.
+    popular = common.previous_file(previous_dir, f"{build.SWITCH}/popular.json")
+    if not rows(popular):
+        print(f"trends: no {build.SWITCH}/popular.json of schema {common.SCHEMA} in {previous_dir}, nothing to redo",
+              file=sys.stderr)
+        return
     today = datetime.date.today()
-    top = [tid for tid, _ in sorted(popular["games"].items(), key=lambda kv: -kv[1][0])[:TOP]]
+    top = [tid for tid, _ in sorted(rows(popular).items(), key=lambda kv: -kv[1][0])[:TOP]]
     by_game = all_pages(top, common.sparql)
     start, end = window(today)
     trends = read_trends(by_game, start, end, lambda url: common.fetch(url, tries=2, patient=False, timeout=30))

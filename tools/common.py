@@ -72,10 +72,14 @@ def write(path, payload):
 
 
 def count_in(path):
-    """How many games a data file has, None when there is no such file (or not one of ours)."""
+    """How many games a data file has, None when there is no such file (or
+    not one of ours, or of another schema)."""
     try:
         with open(path, encoding="utf-8") as f:
-            games_of = json.load(f).get("games")
+            body = json.load(f)
+        if body.get("schema") != SCHEMA:
+            return None
+        games_of = body.get("games")
         return len(games_of) if isinstance(games_of, dict) else None
     except (OSError, ValueError, AttributeError):
         return None
@@ -138,7 +142,8 @@ def with_lowest(games, previous, today):
 
 
 def previous_file(previous_dir, name):
-    """The last run's file `name` (in previous_dir), {} when there is none."""
+    """The last run's file `name` (in previous_dir), {} when there is none
+    (or it is of another schema)."""
     try:
         with open(os.path.join(previous_dir, name), encoding="utf-8") as f:
             body = json.load(f)

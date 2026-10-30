@@ -1,6 +1,7 @@
 """tools/build.py's parts that need no network: the critics' scores read,
 the reviews kept, the months, the scores and trends, the upcoming games."""
 import datetime
+import json
 import os
 import sys
 import unittest
@@ -82,6 +83,32 @@ class Build(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PreviousGames(unittest.TestCase):
+    """The last run's games.json, read for its Steam audience."""
+
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.TemporaryDirectory()
+        os.makedirs(os.path.join(self.tmp.name, build.SWITCH))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def put(self, body):
+        with open(os.path.join(self.tmp.name, build.SWITCH, "games.json"), "w", encoding="utf-8") as f:
+            json.dump(body, f)
+
+    def test_previous_games(self):
+        self.assertEqual(build.previous_games(self.tmp.name), {})                  # none
+        games = {"0100A1B2C3D4E000": {"steam": {"app": 900010}}}
+        self.put({"schema": build.SCHEMA, "games": games})
+        self.assertEqual(build.previous_games(self.tmp.name), games)
+        self.put({"schema": build.SCHEMA + 1, "games": games})                    # a later schema
+        self.assertEqual(build.previous_games(self.tmp.name), {})
+        self.put({"games": games})                                                  # none said
+        self.assertEqual(build.previous_games(self.tmp.name), {})
 
 
 class Guard(unittest.TestCase):
