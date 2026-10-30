@@ -225,7 +225,7 @@ def hero(page: str, catalog: dict, root: str, language: str) -> str:
         return (f'<div class="wrap hero">\n    <span class="eyebrow">{catalog["hero_eyebrow"]}</span>\n'
                 f'    <h1>{catalog["hero_title"]}</h1>\n    <p class="lede">{catalog["hero_lede"]}</p>\n'
                 f'    <div class="actions"><a class="button primary" href="{root}{folder(language)}explore/">{catalog["cta_explore"]}</a>'
-                f'<a class="button ghost" href="https://github.com/JigSawFr/Atlas">{catalog["cta_github"]}</a></div>\n  </div>')
+                f'<a class="button ghost" href="https://github.com/JigSawFr/Atlas" rel="noreferrer">{catalog["cta_github"]}</a></div>\n  </div>')
     return (f'<div class="wrap hero small">\n    <span class="eyebrow">{catalog["explore_eyebrow"]}</span>\n'
             f'    <h1>{catalog["explore_title"]}</h1>\n    <p class="lede">{catalog["explore_lede"]}</p>\n  </div>')
 

@@ -10,6 +10,10 @@
 - nothing the Content-Security-Policy blocks: no inline script (but the
   schema.org data, which runs nothing), no <style>, no style="" attribute,
   nothing loaded from another site;
+- no referrer: every page says `<meta name="referrer" content="no-referrer">`
+  and every link to another site has rel="noreferrer", so a store or a
+  source never learns a visitor came from Atlas (the explorer's store links
+  too, built in site/assets/explore.js);
 - the explorer's texts (its application/json data) read as JSON, and with a
   data copy built in, each platform's x/<platform>/lists.json and shards.
 """
@@ -29,6 +33,7 @@ class Page(HTMLParser):
         super().__init__()
         self.ids, self.links, self.problems, self.data = set(), [], [], []
         self.in_data = False
+        self.no_referrer = False
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
@@ -38,6 +43,11 @@ class Page(HTMLParser):
             self.problems.append(f"style attribute on <{tag}>")
         if tag == "style":
             self.problems.append("<style> element")
+        if tag == "meta" and a.get("name") == "referrer" and a.get("content") == "no-referrer":
+            self.no_referrer = True
+        if tag == "a" and urlparse(a.get("href") or "").scheme in ("http", "https") \
+                and "noreferrer" not in (a.get("rel") or "").split():
+            self.problems.append(f"link to {a['href']} without rel=\"noreferrer\"")
         if tag == "script":
             if a.get("type") == "application/json":
                 self.in_data = True
@@ -92,6 +102,8 @@ def main() -> None:
         parsed = Page()
         parsed.feed(html)
         errors += [f"{name}: {p}" for p in parsed.problems]
+        if not parsed.no_referrer:
+            errors.append(f"{name}: no <meta name=\"referrer\" content=\"no-referrer\">")
         try:
             json.loads("".join(parsed.data) or "{}")
         except ValueError as error:
