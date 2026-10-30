@@ -124,3 +124,32 @@ class Build(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Referrer(unittest.TestCase):
+    """Links out: a third party gets no referrer, Boréale and JigSawFr's GitHub the origin."""
+
+    def problems(self, html):
+        import check_site
+        page = check_site.Page()
+        page.feed(html)
+        return page.problems, page.no_referrer
+
+    def test_own(self):
+        import check_site
+        for href in ("https://boreale.dev/", "https://atlas.boreale.dev/fr/", "https://github.com/JigSawFr/Atlas",
+                     "https://github.com/jigsawfr/atlas/releases"):
+            self.assertTrue(check_site.own(href), href)
+        for href in ("https://store.example.com/app/1", "https://github.com/someone/else", "https://boreale.dev.example.com/",
+                     "https://notboreale.dev/"):
+            self.assertFalse(check_site.own(href), href)
+
+    def test_links(self):
+        ok = ('<meta name="referrer" content="no-referrer">'
+              '<a href="https://store.example.com/app/1" rel="noreferrer noopener">store</a>'
+              '<a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a>')
+        self.assertEqual(self.problems(ok), ([], True))
+        problems, meta = self.problems('<a href="https://store.example.com/app/1">store</a>'
+                                       '<a href="https://boreale.dev/" rel="noreferrer">Boréale</a>')
+        self.assertFalse(meta)
+        self.assertEqual(len(problems), 2)
