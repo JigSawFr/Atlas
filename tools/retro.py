@@ -23,6 +23,7 @@ import sys
 import build
 import common
 import features
+import igdb
 import platforms
 
 # The platforms, by Wikidata item.
@@ -110,6 +111,7 @@ def consolidate(src, out_dir, previous_dir, today):
     for game, kinds in traits.items():
         if game in games:
             games[game].update(kinds)
+    print(f"retro: IGDB's traits or rating for {igdb.complete(games, igdb.others(src))} games", file=sys.stderr)
     starts, end = build.months(today)
     read = build.views_from(known, src("wikipedia/monthly.json").get("pages") or {})
     by_id = lambda d: dict(sorted(d.items(), key=lambda kv: int(kv[0][1:])))   # noqa: E731

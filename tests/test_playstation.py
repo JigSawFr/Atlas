@@ -78,6 +78,19 @@ class Machines(unittest.TestCase):
         self.assertNotIn("release", got["ps4"]["Q900002"])   # only another machine's date
         self.assertEqual(got["ps4"]["Q900002"], {"name": "Quiet Pond"})
 
+    def test_igdb(self):
+        # IGDB's records (with its keys): what Wikidata lacks, Wikidata's own kept.
+        record = {"slug": "lantern-tale", "rating": 70, "rating_count": 12,
+                  "genres": [{"id": 9, "name": "Puzzle"}], "game_modes": [{"id": 2, "name": "Multiplayer"}]}
+        more = dict(SOURCES, **{
+            "wikidata/others-igdb.json": {"rows": [{"tid": "http://www.wikidata.org/entity/Q900001",
+                                                    "slug": "lantern-tale"}]},
+            "igdb/others.json": {"items": [record]}})
+        lantern = playstation.machines_of(lambda name: more.get(name, {}))["ps4"]["Q900001"]
+        self.assertEqual(lantern["genres"], [["Q910002", "puzzle"]])
+        self.assertEqual(lantern["modes"], [["igdb:mode:2", "Multiplayer"]])
+        self.assertEqual(lantern["igdb_rating"], [70, 12])
+
     def test_releases(self):
         rows = common.bindings(SOURCES["wikidata/playstation-dates.json"]["rows"])
         self.assertEqual(playstation.releases(rows, PS5), {"Q900001": 20190314, "Q900003": 20270220})

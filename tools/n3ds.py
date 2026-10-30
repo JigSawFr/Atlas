@@ -38,6 +38,7 @@ import urllib.error
 import build
 import common
 import features
+import igdb
 import platforms
 
 N3DS = "3ds"
@@ -373,6 +374,7 @@ def built(src):
             entry["qid"] = qid
             entry.update({k: v for k, v in traits.get(qid, {}).items() if k in retro.KINDS})
         games[family] = entry
+    print(f"3ds: IGDB's traits or rating for {igdb.complete(games, igdb.others(src))} games", file=sys.stderr)
     return games, matched
 
 

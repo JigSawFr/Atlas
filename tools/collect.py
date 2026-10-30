@@ -9,7 +9,8 @@ is kept and said (common.publish_source).
 - wikidata: the queries' rows, {variable: value}, a file a query:
   - weekly: switch (P11072, sitelinks, English page, critics), switch-<kind>
     (series, developers, publishers, genres, modes), switch-steam (P1733),
-    switch-igdb (P5794), steam (P1733), gog (P2725), xbox (P5885), links
+    switch-igdb (P5794), others-igdb (P5794 of every other platform's
+    games), steam (P1733), gog (P2725), xbox (P5885), links
     (every store's ids), retro (P400) and retro-<kind>, playstation (the
     PS4's and PS5's games, P400), playstation-<kind> (their series,
     developers, publishers, genres, modes) and playstation-dates (P577), 3ds
@@ -26,7 +27,9 @@ is kept and said (common.publish_source).
   trending order (weekly: US; daily: every country).
 - msstore: weekly products.json and gamepass.json; daily
   prices/<country>.json ([list price, MSRP] by product id).
-- igdb (weekly, with its keys): games.json and popularity.json, IGDB's records.
+- igdb (weekly, with its keys): games.json and popularity.json, IGDB's records
+  of the Switch's games; others.json, of every other platform's games
+  Wikidata links to IGDB (tools/igdb.py).
 - nlib-ctr (weekly): Nlib API's 3DS lists of title ids (categories.json)
   and its base games' names, regions and product codes (titles.json, each
   asked once: tools/n3ds.py).
@@ -41,6 +44,7 @@ import os
 import sys
 import time
 import urllib.error
+import zlib
 
 import build
 import common
@@ -75,6 +79,7 @@ def wikidata_weekly():
         out.append((f"switch-{kind}", lambda prop=prop: common.sparql(features.TRAIT_QUERY.format(prop=prop))))
     out += [("switch-steam", lambda: common.sparql(features.STEAM_QUERY)),
             ("switch-igdb", lambda: common.sparql(igdb.SLUG_QUERY)),
+            ("others-igdb", lambda: common.sparql(igdb.others_query(retro.PLATFORMS + playstation.ITEMS))),
             ("steam", steam.wikidata_rows), ("gog", gog.wikidata_rows), ("xbox", xbox.wikidata_rows),
             ("links", links.rows), ("retro", lambda: retro.query(retro.GAMES))]
     for kind in retro.KINDS:
@@ -305,18 +310,15 @@ def collect_msstore(what, out_dir, previous_dir, fresh, today, report):
             "msstore", today, store, terms, country=country, currency=currency, games=rows), previous_dir, report)
 
 
-def collect_igdb(what, out_dir, previous_dir, fresh, today, report):
+def collect_igdb(what, out_dir, previous_dir, fresh, today, report, client=None):
     client_id, secret = os.environ.get("IGDB_CLIENT_ID"), os.environ.get("IGDB_CLIENT_SECRET")
-    if not client_id or not secret:
+    if client is None and (not client_id or not secret):
         print("igdb: no keys, nothing asked", file=sys.stderr)
         return
     rows = common.bindings(common.source(f"{common.SOURCES}/wikidata/switch-igdb.json", *fresh).get("rows") or [])
     by_slug = igdb.slugs(rows, build.base_id)
-    client = igdb.Client(client_id, secret, common.AGENT)
-    records = []
-    names = sorted(by_slug)
-    for i in range(0, len(names), igdb.BATCH):
-        records += client.query("games", igdb.games_query(names[i:i + igdb.BATCH]))
+    client = client or igdb.Client(client_id, secret, common.AGENT)
+    records = igdb.read_records(client, sorted(by_slug))
     ids, _, _ = igdb.read_games(records, by_slug)
     found = []
     games = sorted(ids)
@@ -328,6 +330,20 @@ def collect_igdb(what, out_dir, previous_dir, fresh, today, report):
         "igdb", today, "IGDB (api.igdb.com: games)", terms, items=records), previous_dir, report)
     common.publish_source(out_dir, f"{common.SOURCES}/igdb/popularity.json", payload(
         "igdb", today, "IGDB (api.igdb.com: popularity_primitives)", terms, items=found), previous_dir, report)
+    # Every other platform's games Wikidata links to IGDB: the new ones, and a
+    # quarter of the known ones again (each every four weeks), the rest kept.
+    rows = common.bindings(common.source(f"{common.SOURCES}/wikidata/others-igdb.json", *fresh).get("rows") or [])
+    wanted = igdb.slugs(rows, retro.qid)
+    kept = {r["slug"]: r for r in common.source(f"{common.SOURCES}/igdb/others.json", previous_dir).get("items") or []
+            if isinstance(r, dict) and r.get("slug") in wanted}
+    week = today.isocalendar()[1]
+    asked = [n for n in sorted(wanted) if n not in kept or zlib.crc32(n.encode()) % igdb.REFRESH == week % igdb.REFRESH]
+    got = {r["slug"]: r for r in igdb.read_records(client, asked, igdb.others_games_query)
+           if isinstance(r, dict) and r.get("slug")}
+    others = [got.get(n) or kept[n] for n in sorted(wanted) if n in got or n in kept]
+    print(f"igdb: the other platforms' {len(wanted)} games, {len(asked)} asked, {len(others)} found", file=sys.stderr)
+    common.publish_source(out_dir, f"{common.SOURCES}/igdb/others.json", payload(
+        "igdb", today, "IGDB (api.igdb.com: games)", terms, items=others), previous_dir, report)
 
 
 def monthly_wanted(fresh, previous_dir):
