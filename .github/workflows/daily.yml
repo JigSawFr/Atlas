@@ -36,7 +36,8 @@ env:
 jobs:
   sources:
     runs-on: ubuntu-26.04
-    timeout-minutes: 45
+    # pages: the Switch's and Steam's best known games' pages, some 20 minutes, and up to 10 waiting for Wikimedia
+    timeout-minutes: ${{ matrix.name == 'pages' && 60 || 45 }}
     strategy:
       fail-fast: false
       matrix:

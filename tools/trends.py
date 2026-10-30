@@ -30,6 +30,9 @@ TOP = 400            # the best known games measured
 MIN_VIEWS = 300      # views in the last seven days below which a trend says nothing
 DAYS = 35            # the last seven days and the four weeks before
 PAUSE = 0.1          # seconds between two requests
+MISSES = 5           # pages in a row not read after which the day's collection stops
+WAIT_MIN, WAIT_MAX = 30, 120   # seconds waited after a page not read (Wikimedia's Retry-After within them)
+WAIT_BUDGET = 600    # seconds a day's collection may wait for Wikimedia, at most
 BATCH = 80           # games a Wikidata query asks for: more makes too long an address (414)
 DAILY = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{lang}.wikipedia/all-access/user/"
          "{article}/daily/{start}/{end}")
@@ -148,26 +151,48 @@ def trends_of(by_game, views_of, sleep=time.sleep):
 
 def fetch_daily(by_game, start, end, fetch, sleep=time.sleep):
     """{"lang:title": [views a day]} of the games' pages, asked in turn
-    (read_trends' order); a page refused or not reached (a network error,
-    an answer not read) is left out, and after five, no more: the ones read
-    so far kept."""
-    out, refused = {}, 0
+    (read_trends' order). A page refused for too many requests (429) is
+    asked again once, after as long as Wikimedia says (Retry-After, within
+    WAIT_MIN and WAIT_MAX), while the run has waited less than WAIT_BUDGET;
+    a page not read is left out, and after MISSES in a row, no more: the
+    ones read so far kept."""
+    out, missed, waited = {}, 0, 0
     for tid, langs in by_game.items():
         for lang, title in langs:
             if f"{lang}:{title}" in out:   # the same game on two platforms: its page read once
                 continue
-            try:
-                out[f"{lang}:{title}"] = daily(lang, title, start, end, fetch)
-            except common.NOT_READ as e:
-                refused += 1
-                print(f"trends: {lang}:{title}: {common.why(e)}", file=sys.stderr)
-                if refused >= 5:
-                    print(f"trends: {refused} pages not read, stopped after {len(out)} pages", file=sys.stderr)
-                    return out
-                sleep(30)
-                continue
+            for again in (False, True):
+                try:
+                    out[f"{lang}:{title}"] = daily(lang, title, start, end, fetch)
+                    missed = 0
+                    break
+                except common.NOT_READ as e:
+                    print(f"trends: {lang}:{title}: {common.why(e)}", file=sys.stderr)
+                    wait = retry_after(e)
+                    if not again and getattr(e, "code", None) == 429 and waited + wait <= WAIT_BUDGET:
+                        waited += wait
+                        sleep(wait)
+                        continue
+                    missed += 1
+                    if missed >= MISSES:
+                        print(f"trends: {missed} pages in a row not read, stopped after {len(out)} pages "
+                              f"({waited} s waited)", file=sys.stderr)
+                        return out
+                    sleep(wait)
+                    break
             sleep(PAUSE)
+    print(f"trends: {len(out)} pages read ({waited} s waited for Wikimedia)", file=sys.stderr)
     return out
+
+
+def retry_after(error):
+    """The seconds Wikimedia asks to wait (Retry-After), within WAIT_MIN and WAIT_MAX."""
+    headers = getattr(error, "headers", None) or {}
+    try:
+        wait = int(headers.get("Retry-After") or WAIT_MIN)
+    except (TypeError, ValueError):
+        wait = WAIT_MIN
+    return max(WAIT_MIN, min(WAIT_MAX, wait))
 
 
 def from_pages(by_game, pages):

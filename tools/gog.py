@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""GOG's files, by GOG product id, in gog/:
+"""GOG's files, by GOG product id, in platforms/gog/:
 
 - every Monday (build.yml), `tools/gog.py catalog`:
-  - gog/popular.json: [score, trend, critics], as switch/popular.json: half
+  - platforms/gog/popular.json: [score, trend, critics], as platforms/switch/popular.json: half
     the game's renown on Wikipedia (by the Wikidata item that gives its GOG
     page, P2725), half its GOG reviews, its rank in GOG's "trending" order
     a lift;
-  - gog/games.json: each game's name, slug, release, reviews, Wikidata item
+  - platforms/gog/games.json: each game's name, slug, release, reviews, Wikidata item
     and traits (developers, publishers, genres, tags);
-  - gog/upcoming.json: the games still to come, [YYYYMMDD, name];
-  - gog/similar.json: the games most like each one, by their traits;
-- every day (daily.yml), `tools/gog.py prices`: gog/prices/<country>.json,
-  [regular, sale, until, lowest, lowest_day] as switch/prices/ (GOG gives no
+  - platforms/gog/upcoming.json: the games still to come, [YYYYMMDD, name];
+  - platforms/gog/similar.json: the games most like each one, by their traits;
+- every day (daily.yml), `tools/gog.py prices`: platforms/gog/prices/<country>.json,
+  [regular, sale, until, lowest, lowest_day] as platforms/switch/prices/ (GOG gives no
   sale's last day: `until` is 0).
 
 GOG's catalog (catalog.gog.com, no key) gives every game and pack, 100 a
@@ -223,7 +223,7 @@ def catalog(src, out_dir, previous_dir, today):
         table, month=starts[-1].strftime("%Y-%m"), views=bool(read)), previous_dir, report)
     common.publish(out_dir, f"platforms/{GOG}/upcoming.json", payload("GOG's catalog", coming), previous_dir, report)
     common.publish(out_dir, f"platforms/{GOG}/similar.json", payload(
-        "gog/games.json's traits", features.similar(traits, max_shared=300)), previous_dir, report)
+        "platforms/gog/games.json's traits", features.similar(traits, max_shared=300)), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
 
 

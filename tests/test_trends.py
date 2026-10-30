@@ -217,6 +217,37 @@ class NetworkErrors(unittest.TestCase):
             wrong["en"] = ConnectionResetError("reset")
             self.assertEqual(trends.fetch_daily(by_game, start, end, None, sleep=lambda s: None), {})
 
+    def test_daily_waits_as_asked(self):
+        # Wikimedia refuses (429, Retry-After: 45) every other request: each page asked again after 45 s.
+        calls, slept = [], []
+
+        def daily(lang, title, start, end, fetch):
+            calls.append(title)
+            if len(calls) % 2:
+                raise urllib.error.HTTPError(title, 429, "busy", {"Retry-After": "45"}, None)
+            return [1] * trends.DAYS
+        by_game = {str(n): [("en", f"Page {n}")] for n in range(8)}
+        start, end = trends.window(datetime.date(2026, 10, 30))
+        with mock.patch.object(trends, "daily", daily), contextlib.redirect_stderr(io.StringIO()):
+            pages = trends.fetch_daily(by_game, start, end, None, sleep=slept.append)
+        self.assertEqual(len(pages), 8)                  # none lost, though a refusal a page
+        self.assertEqual(slept.count(45), 8)
+        self.assertEqual(trends.retry_after(urllib.error.HTTPError("u", 429, "", {"Retry-After": "900"}, None)),
+                         trends.WAIT_MAX)
+        self.assertEqual(trends.retry_after(TimeoutError()), trends.WAIT_MIN)
+
+    def test_daily_wait_budget(self):
+        # Always refused: asked again while the budget lasts, then five in a row: stopped.
+        slept = []
+
+        def daily(lang, title, start, end, fetch):
+            raise urllib.error.HTTPError(title, 429, "busy", {"Retry-After": "120"}, None)
+        by_game = {str(n): [("en", f"Page {n}")] for n in range(50)}
+        start, end = trends.window(datetime.date(2026, 10, 30))
+        with mock.patch.object(trends, "daily", daily), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(trends.fetch_daily(by_game, start, end, None, sleep=slept.append), {})
+        self.assertLessEqual(sum(slept), trends.WAIT_BUDGET + trends.MISSES * trends.WAIT_MAX)
+
     def test_monthly(self):
         import build
         starts, end = build.months(datetime.date(2026, 10, 30))

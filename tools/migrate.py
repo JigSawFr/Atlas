@@ -14,6 +14,11 @@ A file already where it goes wins, and the old copy goes. Run on a branch
 already moved, it does nothing.
 
 Usage: tools/migrate.py <data-dir>   (the data branch's worktree, before a run)
+
+Goes, with tests/test_migrate.py and its line in tools/data-branch.sh, once
+the Monday build of 2026-11-02 has run on platforms/: the data branch was
+moved by the daily run 41057856336 (2026-10-30), and nothing else reads the
+old places.
 """
 import os
 import shutil

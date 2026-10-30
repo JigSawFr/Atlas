@@ -15,4 +15,5 @@ if git ls-remote --exit-code --heads origin data >/dev/null; then
 else
   git worktree add --orphan -b data data-branch
 fi
+# Goes with tools/migrate.py after the Monday build of 2026-11-02.
 python3 tools/migrate.py data-branch
