@@ -84,8 +84,8 @@ class Igdb(unittest.TestCase):
         self.assertEqual([e for e, _ in stub.asked], ["games", "popularity_primitives"])
 
     def test_without_keys(self):
-        with mock.patch.dict(os.environ, {"IGDB_CLIENT_ID": "", "IGDB_CLIENT_SECRET": ""}):
-            self.assertEqual(build.read_igdb(), {"traits": {}, "popularity": {}, "hypes": {}, "ratings": {}})
+        # Nothing collected from IGDB (no keys): nothing from it.
+        self.assertEqual(build.igdb_found(lambda name: {}), {"traits": {}, "popularity": {}, "hypes": {}, "ratings": {}})
 
     def test_build_uses_it(self):
         known = {A: (10, None), B: (10, None)}

@@ -19,7 +19,8 @@ none of is left out.
 One query to Wikidata's query service a run; when it turns the run away,
 QLever's copy of Wikidata (qlever.dev) is asked the same.
 
-Usage: tools/links.py <out-dir> [previous-dir]   (writes out-dir/links.json)
+Usage: tools/links.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/links.json,
+from sources/wikidata/links.json, tools/collect.py's)
 """
 import datetime
 import re
@@ -105,9 +106,9 @@ def rows():
 
 
 def main():
-    out_dir = sys.argv[1]
-    previous_dir = sys.argv[2] if len(sys.argv) > 2 else None
-    games = links(rows())
+    out_dir, previous_dir, sources_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+    src = common.reader(sources_dir, previous_dir)
+    games = links(common.bindings(src("wikidata/links.json").get("rows") or []))
     report = []
     common.publish(out_dir, "links.json", {
         "schema": 1, "generated": datetime.date.today().isoformat(),

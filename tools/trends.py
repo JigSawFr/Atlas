@@ -10,7 +10,8 @@ pages in each language, Wikimedia their views a day. A game read fewer than
 MIN_VIEWS times in the week has no trend; one whose views could not be read
 keeps the trend it had. When Wikimedia turns too many away, nothing changes.
 
-Usage: tools/trends.py <out-dir> <previous-dir>   (switch/popular.json from previous-dir)
+Usage: tools/trends.py <out-dir> <previous-dir> <sources-dir>   (switch/popular.json from
+previous-dir, the pages and their views from the sources tools/collect.py keeps)
 """
 import datetime
 import json
@@ -98,13 +99,19 @@ def trend(days):
 
 def read_trends(by_game, start, end, fetch, sleep=time.sleep):
     """{title id: trend} for the games whose views could be read, None when too few could."""
+    return trends_of(by_game, lambda lang, title: daily(lang, title, start, end, fetch), sleep)
+
+
+def trends_of(by_game, views_of, sleep=time.sleep):
+    """read_trends with each page's views from `views_of(lang, title)`, which
+    raises an HTTPError for a page Wikimedia refused."""
     out, asked, refused = {}, 0, 0
     for tid, langs in by_game.items():
         total = None
         for lang, title in langs:
             asked += 1
             try:
-                views = daily(lang, title, start, end, fetch)
+                views = views_of(lang, title)
             except urllib.error.HTTPError as e:
                 refused += 1
                 if refused >= 5:
@@ -123,28 +130,64 @@ def read_trends(by_game, start, end, fetch, sleep=time.sleep):
     return out
 
 
+def fetch_daily(by_game, start, end, fetch, sleep=time.sleep):
+    """{"lang:title": [views a day]} of the games' pages, asked in turn
+    (read_trends' order); after five refusals from Wikimedia, no more."""
+    out, refused = {}, 0
+    for tid, langs in by_game.items():
+        for lang, title in langs:
+            try:
+                out[f"{lang}:{title}"] = daily(lang, title, start, end, fetch)
+            except urllib.error.HTTPError as e:
+                refused += 1
+                if refused >= 5:
+                    print(f"trends: refused ({e.code}) after {len(out)} pages", file=sys.stderr)
+                    return out
+                sleep(30)
+                continue
+            sleep(PAUSE)
+    return out
+
+
+def from_pages(by_game, pages):
+    """read_trends from the pages' views collected (sources/wikipedia/daily.json):
+    a page not read counts as refused."""
+    def views_of(lang, title):
+        key = f"{lang}:{title}"
+        if key not in pages:
+            raise urllib.error.HTTPError(key, 429, "not read", {}, None)
+        return pages[key]
+    return trends_of(by_game, views_of, sleep=lambda s: None)
+
+
 def updated(popular, trends, today):
     """popular.json with the trends measured put in, the others' kept."""
     games = {tid: [row[0], trends.get(tid, row[1]), row[2]] for tid, row in popular["games"].items()}
     return {**popular, "platform": build.SWITCH, "trends": today.isoformat(), "games": games}
 
 
-def main():
-    out_dir, previous_dir = sys.argv[1], sys.argv[2]
+def consolidate(src, out_dir, previous_dir, today):
+    """switch/popular.json with today's trends, from the sources collected."""
     with open(os.path.join(previous_dir, build.SWITCH, "popular.json"), encoding="utf-8") as f:
         popular = json.load(f)
     if popular.get("schema") != 1:
         sys.exit("trends: popular.json is not of schema 1")
-    today = datetime.date.today()
-    top = [tid for tid, _ in sorted(popular["games"].items(), key=lambda kv: -kv[1][0])[:TOP]]
-    by_game = all_pages(top, common.sparql)
-    start, end = window(today)
-    trends = read_trends(by_game, start, end, lambda url: common.fetch(url, tries=2, patient=False, timeout=30))
+    by_game = pages(common.bindings(src("wikidata/switch-pages.json").get("rows") or []), build.base_id)
+    collected = common.collected_today(src, "wikipedia/daily.json", today)
+    if not by_game or not collected:
+        print("trends: no pages or views collected today, nothing changes", file=sys.stderr)
+        return
+    trends = from_pages(by_game, collected.get("pages") or {})
     if trends is None:
         return
     report = []
     common.publish(out_dir, f"{build.SWITCH}/popular.json", updated(popular, trends, today), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
+
+
+def main():
+    out_dir, previous_dir, sources_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+    consolidate(common.reader(sources_dir, previous_dir), out_dir, previous_dir, datetime.date.today())
 
 
 if __name__ == "__main__":

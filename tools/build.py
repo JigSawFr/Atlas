@@ -37,8 +37,12 @@ the most of all, and its popularity on IGDB. When
 Wikimedia turns too many view requests away (fewer than half read), every
 game is scored without views and none has a trend: no mixing of scales.
 
-Usage: tools/build.py [out-dir] [previous-dir]   (writes out-dir/switch/; previous-dir:
-the last run's files, whose Steam figures are kept for the games not asked)
+Every source is asked beforehand (tools/collect.py), its answers kept in
+sources/; this makes the files from them, asking nothing.
+
+Usage: tools/build.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/switch/;
+previous-dir: the last run's files, whose SteamSpy figures are kept for the
+games not asked; sources-dir: this run's sources, else the last run's)
 """
 import datetime
 import json
@@ -49,6 +53,7 @@ import time
 import urllib.error
 import urllib.parse
 
+import common
 import editions
 import features
 import igdb
@@ -167,11 +172,16 @@ def views(article, starts, end):
     return [counts.get(s.strftime("%Y%m"), 0) for s in starts]
 
 
-def read_views(known, starts, end):
-    """{article: [views a month]} for the best known games; {} when Wikimedia turned too many away."""
-    best = sorted(((links, a) for links, a in known.values() if a), reverse=True)[:VIEWED]
+def best_articles(known):
+    """The English pages whose views are asked: the VIEWED best known games' (most sitelinks first)."""
+    return [a for _, a in sorted(((links, a) for links, a in known.values() if a), reverse=True)[:VIEWED]]
+
+
+def fetch_views(articles, starts, end):
+    """{article: [views a month]} of `articles`, asked in turn; after three
+    refusals from Wikimedia, no more (the ones read so far kept)."""
     read, refused = {}, 0
-    for _, article in best:
+    for article in articles:
         if article in read:
             continue
         try:
@@ -184,6 +194,15 @@ def read_views(known, starts, end):
             time.sleep(30)
             continue
         time.sleep(PAUSE)
+    return read
+
+
+def views_from(known, pages):
+    """{article: [views a month]} for the best known games of `known`, from
+    the views collected (sources/wikipedia/monthly.json); {} when fewer than
+    half of them could be read (no mixing of scales)."""
+    best = best_articles(known)
+    read = {a: pages[a] for a in best if a in pages}
     if len(read) < len(best) // 2:
         print(f"views: {len(read)} of {len(best)} read, too few: none used", file=sys.stderr)
         return {}
@@ -191,6 +210,10 @@ def read_views(known, starts, end):
     return read
 
 
+def read_views(known, starts, end):
+    """{article: [views a month]} for the best known games; {} when Wikimedia turned too many away."""
+    best = best_articles(known)
+    return views_from(known, fetch_views(best, starts, end))
 
 
 def popular(known, critics, read, steam=None, igdb_popularity=None):
@@ -263,52 +286,62 @@ def previous_games(directory):
         return {}
 
 
-def read_igdb():
-    """IGDB's traits, popularity and hypes; none without the keys, or when IGDB fails (the run goes on)."""
-    nothing = {"traits": {}, "popularity": {}, "hypes": {}, "ratings": {}}
-    client_id, secret = os.environ.get("IGDB_CLIENT_ID"), os.environ.get("IGDB_CLIENT_SECRET")
-    if not client_id or not secret:
-        print("igdb: no keys, left out", file=sys.stderr)
-        return nothing
-    try:
-        by_slug = igdb.slugs(sparql(igdb.SLUG_QUERY), base_id)
-        return igdb.read(igdb.Client(client_id, secret, AGENT), by_slug)
-    except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as e:
-        print(f"igdb: {e}, left out", file=sys.stderr)
-        return nothing
+def igdb_found(src):
+    """IGDB's traits, popularity, hypes and ratings from its collected records; none without them."""
+    rows = common.bindings(src("wikidata/switch-igdb.json").get("rows") or [])
+    games_, popularity = src("igdb/games.json").get("items"), src("igdb/popularity.json").get("items")
+    if not games_ or not rows:
+        return {"traits": {}, "popularity": {}, "hypes": {}, "ratings": {}}
+    by_slug = igdb.slugs(rows, base_id)
+    ids, traits, hypes = igdb.read_games(games_, by_slug)
+    return {"traits": traits, "popularity": igdb.read_popularity(popularity or [], ids), "hypes": hypes,
+            "ratings": igdb.read_ratings(games_, by_slug)}
 
 
-def main():
-    out_dir = sys.argv[1] if len(sys.argv) > 1 else "out"
-    previous_dir = sys.argv[2] if len(sys.argv) > 2 else None
+def views_known(src):
+    """{title id: (sitelinks, English page)}, the games whose views count."""
+    return games(common.bindings(src("wikidata/switch.json").get("rows") or []))
+
+
+def steam_figures(src, apps, before):
+    """Each game's Steam figures: its store's reviews, SteamSpy's owners and
+    players (as asked this run, the others' kept from `before`)."""
+    items = src("steam-store/apps.json").get("games") or {}
+    store_reviews = {tid: features.reviews_of(items.get(str(app))) for tid, app in apps.items()}
+    spy = src("steamspy/apps.json").get("games") or {}
+    previous = {t: g["steam"] for t, g in before.items() if "steam" in g}
+    spied = {}
+    for tid, app in apps.items():
+        got = features.steam_of(spy.get(str(app)))
+        if got:
+            got["app"] = app
+            spied[tid] = got
+    for tid in apps:
+        if tid not in spied and tid in previous and previous[tid].get("app") == apps[tid]:
+            spied[tid] = previous[tid]
+    return features.with_reviews(spied, {tid: r for tid, r in store_reviews.items() if r}, apps)
+
+
+def consolidate(src, out_dir, previous_dir, today):
+    """switch/'s weekly files from the sources collected (tools/collect.py)."""
     before = previous_games(previous_dir) if previous_dir else {}
     report = []
-    os.makedirs(out_dir, exist_ok=True)
-    today = datetime.date.today()
     starts, end = months(today)
-
-    rows = sparql(QUERY)
+    rows = common.bindings(src("wikidata/switch.json").get("rows") or [])
     known = games(rows)
     print(f"{len(known)} games with a Switch title id", file=sys.stderr)
     critics = reviews(rows)
     print(f"{len(critics)} with critics' scores", file=sys.stderr)
-    read = read_views(known, starts, end)
+    read = views_from(known, src("wikipedia/monthly.json").get("pages") or {})
 
     # The traits and the Steam audience, then the games alike.
-    game_traits = features.traits(features.query_traits(sparql), base_id)
-    found = read_igdb()
+    game_traits = features.traits({kind: common.bindings(src(f"wikidata/switch-{kind}.json").get("rows") or [])
+                                   for kind in features.KINDS}, base_id)
+    found = igdb_found(src)
     for tid, kinds in found["traits"].items():
         game_traits.setdefault(tid, {}).update(kinds)
-    apps = features.steam_ids(sparql(features.STEAM_QUERY), base_id)
-    # The reviews from Steam's store, 200 games a request; the owners and
-    # players from SteamSpy, a request a second, within its budget.
-    import steam as steam_store   # here: steam.py itself reads this module
-    items = steam_store.read_items({str(app) for app in apps.values()},
-                                   lambda url: fetch(url, tries=3, patient=False, timeout=60))
-    store_reviews = {tid: features.reviews_of(items.get(str(app))) for tid, app in apps.items()}
-    spied = features.read_steam(apps, {t: g["steam"] for t, g in before.items() if "steam" in g},
-                                lambda url: fetch(url, tries=2, patient=False, timeout=30))
-    steam = features.with_reviews(spied, {tid: r for tid, r in store_reviews.items() if r}, apps)
+    apps = features.steam_ids(common.bindings(src("wikidata/switch-steam.json").get("rows") or []), base_id)
+    steam = steam_figures(src, apps, before)
     table = {}
     for tid in sorted(set(game_traits) | set(steam) | set(found["ratings"])):
         entry = dict(game_traits.get(tid, {}))
@@ -324,7 +357,7 @@ def main():
     # The games alike: by their traits, then by what the eShop says of them
     # (titledb's names, descriptions, categories and publishers) for the
     # many games Wikidata knows nothing of.
-    titles = fetch(TITLEDB, timeout=600) or {}
+    titles = src("titledb/US.json").get("games") or {}
     by_text = text.similar(titles, base_id)
     # A game's other editions: one game, not one like it.
     of = editions.editions(titles, base_id)
@@ -350,6 +383,11 @@ def main():
         "games": upcoming(titles, today, hypes=found["hypes"])}, previous_dir, report)
 
     print(summary(report), file=sys.stderr)
+
+
+def main():
+    out_dir, previous_dir, sources_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+    consolidate(common.reader(sources_dir, previous_dir), out_dir, previous_dir, datetime.date.today())
 
 
 if __name__ == "__main__":

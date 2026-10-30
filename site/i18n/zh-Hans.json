@@ -54,6 +54,7 @@
   "file_prices": "一个国家的价格和折扣，含历史最低价",
   "file_links": "按 Wikidata 条目列出的游戏在各商店的 ID",
   "file_index": "每个文件的日期、大小和哈希",
+  "file_source": "按收集原样保存的来源回答（各平台的文件由此生成）",
   "use_eyebrow": "使用",
   "use_title": "无需账户，无需密钥，没有限制",
   "use_lede": "文件是普通的 JSON。从任何方便的地方读取。",

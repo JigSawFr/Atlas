@@ -17,7 +17,8 @@
 GOG's catalog (catalog.gog.com, no key) gives every game and pack, 100 a
 page, with its price in a country's currency; some 85 pages a country.
 
-Usage: tools/gog.py catalog|prices <out-dir> [previous-dir]
+Usage: tools/gog.py catalog|prices <out-dir> <previous-dir> <sources-dir>
+  (from the sources tools/collect.py keeps: gog, wikidata, wikipedia)
 """
 import concurrent.futures
 import datetime
@@ -169,11 +170,30 @@ def wikidata_rows():
         return body["results"]["bindings"]
 
 
-def catalog(out_dir, previous_dir, fetch, today):
+def catalog_games(src, country="US", today=None):
+    """[(product, rank)] of the catalog collected for `country`, in its order
+    (with `today`: only one collected that day)."""
+    found = (common.collected_today(src, f"gog/catalog/{country}.json", today) if today
+             else src(f"gog/catalog/{country}.json")).get("games") or {}
+    return [(p, i + 1) for i, p in enumerate(found.values())]
+
+
+def known_of(src):
+    rows = common.bindings(src("wikidata/gog.json").get("rows") or [])
+    return rows, build.games(rows, ident=slug_of)
+
+
+def views_known(src):
+    """{slug: (sitelinks, English page)} of the games whose views count."""
+    _, known = known_of(src)
+    slugs = {(p.get("slug") or "") for p, _ in catalog_games(src)}
+    return {s: known[s] for s in known if s in slugs}
+
+
+def catalog(src, out_dir, previous_dir, today):
     report = []
-    found = read_catalog("US", fetch)
-    rows = wikidata_rows()
-    known = build.games(rows, ident=slug_of)
+    found = catalog_games(src)
+    rows, known = known_of(src)
     critics = build.reviews(rows, ident=slug_of)
     qids = {}
     for b in rows:
@@ -184,7 +204,7 @@ def catalog(out_dir, previous_dir, fetch, today):
     ranks = {str(p["id"]): rank for p, rank in found}
     starts, end = build.months(today)
     slugs = {g["slug"] for g in games.values()}
-    read = build.read_views({s: known[s] for s in known if s in slugs}, starts, end)
+    read = build.views_from({s: known[s] for s in known if s in slugs}, src("wikipedia/monthly.json").get("pages") or {})
     table = popular({s: known[s] for s in known if s in slugs}, critics, read, games, ranks)
     first = int(today.strftime("%Y%m%d"))
     last = int((today + datetime.timedelta(days=UPCOMING_DAYS)).strftime("%Y%m%d"))
@@ -207,11 +227,15 @@ def catalog(out_dir, previous_dir, fetch, today):
     print(common.summary(report), file=sys.stderr)
 
 
-def prices(out_dir, previous_dir, fetch, today):
+def prices(src, out_dir, previous_dir, today):
     report = []
     for country, currency in COUNTRIES.items():
         rows = {}
-        for product, _ in read_catalog(country, fetch):
+        found = catalog_games(src, country, today)
+        if not found:
+            print(f"gog prices: {country}: nothing collected today", file=sys.stderr)
+            continue
+        for product, _ in found:
             row = price_of(product)
             if row:
                 rows[str(product["id"])] = row
@@ -226,10 +250,9 @@ def prices(out_dir, previous_dir, fetch, today):
 
 
 def main():
-    what, out_dir = sys.argv[1], sys.argv[2]
-    previous_dir = sys.argv[3] if len(sys.argv) > 3 else None
-    fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
-    {"catalog": catalog, "prices": prices}[what](out_dir, previous_dir, fetch, datetime.date.today())
+    what, out_dir, previous_dir, sources_dir = sys.argv[1:5]
+    {"catalog": catalog, "prices": prices}[what](common.reader(sources_dir, previous_dir), out_dir, previous_dir,
+                                                 datetime.date.today())
 
 
 if __name__ == "__main__":

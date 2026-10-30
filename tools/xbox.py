@@ -21,7 +21,8 @@ Game Pass's (its public lists, console and PC); the Microsoft Store's
 catalog (displaycatalog.mp.microsoft.com, no key) says which are games and
 gives the rest, 200 a request.
 
-Usage: tools/xbox.py catalog|prices <out-dir> [previous-dir]
+Usage: tools/xbox.py catalog|prices <out-dir> <previous-dir> <sources-dir>
+  (from the sources tools/collect.py keeps: msstore, wikidata, wikipedia)
 """
 import concurrent.futures
 import datetime
@@ -108,7 +109,11 @@ def purchase(product):
 
 def price_of(product):
     """[regular, sale, until] of a product, or None when it is free or not sold."""
-    got = purchase(product)
+    return row_of(purchase(product))
+
+
+def row_of(got):
+    """[regular, sale, until] of the store's (list price, MSRP), or None when free or not sold."""
     if not got or got[0] <= 0:
         return None
     sale, msrp = round(got[0], 2), round(got[1], 2)
@@ -197,24 +202,41 @@ def wikidata_rows():
         return body["results"]["bindings"]
 
 
-def catalog(out_dir, previous_dir, fetch, today):
-    report = []
-    rows = wikidata_rows()
-    known = build.games(rows, ident=big_id)
-    critics = build.reviews(rows, ident=big_id)
+def known_of(src):
+    rows = common.bindings(src("wikidata/xbox.json").get("rows") or [])
+    return rows, build.games(rows, ident=big_id)
+
+
+def store_games(src, rows, known):
+    """{bigId: games.json entry} of the products collected that are games."""
     qids = {}
     for b in rows:
         pid = big_id(b["tid"]["value"])
         if pid and pid not in qids:
             qids[pid] = b["item"]["value"].rsplit("/", 1)[-1]
-    gamepass = read_gamepass(fetch)
-    found = read_products(set(known) | set(gamepass), "US", fetch)
-    games = {pid: entry(p, qids.get(pid), gamepass.get(pid, ())) for pid, p in found.items()
-             if p.get("ProductKind") == "Game"}
+    gamepass = src("msstore/gamepass.json").get("games") or {}
+    found = src("msstore/products.json").get("games") or {}
+    return gamepass, {pid: entry(p, qids.get(pid), gamepass.get(pid, ())) for pid, p in found.items()
+                      if p.get("ProductKind") == "Game" and (pid in known or pid in gamepass)}
+
+
+def views_known(src):
+    """{bigId: (sitelinks, English page)} of the games whose views count."""
+    rows, known = known_of(src)
+    _, games = store_games(src, rows, known)
+    return {pid: known[pid] for pid in games if pid in known}
+
+
+def catalog(src, out_dir, previous_dir, today):
+    report = []
+    rows, known = known_of(src)
+    critics = build.reviews(rows, ident=big_id)
+    gamepass, games = store_games(src, rows, known)
     print(f"xbox: {len(games)} games, {sum(1 for g in games.values() if 'gamepass' in g)} in the Game Pass",
           file=sys.stderr)
     starts, end = build.months(today)
-    read = build.read_views({pid: known[pid] for pid in games if pid in known}, starts, end)
+    read = build.views_from({pid: known[pid] for pid in games if pid in known},
+                            src("wikipedia/monthly.json").get("pages") or {})
     table = popular(known, critics, read, games)
     first = int(today.strftime("%Y%m%d"))
     last = int((today + datetime.timedelta(days=UPCOMING_DAYS)).strftime("%Y%m%d"))
@@ -239,16 +261,16 @@ def catalog(out_dir, previous_dir, fetch, today):
     print(common.summary(report), file=sys.stderr)
 
 
-def prices(out_dir, previous_dir, fetch, today):
-    games = (common.previous_file(previous_dir, f"{XBOX}/games.json").get("games") or {}) if previous_dir else {}
-    if not games:
-        print("xbox prices: no xbox/games.json in the last run's files, nothing to ask", file=sys.stderr)
-        return
+def prices(src, out_dir, previous_dir, today):
     report = []
     for country, currency in COUNTRIES.items():
         rows = {}
-        for pid, product in read_products(games, country, fetch, template="browse").items():
-            row = price_of(product)
+        collected = common.collected_today(src, f"msstore/prices/{country}.json", today)
+        if not collected:
+            print(f"xbox prices: {country}: nothing collected today", file=sys.stderr)
+            continue
+        for pid, got in (collected.get("games") or {}).items():
+            row = row_of(got)
             if row:
                 rows[pid] = row
         name = f"{XBOX}/prices/{country}.json"
@@ -263,10 +285,9 @@ def prices(out_dir, previous_dir, fetch, today):
 
 
 def main():
-    what, out_dir = sys.argv[1], sys.argv[2]
-    previous_dir = sys.argv[3] if len(sys.argv) > 3 else None
-    fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=120)   # noqa: E731
-    {"catalog": catalog, "prices": prices}[what](out_dir, previous_dir, fetch, datetime.date.today())
+    what, out_dir, previous_dir, sources_dir = sys.argv[1:5]
+    {"catalog": catalog, "prices": prices}[what](common.reader(sources_dir, previous_dir), out_dir, previous_dir,
+                                                 datetime.date.today())
 
 
 if __name__ == "__main__":

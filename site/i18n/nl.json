@@ -54,6 +54,7 @@
   "file_prices": "Prijzen en aanbiedingen in één land, met de laagste geziene prijs",
   "file_links": "De id's van een game in elke winkel, per Wikidata-item",
   "file_index": "Elk bestand met zijn dag, grootte en hash",
+  "file_source": "Wat een bron antwoordde, zoals verzameld (de bestanden van de platforms worden ervan gemaakt)",
   "use_eyebrow": "Gebruiken",
   "use_title": "Geen account, geen sleutel, geen limiet",
   "use_lede": "De bestanden zijn gewoon JSON. Lees ze waar het je uitkomt.",

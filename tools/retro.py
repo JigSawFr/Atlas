@@ -11,14 +11,12 @@ arcade, the Commodore 64…), by Wikidata item (QID), in retro/, every Monday
   (series, developers, publishers, genres);
 - retro/similar.json: the games most like each one, by their traits.
 
-Usage: tools/retro.py <out-dir> [previous-dir]   (writes out-dir/retro/)
+Usage: tools/retro.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/retro/,
+from the sources tools/collect.py keeps: wikidata, wikipedia)
 """
 import datetime
 import re
 import sys
-import time
-import urllib.error
-import urllib.parse
 
 import build
 import common
@@ -80,31 +78,24 @@ def query(text):
     return common.sparql(text)
 
 
-def main():
-    out_dir = sys.argv[1]
-    previous_dir = sys.argv[2] if len(sys.argv) > 2 else None
-    today = datetime.date.today()
+def views_known(src):
+    return build.games(common.bindings(src("wikidata/retro.json").get("rows") or []), ident=qid)
+
+
+def consolidate(src, out_dir, previous_dir, today):
+    """retro/'s files from the sources collected (tools/collect.py)."""
     report = []
-    rows = query(GAMES)
+    rows = common.bindings(src("wikidata/retro.json").get("rows") or [])
     known = build.games(rows, ident=qid)
     games = games_of(rows)
     print(f"retro: {len(games)} games", file=sys.stderr)
-    by_kind = {}
-    for kind in KINDS:
-        try:
-            by_kind[kind] = query(TRAITS.replace("{prop}", features.KINDS[kind][0]))
-        except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as e:
-            print(f"retro: {kind}: {e}, left out", file=sys.stderr)
-            by_kind[kind] = []
-        print(f"retro: {kind}: {len(by_kind[kind])} rows", file=sys.stderr)
-        time.sleep(5)
+    by_kind = {kind: common.bindings(src(f"wikidata/retro-{kind}.json").get("rows") or []) for kind in KINDS}
     traits = features.traits(by_kind, qid)
     for game, kinds in traits.items():
         if game in games:
             games[game].update(kinds)
     starts, end = build.months(today)
-    read = build.read_views(known, starts, end)
-
+    read = build.views_from(known, src("wikipedia/monthly.json").get("pages") or {})
     def payload(source, entries, **extra):
         return {"schema": 1, "platform": RETRO, "generated": today.isoformat(), **extra, "source": source,
                 "games": entries}
@@ -119,6 +110,11 @@ def main():
             {g: {k: games[g][k] for k in KINDS if k in games[g]} for g in games}, max_shared=300))),
         previous_dir, report)
     print(common.summary(report), file=sys.stderr)
+
+
+def main():
+    out_dir, previous_dir, sources_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+    consolidate(common.reader(sources_dir, previous_dir), out_dir, previous_dir, datetime.date.today())
 
 
 if __name__ == "__main__":

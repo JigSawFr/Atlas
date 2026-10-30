@@ -54,6 +54,7 @@
   "file_prices": "Prezzi e offerte in un paese, con il prezzo più basso visto",
   "file_links": "Gli ID di un gioco in ogni negozio, per elemento Wikidata",
   "file_index": "Ogni file con giorno, dimensione e hash",
+  "file_source": "Ciò che una fonte ha risposto, così come raccolto (da qui nascono i file delle piattaforme)",
   "use_eyebrow": "Usalo",
   "use_title": "Senza account, senza chiave, senza limiti",
   "use_lede": "I file sono semplice JSON. Leggili da dove preferisci.",
