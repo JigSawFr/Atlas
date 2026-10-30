@@ -13,7 +13,10 @@
 - no referrer: every page says `<meta name="referrer" content="no-referrer">`
   and every link to another site has rel="noreferrer", so a store or a
   source never learns a visitor came from Atlas (the explorer's store links
-  too, built in site/assets/explore.js);
+  too, built in site/assets/explore.js); but a link to boreale.dev, its
+  subdomains or github.com/JigSawFr keeps the site's origin
+  (referrerpolicy="strict-origin", no noreferrer), so GitHub's Traffic
+  page still shows where visits come from;
 - the explorer's texts (its application/json data) read as JSON, and with a
   data copy built in, each platform's x/<platform>/lists.json and shards.
 """
@@ -26,6 +29,15 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def own(href: str) -> bool:
+    """A link to Boréale's sites or to JigSawFr's GitHub: it keeps the origin."""
+    url = urlparse(href)
+    host = url.hostname or ""
+    if host == "boreale.dev" or host.endswith(".boreale.dev"):
+        return True
+    return host == "github.com" and url.path.lower().startswith("/jigsawfr/")
 
 
 class Page(HTMLParser):
@@ -45,9 +57,13 @@ class Page(HTMLParser):
             self.problems.append("<style> element")
         if tag == "meta" and a.get("name") == "referrer" and a.get("content") == "no-referrer":
             self.no_referrer = True
-        if tag == "a" and urlparse(a.get("href") or "").scheme in ("http", "https") \
-                and "noreferrer" not in (a.get("rel") or "").split():
-            self.problems.append(f"link to {a['href']} without rel=\"noreferrer\"")
+        if tag == "a" and urlparse(a.get("href") or "").scheme in ("http", "https"):
+            rel = (a.get("rel") or "").split()
+            if own(a["href"]):
+                if "noreferrer" in rel or a.get("referrerpolicy") != "strict-origin":
+                    self.problems.append(f"link to {a['href']} without referrerpolicy=\"strict-origin\" (or with noreferrer)")
+            elif "noreferrer" not in rel:
+                self.problems.append(f"link to {a['href']} without rel=\"noreferrer\"")
         if tag == "script":
             if a.get("type") == "application/json":
                 self.in_data = True
