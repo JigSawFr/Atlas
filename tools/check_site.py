@@ -38,6 +38,18 @@ SIZE_WARN = 500 * 1000 ** 2   # bytes: half of what Pages takes
 SIZE_MAX = 900 * 1000 ** 2    # bytes: a margin below Pages' 1 GB
 
 
+
+# No real e-mail address on the site, ours or anyone's: contact goes through
+# the repository's issues, a security flaw through a private advisory.
+EMAIL = re.compile(r"[\w.+-]+@(?:[\w-]+\.)+[a-z]{2,}", re.IGNORECASE)
+RESERVED = re.compile(r"@(?:[\w-]+\.)*(?:example\.(?:org|com|net)|[\w-]+\.example)$", re.IGNORECASE)
+
+
+def emails(text: str) -> list:
+    return [f"an e-mail address ({m.group(0)}), contact goes through GitHub"
+            for m in EMAIL.finditer(text) if not RESERVED.search(m.group(0))]
+
+
 def size(site: Path) -> int:
     """The site's bytes, every file counted."""
     return sum(p.stat().st_size for p in site.rglob("*") if p.is_file())
@@ -143,7 +155,7 @@ def main() -> None:
             errors.append(f"{name}: a {{{{key}}}} is left")
         parsed = Page()
         parsed.feed(html)
-        errors += [f"{name}: {p}" for p in parsed.problems]
+        errors += [f"{name}: {p}" for p in parsed.problems + emails(html)]
         if not any(attr == "src" and link.endswith("assets/umami.js") for attr, link in parsed.links):
             errors.append(f"{name}: no Umami tracker (assets/umami.js)")
         csp = re.search(r'http-equiv="Content-Security-Policy" content="([^"]*)"', html)
