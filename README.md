@@ -29,6 +29,7 @@ jsDelivr. Each platform has a folder of its own in `platforms/`, by its id
 | `platforms/switch/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/upcoming.json` |
 | `platforms/switch/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/games.json` |
 | `platforms/switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/similar.json` |
+| `platforms/switch/names.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/names.json` |
 | `platforms/switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/editions.json` |
 | `platforms/switch/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/prices/FR.json` |
 | `platforms/steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/popular.json` |
@@ -118,7 +119,7 @@ The games whose release date, as the US eShop gives it, is in the next year: `[Y
    "steam": {"app": 504230, "positive": 117545, "negative": 3057, "owners": 2000000, "ccu": 1174}}}}
 ```
 
-Every base game titledb knows is there with its `name` (titledb's US list's, else the British or the Japanese one's), even one with nothing else. Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`, and `igdb_rating`: `[players' rating 0..100, how many rated]` (IGDB's users, not the critics). `steam` is there for a game also sold on Steam: its reviews (`positive`, `negative`), from Steam's store at every run (its count and share of positive reviews), and the lower bound of its `owners` and its players at once (`ccu`) when SteamSpy last saw it (0 when it never did). SteamSpy allows a request a second, so each run asks it for as many games as 10 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
+A game has its `name` (titledb's US list's, else the British or the Japanese one's); `platforms/switch/names.json` gives every base game titledb knows its name, `{title id: name}`. Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`, and `igdb_rating`: `[players' rating 0..100, how many rated]` (IGDB's users, not the critics). `steam` is there for a game also sold on Steam: its reviews (`positive`, `negative`), from Steam's store at every run (its count and share of positive reviews), and the lower bound of its `owners` and its players at once (`ccu`) when SteamSpy last saw it (0 when it never did). SteamSpy allows a request a second, so each run asks it for as many games as 10 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
 
 `platforms/switch/similar.json`:
 

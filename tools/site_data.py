@@ -83,7 +83,7 @@ def trait_names(game: dict, tags: dict) -> dict:
 
 def platform_files(data_dir: str, platform: str) -> dict:
     base = os.path.join(data_dir, "platforms", platform)
-    files = {k: read(os.path.join(base, f"{k}.json")) or {} for k in ("popular", "games", "upcoming", "similar", "editions")}
+    files = {k: read(os.path.join(base, f"{k}.json")) or {} for k in ("popular", "games", "upcoming", "similar", "editions", "names")}
     prices = {}
     pdir = os.path.join(base, "prices")
     if os.path.isdir(pdir):
@@ -96,7 +96,7 @@ def platform_files(data_dir: str, platform: str) -> dict:
 
 
 def names_of(files: dict) -> dict:
-    names = {}
+    names = {gid: n for gid, n in (files["names"].get("games") or {}).items() if isinstance(n, str) and n}
     for gid, row in (files["upcoming"].get("games") or {}).items():
         if len(row) > 1 and row[1]:
             names[gid] = row[1]

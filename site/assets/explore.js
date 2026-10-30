@@ -189,8 +189,7 @@
     }
     results.replaceChildren(...found.map(([id, name, s]) => row(platform, id, name, [score(s)])));
     bars(results);
-    const hint = platform === "switch" ? ` ${t("x_switch_names")}` : "";
-    setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + hint + ` · ${t("x_loaded", { size: kb(read) })}`);
+    setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + ` · ${t("x_loaded", { size: kb(read) })}`);
   }
 
   function section(title, ...content) {

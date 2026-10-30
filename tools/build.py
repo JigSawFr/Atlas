@@ -355,10 +355,10 @@ def consolidate(src, out_dir, previous_dir, today):
         game_traits.setdefault(tid, {}).update(kinds)
     apps = features.steam_ids(common.bindings(src("wikidata/switch-steam.json").get("rows") or []), base_id)
     steam = steam_figures(src, apps, before)
-    # Every game's name (titledb's), and every game titledb knows, even with nothing else.
+    # Each game's name (titledb's); every game's in names.json.
     names = names_of(src)
     table = {}
-    for tid in sorted(set(game_traits) | set(steam) | set(found["ratings"]) | set(names)):
+    for tid in sorted(set(game_traits) | set(steam) | set(found["ratings"])):
         entry = {"name": names[tid]} if tid in names else {}
         entry.update(game_traits.get(tid, {}))
         if tid in found["ratings"]:
@@ -371,6 +371,10 @@ def consolidate(src, out_dir, previous_dir, today):
         "source": "blawar/titledb (names), Wikidata (P179, P178, P123, P136, P404, P1733), Steam's store, SteamSpy"
                   + (" and IGDB" if found["traits"] else ""),
         "games": table}, previous_dir, report)
+    publish(out_dir, f"platforms/{SWITCH}/names.json", {
+        "schema": 1, "platform": SWITCH, "generated": today.isoformat(),
+        "source": "blawar/titledb (US.en.json, else GB.en.json, else JP.ja.json)",
+        "games": dict(sorted(names.items()))}, previous_dir, report)
     # The games alike: by their traits, then by what the eShop says of them
     # (titledb's names, descriptions, categories and publishers) for the
     # many games Wikidata knows nothing of.
