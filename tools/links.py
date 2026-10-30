@@ -29,6 +29,7 @@ import urllib.error
 import urllib.parse
 
 import common
+import platforms
 
 QLEVER = "https://qlever.dev/api/wikidata"
 # The platform each property's ids are of.
@@ -113,6 +114,7 @@ def main():
     common.publish(out_dir, "links.json", {
         "schema": common.SCHEMA, "generated": datetime.date.today().isoformat(),
         "source": "Wikidata (" + ", ".join(PROPERTIES) + ")", "games": games}, previous_dir, report)
+    platforms.write_registry(out_dir)
     print(common.summary(report), file=sys.stderr)
 
 

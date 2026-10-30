@@ -87,7 +87,7 @@ class Main(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.out = os.path.join(self.tmp.name, "out")
         self.last = os.path.join(self.tmp.name, "last")
-        os.makedirs(os.path.join(self.last, build.SWITCH))
+        os.makedirs(os.path.join(self.last, "platforms", build.SWITCH))
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -104,7 +104,7 @@ class Main(unittest.TestCase):
         self.assertIn("nothing to redo", err.getvalue())
 
     def put(self, body):
-        path = os.path.join(self.last, build.SWITCH, "popular.json")
+        path = os.path.join(self.last, "platforms", build.SWITCH, "popular.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(body, f)
         return path

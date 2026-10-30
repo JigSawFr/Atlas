@@ -3,6 +3,10 @@
       <div class="group" role="group" aria-label="{{x_platform}}" id="x-platforms">
 {{platform_buttons}}
       </div>
+      <label class="field" id="x-machine-field"{{machine_hidden}}><span>{{x_machine}}</span><select id="x-machine">
+          <option value="">{{x_machine_pick}}</option>
+{{machine_options}}
+        </select></label>
       <div class="group" role="group" aria-label="{{x_view}}" id="x-views">
         <button type="button" data-view="popular">{{x_popular}}</button>
         <button type="button" data-view="trending">{{x_trending}}</button>

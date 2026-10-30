@@ -150,7 +150,7 @@ def consolidate(src, out_dir, previous_dir, today):
                 continue
             games, currency = from_answers(answers, ids)
             print(f"{country}: {len(games)} games, {sum(1 for r in games.values() if r[1])} on sale", file=sys.stderr)
-            name = f"{build.SWITCH}/prices/{country}.json"
+            name = f"platforms/{build.SWITCH}/prices/{country}.json"
             last = common.previous_file(previous_dir, name) if previous_dir else {}
             common.publish(out_dir, name, {
                 "schema": common.SCHEMA, "platform": build.SWITCH, "generated": today, "country": country, "currency": currency or "",

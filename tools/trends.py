@@ -177,9 +177,9 @@ def updated(popular, trends, today):
 def consolidate(src, out_dir, previous_dir, today):
     """switch/popular.json with today's trends, from the sources collected."""
     # None, or one of another schema: the weekly build makes the next one.
-    popular = common.previous_file(previous_dir, f"{build.SWITCH}/popular.json")
+    popular = common.previous_file(previous_dir, f"platforms/{build.SWITCH}/popular.json")
     if not rows(popular):
-        print(f"trends: no {build.SWITCH}/popular.json of schema {common.SCHEMA} in {previous_dir}, nothing to redo",
+        print(f"trends: no platforms/{build.SWITCH}/popular.json of schema {common.SCHEMA} in {previous_dir}, nothing to redo",
               file=sys.stderr)
         return
     by_game = pages(common.bindings(src("wikidata/switch-pages.json").get("rows") or []), build.base_id)
@@ -191,7 +191,7 @@ def consolidate(src, out_dir, previous_dir, today):
     if trends is None:
         return
     report = []
-    common.publish(out_dir, f"{build.SWITCH}/popular.json", updated(popular, trends, today), previous_dir, report)
+    common.publish(out_dir, f"platforms/{build.SWITCH}/popular.json", updated(popular, trends, today), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
 
 

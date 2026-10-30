@@ -22,7 +22,7 @@
   const STORE_NAMES = { switch: "Nintendo Switch", steam: "Steam", ps: "PlayStation", ps_product: "PlayStation",
     xbox: "Xbox", gog: "GOG", epic: "Epic Games" };
   const status = $("x-status"), results = $("x-results"), sheet = $("x-sheet");
-  const countrySelect = $("x-country"), search = $("x-search");
+  const countrySelect = $("x-country"), search = $("x-search"), machine = $("x-machine");
   const cache = new Map();
   let read = 0;
 
@@ -189,8 +189,7 @@
     }
     results.replaceChildren(...found.map(([id, name, s]) => row(platform, id, name, [score(s)])));
     bars(results);
-    const hint = platform === "switch" ? ` ${t("x_switch_names")}` : "";
-    setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + hint + ` · ${t("x_loaded", { size: kb(read) })}`);
+    setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + ` · ${t("x_loaded", { size: kb(read) })}`);
   }
 
   function section(title, ...content) {
@@ -298,6 +297,7 @@
   async function show() {
     const { platform, view, arg } = route();
     pressed("x-platforms", "platform", platform);
+    machine.value = [...machine.options].some((o) => o.value === platform) ? platform : "";
     try {
       if (view === "game") await game(platform, arg);
       else if (view === "search") { if (search.value !== arg) search.value = arg; await find(platform, arg); }
@@ -314,6 +314,7 @@
     const keep = view === "game" || view === "search" ? "popular" : view;
     go(`#${b.dataset.platform}/${keep}${keep === "deals" && arg ? `/${arg}` : ""}`);
   });
+  machine.addEventListener("change", () => { if (machine.value) go(`#${machine.value}/popular`); });
   document.getElementById("x-views").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-view]");
     if (!b) return;

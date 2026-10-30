@@ -279,7 +279,7 @@ def upcoming(titles, today, days=UPCOMING_DAYS, hypes=None):
 def previous_games(directory):
     """The last run's games.json's games, {} when there is none (or it is of another schema)."""
     try:
-        with open(os.path.join(directory, SWITCH, "games.json"), encoding="utf-8") as f:
+        with open(os.path.join(directory, "platforms", SWITCH, "games.json"), encoding="utf-8") as f:
             body = json.load(f)
         return body.get("games", {}) if body.get("schema") == SCHEMA else {}
     except (OSError, ValueError, AttributeError):
@@ -296,6 +296,19 @@ def igdb_found(src):
     ids, traits, hypes = igdb.read_games(games_, by_slug)
     return {"traits": traits, "popularity": igdb.read_popularity(popularity or [], ids), "hypes": hypes,
             "ratings": igdb.read_ratings(games_, by_slug)}
+
+
+def names_of(src):
+    """{title id: name} of every base game titledb knows (not a demo), the US
+    list's name first, else the British one's, else the Japanese one's."""
+    out = {}
+    for region in ("US", "GB", "JP"):
+        for entry in (src(f"titledb/{region}.json").get("games") or {}).values():
+            tid = base_id(entry.get("id"))
+            name = (entry.get("name") or "").strip()
+            if tid and name and tid not in out and entry.get("isDemo") not in (True, "True"):
+                out[tid] = name[:200]
+    return out
 
 
 def views_known(src):
@@ -342,18 +355,26 @@ def consolidate(src, out_dir, previous_dir, today):
         game_traits.setdefault(tid, {}).update(kinds)
     apps = features.steam_ids(common.bindings(src("wikidata/switch-steam.json").get("rows") or []), base_id)
     steam = steam_figures(src, apps, before)
+    # Each game's name (titledb's); every game's in names.json.
+    names = names_of(src)
     table = {}
     for tid in sorted(set(game_traits) | set(steam) | set(found["ratings"])):
-        entry = dict(game_traits.get(tid, {}))
+        entry = {"name": names[tid]} if tid in names else {}
+        entry.update(game_traits.get(tid, {}))
         if tid in found["ratings"]:
             entry["igdb_rating"] = found["ratings"][tid]
         if tid in steam:
             entry["steam"] = steam[tid]
         table[tid] = entry
-    publish(out_dir, f"{SWITCH}/games.json", {
+    publish(out_dir, f"platforms/{SWITCH}/games.json", {
         "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(),
-        "source": "Wikidata (P179, P178, P123, P136, P404, P1733), Steam's store, SteamSpy" + (" and IGDB" if found["traits"] else ""),
+        "source": "blawar/titledb (names), Wikidata (P179, P178, P123, P136, P404, P1733), Steam's store, SteamSpy"
+                  + (" and IGDB" if found["traits"] else ""),
         "games": table}, previous_dir, report)
+    publish(out_dir, f"platforms/{SWITCH}/names.json", {
+        "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(),
+        "source": "blawar/titledb (US.en.json, else GB.en.json, else JP.ja.json)",
+        "games": dict(sorted(names.items()))}, previous_dir, report)
     # The games alike: by their traits, then by what the eShop says of them
     # (titledb's names, descriptions, categories and publishers) for the
     # many games Wikidata knows nothing of.
@@ -361,23 +382,23 @@ def consolidate(src, out_dir, previous_dir, today):
     by_text = text.similar(titles, base_id)
     # A game's other editions: one game, not one like it.
     of = editions.editions(titles, base_id)
-    publish(out_dir, f"{SWITCH}/similar.json", {
+    publish(out_dir, f"platforms/{SWITCH}/similar.json", {
         "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(),
         "source": "games.json's traits" + (" and titledb's descriptions" if by_text else ""),
         "games": editions.apart(text.merged(features.similar(game_traits), by_text), of)}, previous_dir, report)
     if of:
-        publish(out_dir, f"{SWITCH}/editions.json", {
+        publish(out_dir, f"platforms/{SWITCH}/editions.json", {
             "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(), "source": "blawar/titledb (US.en.json)",
             "games": of}, previous_dir, report)
 
-    publish(out_dir, f"{SWITCH}/popular.json", {
+    publish(out_dir, f"platforms/{SWITCH}/popular.json", {
         "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
         "views": bool(read),
         "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), Steam's store"
                   + (" and IGDB" if found["popularity"] else ""),
         "games": popular(known, critics, read, steam, found["popularity"])}, previous_dir, report)
 
-    publish(out_dir, f"{SWITCH}/upcoming.json", {
+    publish(out_dir, f"platforms/{SWITCH}/upcoming.json", {
         "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(),
         "source": "blawar/titledb (US.en.json)" + (" and IGDB" if found["hypes"] else ""),
         "games": upcoming(titles, today, hypes=found["hypes"])}, previous_dir, report)

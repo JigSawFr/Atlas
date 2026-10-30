@@ -256,16 +256,16 @@ def consolidate(src, out_dir, previous_dir, today):
 
     kept = set(sorted(table, key=lambda app: -table[app][0])[:GAMES_KEPT]) | set(upcoming(games, today))
     used = {t for app in kept for t in games[app].get("tags", [])}
-    common.publish(out_dir, f"{STEAM}/games.json", payload(
+    common.publish(out_dir, f"platforms/{STEAM}/games.json", payload(
         "Steam's store (GetItems, GetTagList), Wikidata (P1733)",
         {app: games[app] for app in sorted(kept, key=int)},
         tags={str(t): tags[t] for t in sorted(used) if t in tags}), previous_dir, report)
-    common.publish(out_dir, f"{STEAM}/popular.json", payload(
+    common.publish(out_dir, f"platforms/{STEAM}/popular.json", payload(
         "Wikidata (P1733, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), Steam's reviews "
         "and most played", table, month=starts[-1].strftime("%Y-%m"), views=bool(read)), previous_dir, report)
-    common.publish(out_dir, f"{STEAM}/upcoming.json", payload(
+    common.publish(out_dir, f"platforms/{STEAM}/upcoming.json", payload(
         "Steam's store (GetItems)", upcoming(games, today)), previous_dir, report)
-    common.publish(out_dir, f"{STEAM}/similar.json", payload(
+    common.publish(out_dir, f"platforms/{STEAM}/similar.json", payload(
         "steam/games.json's traits", similar(games, table)), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
 

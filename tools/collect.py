@@ -77,7 +77,7 @@ def collect_wikidata(what, out_dir, previous_dir, fresh, today, report):
     if what == "weekly":
         asked = wikidata_weekly()
     else:
-        popular = common.previous_file(previous_dir, f"{build.SWITCH}/popular.json").get("games") or {}
+        popular = common.previous_file(previous_dir, f"platforms/{build.SWITCH}/popular.json").get("games") or {}
         top = [tid for tid, _ in sorted(popular.items(), key=lambda kv: -kv[1][0])[:trends.TOP]]
 
         def pages():
@@ -205,7 +205,7 @@ def collect_steam_store(what, out_dir, previous_dir, fresh, today, report):
             "steam-store", today, store + ": ISteamChartsService/GetMostPlayedGames", terms, items=played),
             previous_dir, report)
         return
-    games = common.previous_file(previous_dir, f"{steam.STEAM}/games.json").get("games") or {}
+    games = common.previous_file(previous_dir, f"platforms/{steam.STEAM}/games.json").get("games") or {}
     if not games:
         print("steam-store prices: no steam/games.json in the last run's files, nothing to ask", file=sys.stderr)
         return
@@ -276,7 +276,7 @@ def collect_msstore(what, out_dir, previous_dir, fresh, today, report):
             "msstore", today, store, terms, country="US",
             games={pid: ms_product(p) for pid, p in found.items()}), previous_dir, report)
         return
-    games = common.previous_file(previous_dir, f"{xbox.XBOX}/games.json").get("games") or {}
+    games = common.previous_file(previous_dir, f"platforms/{xbox.XBOX}/games.json").get("games") or {}
     if not games:
         print("msstore prices: no xbox/games.json in the last run's files, nothing to ask", file=sys.stderr)
         return

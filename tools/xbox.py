@@ -246,17 +246,17 @@ def catalog(src, out_dir, previous_dir, today):
     def payload(source, entries, **extra):
         return {"platform": XBOX, "generated": today.isoformat(), **extra, "schema": common.SCHEMA, "source": source,
                 "games": entries}
-    common.publish(out_dir, f"{XBOX}/games.json", payload(
+    common.publish(out_dir, f"platforms/{XBOX}/games.json", payload(
         "Microsoft Store's catalog (displaycatalog), Game Pass lists, Wikidata (P5885)", dict(sorted(games.items()))),
         previous_dir, report)
-    common.publish(out_dir, f"{XBOX}/gamepass.json", payload(
+    common.publish(out_dir, f"platforms/{XBOX}/gamepass.json", payload(
         "Game Pass's lists (console, PC)", {pid: gamepass[pid] for pid in sorted(gamepass) if pid in games}),
         previous_dir, report)
-    common.publish(out_dir, f"{XBOX}/popular.json", payload(
+    common.publish(out_dir, f"platforms/{XBOX}/popular.json", payload(
         "Wikidata (P5885, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), the store's ratings, "
         "the Game Pass", table, month=starts[-1].strftime("%Y-%m"), views=bool(read)), previous_dir, report)
-    common.publish(out_dir, f"{XBOX}/upcoming.json", payload("Microsoft Store's catalog", coming), previous_dir, report)
-    common.publish(out_dir, f"{XBOX}/similar.json", payload(
+    common.publish(out_dir, f"platforms/{XBOX}/upcoming.json", payload("Microsoft Store's catalog", coming), previous_dir, report)
+    common.publish(out_dir, f"platforms/{XBOX}/similar.json", payload(
         "xbox/games.json's traits", features.similar(traits, max_shared=300)), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
 
@@ -273,7 +273,7 @@ def prices(src, out_dir, previous_dir, today):
             row = row_of(got)
             if row:
                 rows[pid] = row
-        name = f"{XBOX}/prices/{country}.json"
+        name = f"platforms/{XBOX}/prices/{country}.json"
         last = common.previous_file(previous_dir, name)
         common.publish(out_dir, name, {
             "schema": common.SCHEMA, "platform": XBOX, "generated": today.isoformat(), "country": country, "currency": currency,

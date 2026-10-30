@@ -91,13 +91,13 @@ class PreviousGames(unittest.TestCase):
     def setUp(self):
         import tempfile
         self.tmp = tempfile.TemporaryDirectory()
-        os.makedirs(os.path.join(self.tmp.name, build.SWITCH))
+        os.makedirs(os.path.join(self.tmp.name, "platforms", build.SWITCH))
 
     def tearDown(self):
         self.tmp.cleanup()
 
     def put(self, body):
-        with open(os.path.join(self.tmp.name, build.SWITCH, "games.json"), "w", encoding="utf-8") as f:
+        with open(os.path.join(self.tmp.name, "platforms", build.SWITCH, "games.json"), "w", encoding="utf-8") as f:
             json.dump(body, f)
 
     def test_previous_games(self):

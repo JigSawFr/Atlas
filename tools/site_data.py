@@ -54,10 +54,11 @@ def read(path):
 
 
 def platforms(data_dir: str) -> list:
-    """The platforms the data has: each folder with a popular.json (of our schema)."""
+    """The platforms the data has: each folder of platforms/ with a popular.json (of our schema)."""
     out = []
-    for name in sorted(os.listdir(data_dir)):
-        if read(os.path.join(data_dir, name, "popular.json")) is not None:
+    base = os.path.join(data_dir, "platforms")
+    for name in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+        if read(os.path.join(base, name, "popular.json")) is not None:
             out.append(name)
     return out
 
@@ -85,8 +86,8 @@ def trait_names(game: dict, tags: dict) -> dict:
 
 
 def platform_files(data_dir: str, platform: str) -> dict:
-    base = os.path.join(data_dir, platform)
-    files = {k: read(os.path.join(base, f"{k}.json")) or {} for k in ("popular", "games", "upcoming", "similar", "editions")}
+    base = os.path.join(data_dir, "platforms", platform)
+    files = {k: read(os.path.join(base, f"{k}.json")) or {} for k in ("popular", "games", "upcoming", "similar", "editions", "names")}
     prices = {}
     pdir = os.path.join(base, "prices")
     if os.path.isdir(pdir):
@@ -99,7 +100,7 @@ def platform_files(data_dir: str, platform: str) -> dict:
 
 
 def names_of(files: dict) -> dict:
-    names = {}
+    names = {gid: n for gid, n in (files["names"].get("games") or {}).items() if isinstance(n, str) and n}
     for gid, row in (files["upcoming"].get("games") or {}).items():
         if len(row) > 1 and row[1]:
             names[gid] = row[1]
