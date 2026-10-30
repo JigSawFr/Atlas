@@ -26,7 +26,7 @@ import shutil
 import sys
 from datetime import date
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import platforms  # noqa: E402
@@ -35,6 +35,12 @@ import site_data  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 SITE_URL = os.environ.get("SITE_URL", "https://atlas.boreale.dev/").rstrip("/") + "/"
+# The audience, counted by Umami Cloud (site/README.md): its tracker, served from
+# assets/, sends each page seen to gateway.umami.is, without cookie, and only from
+# the site's own address (not a local copy). Its site in Umami is Boréale's,
+# shared by its projects' sites: Umami's Hostname filter tells them apart.
+UMAMI_WEBSITE = "6410ffdd-ae2e-4ddb-8e18-0a77e9fa374e"
+UMAMI_DOMAIN = urlparse(SITE_URL).hostname
 # Boréale's sites' languages: the catalog's code, the folder ('' for the
 # root), the name in its own words, the html lang.
 LANGUAGES = [
@@ -68,6 +74,21 @@ STORE_IDS = {p[0] for p in platforms.STORES + platforms.CONSOLES}   # a button e
 MACHINES = "|".join(re.escape(p[0]) for p in platforms.RETRO)
 # The pages, by their path under each language's folder.
 PAGES = {"": "home", "explore/": "explore"}
+# Boréale's sites, in the header's menu (switcher()): boreale.dev's
+# reference (boreale/tools/build_site.py), then the open data and protocols,
+# this one and Lantern.
+SITES = [(None, [("boreale", "Boréale", "https://boreale.dev/")]),
+         ("sites_homebrew", [("playguard", "PlayGuard", "https://guard.boreale.dev/"),
+                             ("playshelf", "PlayShelf", "https://shelf.boreale.dev/")]),
+         ("sites_libraries", [("aurore", "Aurore", "https://aurore.boreale.dev/")]),
+         ("sites_open", [("atlas", "Atlas", "https://atlas.boreale.dev/"),
+                         ("lantern", "Lantern", "https://lantern.boreale.dev/")])]
+HERE = "atlas"
+# Where a visit to another of Boréale's sites came from, for Umami (Boréale's
+# audience rules): a link from this site to another *.boreale.dev site
+# carries utm_source=atlas and a utm_medium telling where on the page it is
+# ("nav" for the header's sites menu, "footer"). A link to this site carries none.
+UTM_SOURCE = "atlas"
 # A file made every day; the others every week (late past 2 and 9 days).
 DAILY = re.compile(r"(^|/)prices/|^platforms/switch/popular\.json$|^sources/(eshop|titledb|gog|wikipedia)/")
 
@@ -128,6 +149,48 @@ def day(text: str, language: str) -> str:
         return ""
     month = MONTHS[language][d.month - 1] if language in MONTHS else ""
     return DATES.get(language, "{d} {m} {y}").format(d=d.day, m=month, n=d.month, y=d.year)
+
+
+def utm(url: str, medium: str) -> str:
+    """`url` tagged for its medium, or as it is when it leads out of Boréale's
+    sites or to this site itself."""
+    u = urlsplit(url)
+    host = (u.hostname or "").lower()
+    if u.scheme != "https" or not (host == "boreale.dev" or host.endswith(".boreale.dev")):
+        return url
+    query = [(k, v) for k, v in parse_qsl(u.query, keep_blank_values=True) if not k.startswith("utm_")]
+    if host != (urlsplit(SITE_URL).hostname or ""):
+        query += [("utm_source", UTM_SOURCE), ("utm_medium", medium)]
+    return urlunsplit(u._replace(query=urlencode(query)))
+
+
+def switcher(language: str, catalog: dict, root: str) -> str:
+    """The header's name, a button that opens the menu of Boréale's sites
+    (site.css's and site.js's "site switcher" blocks, boreale.dev's), this
+    one marked and leading home. A popover: the browser closes it on Esc or
+    a click elsewhere. The other sites keep the origin and carry their UTM
+    tags (utm()); no versions: this build reads nothing from boreale.dev."""
+    label = catalog["sites_label"]
+    groups = []
+    for title, sites in SITES:
+        items = []
+        for key, name, url in sites:
+            if key == HERE:
+                link = f'href="{root}{folder(language)}" aria-current="true"'
+            else:
+                link = f'href="{html.escape(utm(url + folder(language), "nav"))}" referrerpolicy="strict-origin"'
+            soon = f'<em class="soon">{catalog["sites_soon"]}</em>' if key == "playshelf" else ""
+            items.append(f'<li><a {link}>'
+                         f'<img src="{root}assets/marks/{key}.svg" alt="" width="36" height="36">'
+                         f'<span><strong>{name}</strong><small>{catalog[f"sites_{key}"]}</small></span>{soon}</a></li>')
+        heading = f'<p class="sites-title">{catalog[title]}</p>' if title else ""
+        groups.append(f'        {heading}<ul>\n          ' + "\n          ".join(items) + '\n        </ul>')
+    return (f'<div class="switcher">\n'
+            f'      <button class="brand switch" type="button" popovertarget="sites" aria-label="Atlas · {label}">'
+            f'<img src="{root}assets/mark.svg" alt="" width="34" height="34">Atlas'
+            f'<svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>\n'
+            f'      <div id="sites" class="sites" popover aria-label="{label}">\n'
+            + "\n".join(groups) + '\n      </div>\n    </div>')
 
 
 def flag(language: str) -> str:
@@ -235,7 +298,7 @@ def hero(page: str, catalog: dict, root: str, language: str) -> str:
         return (f'<div class="wrap hero">\n    <span class="eyebrow">{catalog["hero_eyebrow"]}</span>\n'
                 f'    <h1>{catalog["hero_title"]}</h1>\n    <p class="lede">{catalog["hero_lede"]}</p>\n'
                 f'    <div class="actions"><a class="button primary" href="{root}{folder(language)}explore/">{catalog["cta_explore"]}</a>'
-                f'<a class="button ghost" href="https://github.com/JigSawFr/Atlas" rel="noreferrer">{catalog["cta_github"]}</a></div>\n  </div>')
+                f'<a class="button ghost" href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">{catalog["cta_github"]}</a></div>\n  </div>')
     return (f'<div class="wrap hero small">\n    <span class="eyebrow">{catalog["explore_eyebrow"]}</span>\n'
             f'    <h1>{catalog["explore_title"]}</h1>\n    <p class="lede">{catalog["explore_lede"]}</p>\n  </div>')
 
@@ -263,15 +326,19 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
         "first_visit": ' data-first-visit=""' if language == "en" and path == "" else "",
         "indexing": indexing(folder(language) + path) + "\n" + alternates(path),
         "languages": languages(language, catalog, root, path),
+        "switcher": switcher(language, catalog, root),
         "current_project": ' aria-current="page"' if page == "home" else "",
         "current_explore": ' aria-current="page"' if page == "explore" else "",
         "scripts": f'<script src="{root}assets/explore.js" defer></script>' if page == "explore" else "",
+        "audience": f'<script src="{root}assets/umami.js" defer data-website-id="{UMAMI_WEBSITE}" '
+                    f'data-domains="{UMAMI_DOMAIN}"></script>',
         "hero": hero(page, catalog, root, language),
         "platform_cards": platform_cards(language, catalog, root, summary) if page == "home" else "",
         "file_rows": file_rows(language, catalog, index) if page == "home" else "",
         "platform_buttons": "\n".join(
             f'        <button type="button" data-platform="{k}">{n}</button>' for k, n in PLATFORMS
             if k in summary and k in STORE_IDS) if page == "explore" else "",
+        "machine_hidden": "" if any(k in summary and k not in STORE_IDS for k, _ in PLATFORMS) else " hidden",
         "machine_options": "\n".join(
             f'          <option value="{k}">{html.escape(n)}</option>' for k, n in PLATFORMS
             if k in summary and k not in STORE_IDS) if page == "explore" else "",

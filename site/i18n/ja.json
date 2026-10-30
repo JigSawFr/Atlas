@@ -10,6 +10,7 @@
   "language": "言語",
   "footer_label": "その他",
   "footer_releases": "毎週のリリース",
+  "footer_legal": "プライバシーと法的情報",
   "footer_made": "Boréale のプロジェクト。コードは GPL-3.0、データはオープンなソースから。",
   "footer_trademarks": "Nintendo Switch、Steam、およびここに挙げたゲームは各権利者の商標です。Atlas はそれらと提携していません。",
   "hero_eyebrow": "オープンデータ · すべてのプラットフォーム",
@@ -140,5 +141,16 @@
   "x_keywords": "キーワード",
   "x_perspectives": "視点",
   "x_tags": "タグ",
-  "x_not_found": "このゲームは地図にありません。"
+  "x_not_found": "このゲームは地図にありません。",
+  "sites_label": "Boréale のプロジェクト",
+  "sites_homebrew": "Switch の自作ソフト",
+  "sites_libraries": "ライブラリ",
+  "sites_boreale": "長い夜のための自作ソフト",
+  "sites_playguard": "見守り設定を本体で",
+  "sites_playshelf": "ゲームライブラリを本体で",
+  "sites_aurore": "それらを支える UI ライブラリ",
+  "sites_soon": "近日公開",
+  "sites_open": "オープンデータとプロトコル",
+  "sites_atlas": "すべてのプラットフォームの、すべてのゲームの地図",
+  "sites_lantern": "サーバーとゲーム機をつなぐプロトコル"
 }

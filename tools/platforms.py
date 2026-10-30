@@ -86,7 +86,7 @@ def registry(today=None):
     for pid, name, qid, igdb, aurore, kind in STORES + CONSOLES + [r + ("retro",) for r in RETRO]:
         entries[pid] = {k: v for k, v in (("name", name), ("qid", qid), ("igdb", igdb), ("aurore", aurore),
                                           ("kind", kind)) if v}
-    return {"schema": 1, "generated": (today or datetime.date.today()).isoformat(),
+    return {"schema": common.SCHEMA, "generated": (today or datetime.date.today()).isoformat(),
             "source": "Atlas (Wikidata items, IGDB platforms, Aurore's ids)", "platforms": entries}
 
 

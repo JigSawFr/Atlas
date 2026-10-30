@@ -5,9 +5,9 @@
 #   - eshop: titledb's lists (the eShop's ids), then the eShop's prices in a
 #     few countries;
 #   - steam-store, gog, msstore: each store's prices in the same countries;
-# - the platforms' files made from them, asking nothing: switch/popular.json's
-#   trends (tools/trends.py), switch/prices/ (tools/prices.py), steam/prices/
-#   (tools/steam_prices.py), gog/prices/ (tools/gog.py prices), xbox/prices/
+# - the platforms' files made from them, asking nothing: platforms/switch/popular.json's
+#   trends (tools/trends.py), platforms/switch/prices/ (tools/prices.py), platforms/steam/prices/
+#   (tools/steam_prices.py), platforms/gog/prices/ (tools/gog.py prices), platforms/xbox/prices/
 #   (tools/xbox.py prices); then everything committed to the `data` branch,
 #   where PlayShelf reads it through jsDelivr. A file made from nothing
 #   collected today is left as it was.
@@ -33,7 +33,7 @@ env:
 
 jobs:
   sources:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -83,7 +83,7 @@ jobs:
   publish:
     needs: sources
     if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -10,6 +10,7 @@
   "language": "Язык",
   "footer_label": "Ещё",
   "footer_releases": "Еженедельные релизы",
+  "footer_legal": "Конфиденциальность и правовая информация",
   "footer_made": "Проект Boréale. Код под GPL-3.0, данные из открытых источников.",
   "footer_trademarks": "Nintendo Switch, Steam и названные здесь игры — товарные знаки их владельцев. Atlas с ними не связан.",
   "hero_eyebrow": "Открытые данные · все платформы",
@@ -140,5 +141,16 @@
   "x_keywords": "Ключевые слова",
   "x_perspectives": "Перспективы",
   "x_tags": "Метки",
-  "x_not_found": "Этой игры нет на карте."
+  "x_not_found": "Этой игры нет на карте.",
+  "sites_label": "Проекты Boréale",
+  "sites_homebrew": "Homebrew для Switch",
+  "sites_libraries": "Библиотеки",
+  "sites_boreale": "Homebrew для долгих ночей",
+  "sites_playguard": "Родительский контроль на консоли",
+  "sites_playshelf": "Ваша библиотека игр на консоли",
+  "sites_aurore": "Библиотека интерфейса, на которой они построены",
+  "sites_soon": "Скоро",
+  "sites_open": "Открытые данные и протоколы",
+  "sites_atlas": "Карта всех игр на всех платформах",
+  "sites_lantern": "Протокол между серверами и консолями"
 }

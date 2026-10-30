@@ -46,6 +46,26 @@ class SourceFiles(unittest.TestCase):
             self.assertTrue(kept)
             self.assertEqual(len(common.read_records(out, "sources/demo/rows.json")["rows"]), 100)
 
+    def test_schema(self):
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "sources/demo"))
+            for name, body in (("newer", {"schema": 2, "games": {"1": {}}}), ("none", {"games": {"1": {}}}),
+                               ("odd", ["not", "ours"]),
+                               ("known", {"schema": 1, "games": {"1": {"name": "Lantern Tale"}}, "later": 3})):
+                with open(os.path.join(d, f"sources/demo/{name}.json"), "w") as f:
+                    json.dump(body, f)
+            self.assertIsNone(common.read_records(d, "sources/demo/newer.json"))   # another schema: no file
+            self.assertIsNone(common.read_records(d, "sources/demo/none.json"))
+            self.assertIsNone(common.read_records(d, "sources/demo/odd.json"))
+            self.assertEqual(common.read_records(d, "sources/demo/known.json")["later"], 3)   # unknown field kept
+        with tempfile.TemporaryDirectory() as last, tempfile.TemporaryDirectory() as out:
+            os.makedirs(os.path.join(last, "sources/demo"))
+            with open(os.path.join(last, "sources/demo/rows.json"), "w") as f:
+                json.dump({"schema": 2, "rows": [{"n": i} for i in range(100)]}, f)
+            # the last run's file is of another schema: no guard against it
+            self.assertTrue(common.publish_source(out, "sources/demo/rows.json",
+                                                  {"schema": 1, "rows": [{"n": 1}]}, last, []))
+
     def test_rows(self):
         answer = [{"tid": {"type": "literal", "value": A}, "name": {"value": "Lantern Tale", "xml:lang": "en"}}]
         rows = common.rows_of(answer)
@@ -57,9 +77,9 @@ class SourceFiles(unittest.TestCase):
             for d, n in ((fresh, 1), (last, 2)):
                 os.makedirs(os.path.join(d, "sources/demo"))
                 with open(os.path.join(d, "sources/demo/a.json"), "w") as f:
-                    json.dump({"games": {"n": n}, "generated": "2026-10-30"}, f)
+                    json.dump({"schema": 1, "games": {"n": n}, "generated": "2026-10-30"}, f)
             with open(os.path.join(last, "sources/demo/b.json"), "w") as f:
-                json.dump({"games": {"n": 3}}, f)
+                json.dump({"schema": 1, "games": {"n": 3}}, f)
             src = common.reader(fresh, last)
             self.assertEqual(src("demo/a.json")["games"]["n"], 1)
             self.assertEqual(src("demo/b.json")["games"]["n"], 3)

@@ -1,7 +1,7 @@
 #!/bin/bash
 # The data branch's last files in ./data-branch (a worktree, on branch `data`,
 # a new orphan one when the repository has none yet), with the Switch's files
-# moved into switch/ when they are still at its root (tools/migrate.py): each
+# moved into platforms/<id>/ when they are still where they were (tools/migrate.py): each
 # job reads the last run's files there, and the publishing job commits into it.
 #
 # Usage: tools/data-branch.sh   (from the repository's root)

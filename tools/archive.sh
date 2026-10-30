@@ -1,7 +1,8 @@
 #!/bin/bash
 # The data branch's files as they are in <data-dir>, kept as a GitHub
 # release: data-YYYY-MM-DD, tagged on the commit of main that made them, with
-# each file attached on its own (switch/prices/FR.json as switch-prices-FR.json: a
+# each file attached on its own (platforms/switch/prices/FR.json as
+# platforms-switch-prices-FR.json: a
 # release's files have no folders), all of them in one zip
 # (atlas-data-YYYY-MM-DD.zip, with its folders), and a SHA256SUMS.txt. The data branch
 # keeps no history; these releases are its history, one a week, kept for
@@ -32,7 +33,7 @@ PY
 (cd "$out" && sha256sum -- * > ../SHA256SUMS.txt && mv ../SHA256SUMS.txt . && cat SHA256SUMS.txt)
 
 files=$(python3 -c "import json,sys; print(len(json.load(open(sys.argv[1]))['files']))" "$dir/index.json")
-notes="Atlas' data files as published on $day: $files files, the same as the \`data\` branch had that day (\`switch/prices/FR.json\` is \`switch-prices-FR.json\` here). Their format is in the README."
+notes="Atlas' data files as published on $day: $files files, the same as the \`data\` branch had that day (\`platforms/switch/prices/FR.json\` is \`platforms-switch-prices-FR.json\` here; the zip keeps the folders). Their format is in the README."
 if gh release view "$tag" >/dev/null 2>&1; then
   gh release delete "$tag" --yes --cleanup-tag
 fi

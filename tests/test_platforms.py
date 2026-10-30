@@ -9,6 +9,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
 import build  # noqa: E402
+import common  # noqa: E402
 import platforms  # noqa: E402
 import retro  # noqa: E402
 
@@ -31,6 +32,10 @@ class Registry(unittest.TestCase):
         self.assertEqual(got["3ds"]["kind"], "console")   # every machine retro.py asks has its folder
         self.assertEqual(platforms.path("nes", "games.json"), "platforms/nes/games.json")
 
+    def test_schema(self):
+        # platforms.json carries the data files' schema, like every other file (README).
+        self.assertEqual(platforms.registry(datetime.date(2026, 10, 30))["schema"], common.SCHEMA)
+
 
 def row(game, machine, name, links=10):
     return {"tid": f"http://www.wikidata.org/entity/{game}", "platform": f"http://www.wikidata.org/entity/{machine}",
@@ -50,6 +55,7 @@ class Machines(unittest.TestCase):
                 snes = json.load(f)
             self.assertEqual(sorted(nes["games"]), ["Q900001", "Q900002"])
             self.assertEqual(nes["platform"], "nes")
+            self.assertEqual(nes["schema"], common.SCHEMA)
             self.assertEqual(list(snes["games"]), ["Q900001"])
             self.assertFalse(os.path.exists(os.path.join(out, "platforms/gba")))
 

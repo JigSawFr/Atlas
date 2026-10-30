@@ -117,7 +117,7 @@ def main():
     games = dict(sorted(games.items(), key=lambda kv: int(kv[0][1:]) if kv[0][1:].isdigit() else 0))
     report = []
     common.publish(out_dir, "links.json", {
-        "schema": 1, "generated": datetime.date.today().isoformat(),
+        "schema": common.SCHEMA, "generated": datetime.date.today().isoformat(),
         "source": "Wikidata (" + ", ".join(PROPERTIES) + ")", "games": games}, previous_dir, report)
     platforms.write_registry(out_dir)
     print(common.summary(report), file=sys.stderr)

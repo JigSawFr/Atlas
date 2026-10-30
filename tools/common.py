@@ -20,6 +20,12 @@ SPARQL = "https://query.wikidata.org/sparql"
 MAX_WAIT = 1800        # seconds a rate-limited service is waited for, at most
 GUARD_KEEP = 0.7       # a file with fewer games than this share of the last run's is not published
 GUARD_FLOOR = 50       # games the last run's file had at least, for that to count
+# The data files' schema (README): a new field keeps it, a field changing
+# meaning moves it up. A file of another schema is read as no file at all.
+SCHEMA = 1
+# The sources' files' schema: a new field keeps it, a field changing
+# meaning moves it up; one of another schema is read as no file.
+SOURCE_SCHEMA = 1
 SOURCES = "sources"    # each source's answers, as collected (tools/collect.py)
 SHARD_BYTES = 15_000_000   # a source file larger than this is cut in parts (jsDelivr serves 20 MB at most)
 
@@ -71,10 +77,14 @@ def write(path, payload):
 
 
 def count_in(path):
-    """How many games a data file has, None when there is no such file (or not one of ours)."""
+    """How many games a data file has, None when there is no such file (or
+    not one of ours, or of another schema)."""
     try:
         with open(path, encoding="utf-8") as f:
-            games_of = json.load(f).get("games")
+            body = json.load(f)
+        if body.get("schema") != SCHEMA:
+            return None
+        games_of = body.get("games")
         return len(games_of) if isinstance(games_of, dict) else None
     except (OSError, ValueError, AttributeError):
         return None
@@ -137,11 +147,12 @@ def with_lowest(games, previous, today):
 
 
 def previous_file(previous_dir, name):
-    """The last run's file `name` (in previous_dir), {} when there is none."""
+    """The last run's file `name` (in previous_dir), {} when there is none
+    (or it is of another schema)."""
     try:
         with open(os.path.join(previous_dir, name), encoding="utf-8") as f:
             body = json.load(f)
-        return body if body.get("schema") == 1 else {}
+        return body if body.get("schema") == SCHEMA else {}
     except (OSError, ValueError, AttributeError, TypeError):
         return {}
 
@@ -175,7 +186,12 @@ def _parts(payload, key):
 def read_records(directory, name):
     """The source file `name` (sources/<source>/<file>.json) in `directory`,
     its parts put together when it was cut (sources/<source>/<file>/1.json…);
-    None when there is none."""
+    None when there is none, or it is of another schema (README)."""
+    whole = _read_records(directory, name)
+    return whole if isinstance(whole, dict) and whole.get("schema") == SOURCE_SCHEMA else None
+
+
+def _read_records(directory, name):
     path = os.path.join(directory, name)
     try:
         with open(path, encoding="utf-8") as f:
@@ -195,13 +211,16 @@ def read_records(directory, name):
                 part = json.load(f)
         except (OSError, ValueError):
             return None
-        key = records_key(part)
-        if whole is None:
-            whole = {k: v for k, v in part.items() if k not in ("part", "parts")}
-        elif isinstance(part[key], dict):
-            whole[key].update(part[key])
-        else:
-            whole[key].extend(part[key])
+        try:
+            key = records_key(part)
+            if whole is None:
+                whole = {k: v for k, v in part.items() if k not in ("part", "parts")}
+            elif isinstance(part[key], dict):
+                whole[key].update(part[key])
+            else:
+                whole[key].extend(part[key])
+        except (AttributeError, KeyError, TypeError):
+            return None   # not one of ours
     return whole
 
 
