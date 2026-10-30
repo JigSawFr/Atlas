@@ -35,6 +35,7 @@ import urllib.parse
 import build
 import common
 import features
+import igdb
 
 XBOX = "xbox"
 PRODUCTS = ("https://displaycatalog.mp.microsoft.com/v7.0/products?bigIds={ids}&market={country}"
@@ -232,6 +233,7 @@ def catalog(src, out_dir, previous_dir, today):
     rows, known = known_of(src)
     critics = build.reviews(rows, ident=big_id)
     gamepass, games = store_games(src, rows, known)
+    print(f"xbox: IGDB's traits or rating for {igdb.complete(games, igdb.others(src))} games", file=sys.stderr)
     print(f"xbox: {len(games)} games, {sum(1 for g in games.values() if 'gamepass' in g)} in the Game Pass",
           file=sys.stderr)
     starts, end = build.months(today)

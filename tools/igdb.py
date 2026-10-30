@@ -13,6 +13,15 @@ application's): without them, nothing, and every file is made as before.
 The games are found by their IGDB slug in Wikidata (P5794), which links them
 to their Switch title id: no table kept by hand. IGDB answers 4 requests a
 second and 500 records a request at most (PAUSE, BATCH).
+
+The consoles' games Wikidata knows (the 3DS, the PS4 and PS5, the old
+machines, the Microsoft Store's; Steam's and GOG's have their store's
+traits) get from IGDB, by the same slug (OTHERS_QUERY), the traits neither
+Wikidata nor their store gives them (series, developers, publishers,
+genres, modes: complete()) and their players' rating (igdb_rating), each
+IGDB value's id "igdb:…" ("igdb:genre:12") where Wikidata's is a QID. One
+request a 500 games; each game asked again every REFRESH weeks, the others
+kept from the last run (collect.py).
 """
 import json
 import sys
@@ -28,10 +37,100 @@ BATCH = 500                 # records a request, at most
 POPULARITY = (1, 2, 3, 4)   # visits, want to play, playing, played
 KINDS = {"themes": "themes", "keywords": "keywords", "perspectives": "player_perspectives"}
 MAX_TRAITS = 12             # of a kind, a game's first ones
+REFRESH = 4                 # the other platforms' games: each asked again every REFRESH weeks
 
 SLUG_QUERY = """
 SELECT ?tid ?slug WHERE { ?game wdt:P11072 ?tid; wdt:P5794 ?slug. }
 """
+
+
+OTHERS_QUERY = """
+SELECT DISTINCT ?tid ?slug WHERE {
+  ?tid wdt:P5794 ?slug.
+  { VALUES ?platform { %s } ?tid wdt:P400 ?platform. } UNION { ?tid wdt:P5885 []. }
+}
+"""
+# IGDB's fields for each of features.KINDS: [(field, its values' "igdb:<kind>" id), ...].
+OTHER_KINDS = {
+    "series": [("collections", "collection"), ("franchises", "franchise")],
+    "developers": [("involved_companies.company", "company")],
+    "publishers": [("involved_companies.company", "company")],
+    "genres": [("genres", "genre")],
+    "modes": [("game_modes", "mode")],
+}
+
+
+def others_query(items):
+    """OTHERS_QUERY for the machines `items` (QIDs)."""
+    return OTHERS_QUERY % " ".join(f"wd:{q}" for q in items)
+
+
+def others_games_query(batch):
+    fields = ["slug", "rating", "rating_count", "collections.name", "franchises.name", "genres.name",
+              "game_modes.name", "involved_companies.company.name", "involved_companies.developer",
+              "involved_companies.publisher"]
+    return f"fields {','.join(fields)}; where slug = ({quoted(batch)}); limit {BATCH};"
+
+
+def read_others(records, by_slug):
+    """{QID: {kind: [["igdb:<kind>:<id>", name], ...], "igdb_rating": [0..100, count]}} from IGDB's games."""
+    out = {}
+    for g in records:
+        qids = by_slug.get(g.get("slug"))
+        if not qids:
+            continue
+        found = {}
+        for kind, sources in OTHER_KINDS.items():
+            values = []
+            for field, tag in sources:
+                if field == "involved_companies.company":
+                    role = "developer" if kind == "developers" else "publisher"
+                    items = [c.get("company") for c in g.get("involved_companies") or []
+                             if isinstance(c, dict) and c.get(role) is True]
+                else:
+                    items = g.get(field) or []
+                for v in items:
+                    if not isinstance(v, dict) or not isinstance(v.get("id"), int) or not v.get("name"):
+                        continue
+                    value = [f"igdb:{tag}:{v['id']}", str(v["name"])[:120]]
+                    if value not in values and len(values) < MAX_TRAITS:
+                        values.append(value)
+            if values:
+                found[kind] = values
+        rating, count = g.get("rating"), g.get("rating_count")
+        if isinstance(rating, (int, float)) and isinstance(count, int) and count > 0:
+            found["igdb_rating"] = [max(0, min(100, round(rating))), count]
+        if found:
+            for qid in qids:
+                out[qid] = found
+    return out
+
+
+def others(src):
+    """read_others() of the records collected (sources/igdb/others.json), {} without them."""
+    import common
+    import retro
+    by_slug = slugs(common.bindings(src("wikidata/others-igdb.json").get("rows") or []), retro.qid)
+    return read_others(src("igdb/others.json").get("items") or [], by_slug)
+
+
+def complete(games, found, kinds=tuple(OTHER_KINDS)):
+    """The games' traits Wikidata gave none of, and their players' rating,
+    from IGDB (found: read_others()), each game by its QID: its key, else its
+    "qid". Changes games in place; how many it added to."""
+    added = 0
+    for gid, entry in games.items():
+        record = found.get(gid if gid[:1] == "Q" and gid[1:].isdigit() else entry.get("qid"))
+        if not record:
+            continue
+        before = len(entry)
+        for kind in kinds:
+            if record.get(kind) and not entry.get(kind):
+                entry[kind] = record[kind]
+        if record.get("igdb_rating") and "igdb_rating" not in entry:
+            entry["igdb_rating"] = record["igdb_rating"]
+        added += len(entry) > before
+    return added
 
 
 def slugs(rows, base_id):
@@ -146,6 +245,15 @@ class Client:
         time.sleep(PAUSE)
         return self.send(API + endpoint, text.encode(), {"Client-ID": self.client_id,
                                                          "Authorization": "Bearer " + self.token}) or []
+
+
+def read_records(client, names, query=None):
+    """IGDB's games of these slugs, BATCH a request."""
+    query = query or games_query
+    records = []
+    for i in range(0, len(names), BATCH):
+        records += client.query("games", query(names[i:i + BATCH]))
+    return records
 
 
 def read(client, by_slug):

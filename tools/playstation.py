@@ -35,6 +35,7 @@ import sys
 import build
 import common
 import features
+import igdb
 import links
 import platforms
 import retro
@@ -117,6 +118,7 @@ def machines_of(src):
     traits = traits_of(src)
     dates = common.bindings(src("wikidata/playstation-dates.json").get("rows") or [])
     ids = links.links(common.bindings(src("wikidata/links.json").get("rows") or []))
+    others = igdb.others(src)
     out = {}
     for pid, (item, prefix) in MACHINES.items():
         days = releases(dates, item)
@@ -130,6 +132,7 @@ def machines_of(src):
             entry.update(store_ids(ids.get(game) or {}, prefix))
             entry.update({k: v for k, v in traits.get(game, {}).items() if k in KINDS})
             mine[game] = entry
+        print(f"{pid}: IGDB's traits or rating for {igdb.complete(mine, others)} games", file=sys.stderr)
         out[pid] = mine
     return out
 

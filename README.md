@@ -9,7 +9,9 @@ Each platform has a folder: the Nintendo Switch (`platforms/switch/`, by title i
 Steam (`platforms/steam/`), GOG (`platforms/gog/`) and the Xbox and Microsoft Store (`platforms/xbox/`);
 `links.json` ties a game's ids on every platform together. With IGDB's keys
 (see "Keys"), the Switch's files also take IGDB's themes, keywords,
-perspectives, popularity and hype.
+perspectives, popularity and hype, and every console's (the 3DS, the PS4
+and PS5, the Microsoft Store's, the old machines) the traits Wikidata
+lacks and the players' rating.
 [PlayShelf](https://github.com/JigSawFr/PlayShelf) reads the Switch's for its
 Home tab; anything else may too.
 
@@ -434,7 +436,7 @@ branch: the platforms' files are then made from these, asking nothing more
 
 | Folder | What it keeps | When |
 |---|---|---|
-| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`, `playstation`, `playstation-<kind>`, `playstation-dates`, `3ds` (the 3DS games' Japanese labels, English aliases, dates, GameTDB codes); `switch-pages`, `steam-pages` (daily) | Monday, every day |
+| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `others-igdb` (every console's games' IGDB slugs), `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`, `playstation`, `playstation-<kind>`, `playstation-dates`, `3ds` (the 3DS games' Japanese labels, English aliases, dates, GameTDB codes); `switch-pages`, `steam-pages` (daily) | Monday, every day |
 | `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers; the others with ids and names) | every day |
 | `sources/eshop/prices/` | The eShop's answer by eShop id: status, regular price, discount, its last day, currency | every day |
 | `sources/steam-store/` | `apps.json` (GetItems by app id), `tags.json`, `most-played.json`; `prices/<country>.json` (GetItems' prices) | Monday, every day |
@@ -442,7 +444,7 @@ branch: the platforms' files are then made from these, asking nothing more
 | `sources/gog/catalog/` | The catalog's products by product id, in its trending order, a country a file | Monday (US), every day |
 | `sources/msstore/` | `products.json`, `gamepass.json`; `prices/<country>.json` ([list price, MSRP] by product id) | Monday, every day |
 | `sources/nlib-ctr/` | `categories.json` (the 3DS's title ids by category), `titles.json` (each base game's name, region, publisher, product code, first day; kept from run to run) | Monday |
-| `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records (with its keys only) | Monday |
+| `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records of the Switch's games; `others.json`, of every console's (with its keys only) | Monday |
 | `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (the Switch's and Steam's best known games' pages' views a day, 8 languages) | Monday, every day |
 
 Each file says its source, its licence or terms, the day it was
@@ -463,7 +465,7 @@ left as it was), and skips the fields it does not know.
 | [Microsoft Store's catalog](https://www.xbox.com/) (`displaycatalog.mp.microsoft.com`, `catalog.gamepass.com`, no key) | The Xbox and PC games: names, releases, players' ratings, developers, publishers, genres, the Game Pass; prices and sales by country (`platforms/xbox/prices/`) | as published there; data from Microsoft |
 | [Nintendo eShop's prices](https://api.ec.nintendo.com/v1/price) | Each game's price and sale, by country (`platforms/switch/prices/`) | as published there |
 | [Nlib API](https://api.nlib.cc/ctr/) (3DS, no key; asked as `Atlas/1.0 (+https://atlas.boreale.dev)`, two requests at a time) | The 3DS's titles: names, regions, publishers, product codes, first days on the eShop; their updates', add-ons' and demos' title ids | as published there (no terms stated) |
-| [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
+| [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the Switch's games, the consoles' missing traits and every game's players' rating, for the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
 ## When a source fails
 
@@ -494,7 +496,7 @@ Every source works without a key, but IGDB, which needs one:
 
 | Platform | Source | Key | Where | Secret |
 |---|---|---|---|---|
-| Switch | IGDB | optional (more traits, popularity, hype, players' rating) | [Twitch's developer console](https://dev.twitch.tv/console/apps) | `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` |
+| Switch, 3DS, PS4, PS5, Xbox, retro | IGDB | optional (more traits, popularity and hype on the Switch, players' rating) | [Twitch's developer console](https://dev.twitch.tv/console/apps) | `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` |
 | GOG | GOG's catalog | none | — | — |
 | Xbox / Microsoft Store | the store's catalog, the Game Pass's lists | none | — | — |
 | Retro | Wikidata | none | — | — |
@@ -511,6 +513,17 @@ secret, kept in the repository's Actions secrets (the workflow passes them to
 the build). Without them, or when IGDB fails, the files are made from the
 other sources alone. IGDB answers 4 requests a second, which the build keeps
 to.
+
+Beyond the Switch, every console's games Wikidata links to IGDB (P5794 of
+the games of the 3DS, the PS4, the PS5, the old machines, P400, and of the
+Microsoft Store's, P5885; some 29,000 on 2026-10-30) are asked by their slug,
+500 a request (some 60 requests the first week, a quarter of that after:
+each game is asked again every four weeks, the others kept from the last
+run), and take in their `games.json` what Wikidata does not give them:
+`series` (IGDB's collections and franchises), `developers`, `publishers`,
+`genres`, `modes`, each trait `["igdb:<kind>:<id>", name]` (`igdb:genre:12`,
+`igdb:company:300`…) where Wikidata's is `[QID, label]`, and `igdb_rating`.
+Steam's and GOG's games keep their stores' traits.
 
 ## Running it
 
