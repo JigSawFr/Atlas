@@ -71,6 +71,20 @@ class Report(unittest.TestCase):
             self.assertEqual(got["sources"]["titledb"]["records"], 2)
             self.assertEqual(got["steps"], {"switch": 12.3})
             self.assertEqual(schemas.errors(got, schemas.KINDS["report"]), [])
+            # A file of a later schema counts as none, and is left as it was.
+            later = {"schema": 2, "generated": "2026-11-09", "games": {A: [1, 0, 0], B: [2, 0, 0]}}
+            put(d, "platforms/switch/popular.json", later)
+            self.assertEqual(report.report(d, "build", [])["platforms"]["switch"]["popular"], 0)
+            with open(os.path.join(d, "platforms/switch/popular.json"), encoding="utf-8") as f:
+                self.assertEqual(json.load(f), later)
+
+    def test_kinds_known(self):
+        # platforms.json's kinds, the 3DS's console among them, match its schema.
+        import datetime
+        import platforms
+        body = platforms.registry(datetime.date(2026, 10, 30))
+        self.assertEqual(schemas.errors(body, schemas.KINDS["platforms"]), [])
+        self.assertEqual({e["kind"] for e in body["platforms"].values()}, {"store", "console", "retro"})
 
 
 class Licences(unittest.TestCase):

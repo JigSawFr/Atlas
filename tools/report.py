@@ -23,13 +23,17 @@ import sys
 import common
 
 
-def read(path):
+def read(path, schema=common.SCHEMA):
+    """A file's body, {} when there is none, or it is of another schema
+    (counted as none: its fields may mean something else)."""
     try:
         with open(path, encoding="utf-8") as f:
             body = json.load(f)
-        return body if isinstance(body, dict) else {}
     except (OSError, ValueError):
         return {}
+    if not isinstance(body, dict) or (schema is not None and body.get("schema") != schema):
+        return {}
+    return body
 
 
 def sources(directory):
@@ -42,7 +46,7 @@ def sources(directory):
                 if not f.endswith(".json"):
                     continue
                 path = os.path.join(root, f)
-                body = read(path)
+                body = read(path, common.SOURCE_SCHEMA)
                 key = common.records_key(body)
                 entry["files"] += 1
                 entry["bytes"] += os.path.getsize(path)
@@ -93,14 +97,14 @@ def steps(directories):
     for directory in directories:
         folder = os.path.join(directory, ".runtimes")
         for f in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
-            body = read(os.path.join(folder, f))
+            body = read(os.path.join(folder, f), schema=None)
             if isinstance(body.get("seconds"), (int, float)):
                 out[f[:-5]] = round(body["seconds"], 1)
     return out
 
 
 def report(directory, run, runtimes):
-    return {"schema": 1, "generated": datetime.date.today().isoformat(), "run": run,
+    return {"schema": common.SCHEMA, "generated": datetime.date.today().isoformat(), "run": run,
             "source": "Atlas (its own files: sources/, platforms/, links.json)",
             "sources": sources(directory), "platforms": platforms(directory), "steps": steps(runtimes)}
 

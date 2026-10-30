@@ -22,9 +22,11 @@ import re
 import subprocess
 import sys
 
+import common
+
 DATE = {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"}
 DAY = {"type": "integer", "minimum": 0, "maximum": 99991231}
-HEAD = {"schema": {"const": 1}, "generated": DATE, "source": {"type": "string"}, "platform": {"type": "string"},
+HEAD = {"schema": {"const": common.SCHEMA}, "generated": DATE, "source": {"type": "string"}, "platform": {"type": "string"},
         "license": {"type": "string"}, "part": {"type": "integer"}, "parts": {"type": "integer"}}
 TRAIT = {"type": "array", "prefixItems": [{"type": "string"}, {"type": "string"}], "minItems": 2, "maxItems": 2}
 TRAITS = {"type": "array", "items": {"anyOf": [TRAIT, {"type": "integer"}]}}
@@ -77,18 +79,21 @@ KINDS = {
     "platforms": file_schema("The platforms' registry", {
         "type": "object", "required": ["name", "kind"], "properties": {
             "name": {"type": "string"}, "qid": {"type": "string", "pattern": r"^Q\d+$"}, "igdb": {"type": "string"},
-            "aurore": {"type": "string"}, "kind": {"enum": ["store", "retro"]}}}, key="platforms",
+            "aurore": {"type": "string"}, "kind": {"enum": ["store", "console", "retro"]}}}, key="platforms",
         required=("schema", "generated", "platforms")),
     "index": {"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Every file", "type": "object",
-              "required": ["schema", "files"], "properties": {"schema": {"const": 1}, "files": {
+              "required": ["schema", "files"], "properties": {"schema": {"const": common.SCHEMA}, "files": {
                   "type": "object", "additionalProperties": {"type": "object", "required": ["bytes", "sha256"],
                                                              "properties": {"generated": {"type": "string"},
                                                                             "bytes": {"type": "integer"},
+                                                                            "source": {"type": "string"},
+                                                                            "license": {"type": "string"},
+                                                                            "attribution": {"type": "string"},
                                                                             "sha256": {"type": "string",
                                                                                        "pattern": "^[0-9a-f]{16}$"}}}}}},
     "report": {"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "How the data is", "type": "object",
                "required": ["schema", "generated", "sources", "platforms"],
-               "properties": {"schema": {"const": 1}, "generated": DATE, "run": {"enum": ["build", "daily"]},
+               "properties": {"schema": {"const": common.SCHEMA}, "generated": DATE, "run": {"enum": ["build", "daily"]},
                               "source": {"type": "string"},
                               "sources": {"type": "object", "additionalProperties": {
                                   "type": "object", "required": ["files", "records", "generated"]}},
@@ -100,7 +105,7 @@ KINDS = {
                               "steps": {"type": "object", "additionalProperties": {"type": "number"}}}},
     "source": {"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "A source's answers, as collected",
                "type": "object", "required": ["schema", "generated", "source", "license"],
-               "properties": {**HEAD, "source_id": {"type": "string"},
+               "properties": {**HEAD, "schema": {"const": common.SOURCE_SCHEMA}, "source_id": {"type": "string"},
                               "rows": {"type": "array", "items": {"type": "object",
                                                                   "additionalProperties": {"type": "string"}}},
                               "games": {"type": "object"}, "items": {}, "pages": {"type": "object"}}},

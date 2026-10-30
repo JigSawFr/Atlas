@@ -35,6 +35,7 @@ LICENCES = [
     ("Microsoft", "Microsoft's terms of use", "Microsoft"),
     ("Game Pass", "Microsoft's terms of use", "Microsoft"),
     ("IGDB", "IGDB's API terms", "Data from IGDB.com"),
+    ("Nlib", "as published by Nlib API (no terms stated)", "Nlib API"),
 ]
 OWN = ("CC0-1.0", "Atlas (github.com/JigSawFr/Atlas)")   # what Atlas makes of nothing but its own files
 
