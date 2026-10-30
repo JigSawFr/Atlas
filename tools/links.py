@@ -110,9 +110,14 @@ def main():
     out_dir, previous_dir, sources_dir = sys.argv[1], sys.argv[2], sys.argv[3]
     src = common.reader(sources_dir, previous_dir)
     games = links(common.bindings(src("wikidata/links.json").get("rows") or []))
+    # The 3DS's games Wikidata knows by their name (it has no 3DS title id): their family.
+    import n3ds
+    for qid, family in n3ds.built(src)[1].items():
+        games.setdefault(qid, {})[n3ds.N3DS] = [family]
+    games = dict(sorted(games.items(), key=lambda kv: int(kv[0][1:]) if kv[0][1:].isdigit() else 0))
     report = []
     common.publish(out_dir, "links.json", {
-        "schema": 1, "generated": datetime.date.today().isoformat(),
+        "schema": common.SCHEMA, "generated": datetime.date.today().isoformat(),
         "source": "Wikidata (" + ", ".join(PROPERTIES) + ")", "games": games}, previous_dir, report)
     platforms.write_registry(out_dir)
     print(common.summary(report), file=sys.stderr)

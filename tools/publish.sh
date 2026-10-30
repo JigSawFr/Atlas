@@ -17,7 +17,8 @@ if git diff --cached --quiet; then
   echo "nothing changed"
   exit 0
 fi
-changed=$(git diff --cached --name-only)
+# Without renames: a moved file's old path is asked again too (it goes).
+changed=$(git diff --cached --name-only --no-renames)
 commit=$(git commit-tree "$(git write-tree)" -m "$message")
 git push --force origin "$commit:refs/heads/data"
 # jsDelivr keeps a branch's files up to 12 hours: asked again now.

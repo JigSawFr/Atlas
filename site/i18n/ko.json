@@ -10,6 +10,7 @@
   "language": "언어",
   "footer_label": "더 보기",
   "footer_releases": "주간 릴리스",
+  "footer_legal": "개인정보 및 법적 고지",
   "footer_made": "Boréale 프로젝트입니다. 코드는 GPL-3.0, 데이터는 공개 출처에서 가져옵니다.",
   "footer_trademarks": "Nintendo Switch, Steam 및 여기에 언급된 게임은 각 소유자의 상표입니다. Atlas는 이들과 제휴하지 않았습니다.",
   "hero_eyebrow": "공개 데이터 · 모든 플랫폼",
@@ -33,6 +34,7 @@
   "platform_steam_text": "Wikipedia와 Steam 리뷰의 인지도, 가장 많이 플레이된 게임, 태그, 비슷한 게임, 스토어 가격.",
   "platform_gog_text": "GOG 전체 카탈로그와 가격, 리뷰.",
   "platform_xbox_text": "Microsoft Store 가격과 Game Pass 목록.",
+  "platform_3ds_text": "모든 지역의 3DS 게임과 타이틀 ID(Nlib API와 Wikidata 기준, eShop이 2023년에 종료되어 가격 없음).",
   "platform_retro_text": "더 이상 어느 스토어에서도 팔지 않는 게임, Wikidata에서.",
   "files_eyebrow": "파일",
   "files_title": "무엇이 언제 공개되는지",
@@ -139,5 +141,16 @@
   "x_keywords": "키워드",
   "x_perspectives": "시점",
   "x_tags": "태그",
-  "x_not_found": "이 게임은 지도에 없습니다."
+  "x_not_found": "이 게임은 지도에 없습니다.",
+  "sites_label": "Boréale 프로젝트",
+  "sites_homebrew": "Switch 홈브루",
+  "sites_libraries": "라이브러리",
+  "sites_boreale": "긴 밤을 위한 홈브루",
+  "sites_playguard": "본체에서 자녀 보호",
+  "sites_playshelf": "본체에서 보는 게임 라이브러리",
+  "sites_aurore": "그 뒤의 UI 라이브러리",
+  "sites_soon": "출시 예정",
+  "sites_open": "열린 데이터와 프로토콜",
+  "sites_atlas": "모든 플랫폼의 모든 게임 지도",
+  "sites_lantern": "서버와 콘솔 사이의 프로토콜"
 }

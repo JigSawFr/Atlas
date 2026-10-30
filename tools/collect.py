@@ -22,6 +22,9 @@ is kept and said (common.publish_source).
 - msstore: weekly products.json and gamepass.json; daily
   prices/<country>.json ([list price, MSRP] by product id).
 - igdb (weekly, with its keys): games.json and popularity.json, IGDB's records.
+- nlib-ctr (weekly): Nlib API's 3DS lists of title ids (categories.json)
+  and its base games' names, regions and product codes (titles.json, each
+  asked once: tools/n3ds.py).
 - wikipedia: weekly monthly.json (the best known games' English pages'
   views a month), daily daily.json (their pages' views a day, LANGS).
 
@@ -54,8 +57,8 @@ TITLEDB_SHORT = ("id", "nsuId", "name", "releaseDate", "isDemo")
 
 
 def payload(name, today, source, licence, **records):
-    return {"schema": 1, "source_id": name, "generated": today.isoformat(), "source": source,
-            "license": licence, **records}
+    return {"source_id": name, "generated": today.isoformat(), "source": source,
+            "license": licence, **records, "schema": common.SOURCE_SCHEMA}
 
 
 def wikidata_weekly():
@@ -347,7 +350,12 @@ def collect_wikipedia(what, out_dir, previous_dir, fresh, today, report):
         licence, start=start.isoformat(), end=end.isoformat(), pages=read), previous_dir, report)
 
 
-COLLECTORS = {"wikidata": collect_wikidata, "titledb": collect_titledb, "eshop": collect_eshop,
+def collect_nlib_ctr(what, out_dir, previous_dir, fresh, today, report):
+    import n3ds
+    n3ds.collect(out_dir, previous_dir, fresh, today, report)
+
+
+COLLECTORS = {"nlib-ctr": collect_nlib_ctr, "wikidata": collect_wikidata, "titledb": collect_titledb, "eshop": collect_eshop,
               "steam-store": collect_steam_store, "steamspy": collect_steamspy, "gog": collect_gog,
               "msstore": collect_msstore, "igdb": collect_igdb, "wikipedia": collect_wikipedia}
 

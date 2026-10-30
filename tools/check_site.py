@@ -9,24 +9,42 @@
 - every link and image to the site leads to a file, and every #anchor to an id;
 - nothing the Content-Security-Policy blocks: no inline script (but the
   schema.org data, which runs nothing), no <style>, no style="" attribute,
-  nothing loaded from another site;
+  nothing loaded from another site; the one address a page may send to is
+  Umami's (connect-src), whose tracker (assets/umami.js, the site's own copy)
+  every page carries;
 - no referrer: every page says `<meta name="referrer" content="no-referrer">`
   and every link to another site has rel="noreferrer", so a store or a
   source never learns a visitor came from Atlas (the explorer's store links
-  too, built in site/assets/explore.js);
+  too, built in site/assets/explore.js); but a link to boreale.dev, its
+  subdomains or github.com/JigSawFr keeps the site's origin
+  (referrerpolicy="strict-origin", no noreferrer), so GitHub's Traffic
+  page still shows where visits come from;
 - the explorer's texts (its application/json data) read as JSON, and with a
   data copy built in, each platform's x/<platform>/lists.json and shards.
 """
 import json
+import os
 import re
 import sys
 import xml.etree.ElementTree as ElementTree
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 
+
+def own(href: str) -> bool:
+    """A link to Boréale's sites or to JigSawFr's GitHub: it keeps the origin."""
+    url = urlparse(href)
+    host = url.hostname or ""
+    if host == "boreale.dev" or host.endswith(".boreale.dev"):
+        return True
+    return host == "github.com" and url.path.lower().startswith("/jigsawfr/")
+
+
+# Atlas's own address (build_site.py's SITE_URL): its links to itself carry no UTM tags.
+SITE_HOST = (urlparse(os.environ.get("SITE_URL", "https://atlas.boreale.dev/")).hostname or "").lower()
 
 class Page(HTMLParser):
     def __init__(self):
@@ -45,9 +63,24 @@ class Page(HTMLParser):
             self.problems.append("<style> element")
         if tag == "meta" and a.get("name") == "referrer" and a.get("content") == "no-referrer":
             self.no_referrer = True
-        if tag == "a" and urlparse(a.get("href") or "").scheme in ("http", "https") \
-                and "noreferrer" not in (a.get("rel") or "").split():
-            self.problems.append(f"link to {a['href']} without rel=\"noreferrer\"")
+        if tag == "a" and urlparse(a.get("href") or "").scheme in ("http", "https"):
+            rel = (a.get("rel") or "").split()
+            if own(a["href"]):
+                if "noreferrer" in rel or a.get("referrerpolicy") != "strict-origin":
+                    self.problems.append(f"link to {a['href']} without referrerpolicy=\"strict-origin\" (or with noreferrer)")
+            elif "noreferrer" not in rel:
+                self.problems.append(f"link to {a['href']} without rel=\"noreferrer\"")
+            # UTM tags (workbench's "Mesure d'audience"): a link to another of
+            # our sites says it comes from Atlas (utm_source=atlas, a
+            # utm_medium); one to Atlas itself or to anyone else carries none.
+            u = urlparse(a["href"])
+            host = (u.hostname or "").lower()
+            query = dict(parse_qsl(u.query))
+            if u.scheme == "https" and (host == "boreale.dev" or host.endswith(".boreale.dev")) and host != SITE_HOST:
+                if query.get("utm_source") != "atlas" or not query.get("utm_medium"):
+                    self.problems.append(f"link to {a['href']} without utm_source=atlas and a utm_medium")
+            elif any(k.startswith("utm_") for k in query):
+                self.problems.append(f"link to {a['href']} with utm_ parameters: only a link to another of our sites has them")
         if tag == "script":
             if a.get("type") == "application/json":
                 self.in_data = True
@@ -102,6 +135,11 @@ def main() -> None:
         parsed = Page()
         parsed.feed(html)
         errors += [f"{name}: {p}" for p in parsed.problems]
+        if not any(attr == "src" and link.endswith("assets/umami.js") for attr, link in parsed.links):
+            errors.append(f"{name}: no Umami tracker (assets/umami.js)")
+        csp = re.search(r'http-equiv="Content-Security-Policy" content="([^"]*)"', html)
+        if not csp or "connect-src 'self' https://gateway.umami.is;" not in csp.group(1):
+            errors.append(f"{name}: its policy's connect-src is not 'self' and Umami's alone")
         if not parsed.no_referrer:
             errors.append(f"{name}: no <meta name=\"referrer\" content=\"no-referrer\">")
         try:

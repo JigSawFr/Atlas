@@ -59,7 +59,7 @@ import features
 import igdb
 import text
 # Shared with the other tools, which read them here too.
-from common import (AGENT, GUARD_FLOOR, GUARD_KEEP, MAX_WAIT, SPARQL, count_in, fetch,  # noqa: F401
+from common import (AGENT, GUARD_FLOOR, GUARD_KEEP, MAX_WAIT, SCHEMA, SPARQL, count_in, fetch,  # noqa: F401
                     publish, scale, sparql, summary, write)
 
 # One query (Wikidata's service may allow one a minute): each game with a
@@ -277,11 +277,11 @@ def upcoming(titles, today, days=UPCOMING_DAYS, hypes=None):
 
 
 def previous_games(directory):
-    """The last run's games.json's games, {} when there is none."""
+    """The last run's games.json's games, {} when there is none (or it is of another schema)."""
     try:
         with open(os.path.join(directory, "platforms", SWITCH, "games.json"), encoding="utf-8") as f:
             body = json.load(f)
-        return body.get("games", {}) if body.get("schema") == 1 else {}
+        return body.get("games", {}) if body.get("schema") == SCHEMA else {}
     except (OSError, ValueError, AttributeError):
         return {}
 
@@ -367,12 +367,12 @@ def consolidate(src, out_dir, previous_dir, today):
             entry["steam"] = steam[tid]
         table[tid] = entry
     publish(out_dir, f"platforms/{SWITCH}/games.json", {
-        "schema": 1, "platform": SWITCH, "generated": today.isoformat(),
+        "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(),
         "source": "blawar/titledb (names), Wikidata (P179, P178, P123, P136, P404, P1733), Steam's store, SteamSpy"
                   + (" and IGDB" if found["traits"] else ""),
         "games": table}, previous_dir, report)
     publish(out_dir, f"platforms/{SWITCH}/names.json", {
-        "schema": 1, "platform": SWITCH, "generated": today.isoformat(),
+        "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(),
         "source": "blawar/titledb (US.en.json, else GB.en.json, else JP.ja.json)",
         "games": dict(sorted(names.items()))}, previous_dir, report)
     # The games alike: by their traits, then by what the eShop says of them
@@ -383,23 +383,23 @@ def consolidate(src, out_dir, previous_dir, today):
     # A game's other editions: one game, not one like it.
     of = editions.editions(titles, base_id)
     publish(out_dir, f"platforms/{SWITCH}/similar.json", {
-        "schema": 1, "platform": SWITCH, "generated": today.isoformat(),
+        "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(),
         "source": "games.json's traits" + (" and titledb's descriptions" if by_text else ""),
         "games": editions.apart(text.merged(features.similar(game_traits), by_text), of)}, previous_dir, report)
     if of:
         publish(out_dir, f"platforms/{SWITCH}/editions.json", {
-            "schema": 1, "platform": SWITCH, "generated": today.isoformat(), "source": "blawar/titledb (US.en.json)",
+            "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(), "source": "blawar/titledb (US.en.json)",
             "games": of}, previous_dir, report)
 
     publish(out_dir, f"platforms/{SWITCH}/popular.json", {
-        "schema": 1, "platform": SWITCH, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
+        "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
         "views": bool(read),
         "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), Steam's store"
                   + (" and IGDB" if found["popularity"] else ""),
         "games": popular(known, critics, read, steam, found["popularity"])}, previous_dir, report)
 
     publish(out_dir, f"platforms/{SWITCH}/upcoming.json", {
-        "schema": 1, "platform": SWITCH, "generated": today.isoformat(),
+        "schema": SCHEMA, "platform": SWITCH, "generated": today.isoformat(),
         "source": "blawar/titledb (US.en.json)" + (" and IGDB" if found["hypes"] else ""),
         "games": upcoming(titles, today, hypes=found["hypes"])}, previous_dir, report)
 

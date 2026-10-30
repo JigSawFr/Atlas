@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://gateway.umami.is; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <title>{{title}}</title>
 <meta name="description" content="{{description}}">
 <meta name="theme-color" content="#0b1424">
@@ -26,17 +26,18 @@
 <script src="{{root}}assets/lang.js"></script>
 <script src="{{root}}assets/site.js" defer></script>
 {{scripts}}
+{{audience}}
 </head>
 <body class="{{page}}" data-root="{{root}}" data-lang="{{lang}}">
 <a class="skip" href="#main">{{skip}}</a>
 <div class="sky">
   <header class="wrap top">
-    <a class="brand" href="{{root}}{{home}}"><img src="{{root}}assets/mark.svg" alt="" width="34" height="34">Atlas</a>
+    {{switcher}}
     <nav aria-label="{{nav_label}}">
       <ul>
         <li><a href="{{root}}{{home}}"{{current_project}}>{{nav_project}}</a></li>
         <li><a href="{{root}}{{home}}explore/"{{current_explore}}>{{nav_explore}}</a></li>
-        <li><a href="https://github.com/JigSawFr/Atlas" rel="noreferrer">GitHub</a></li>
+        <li><a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a></li>
       </ul>
     </nav>
     {{languages}}
@@ -52,14 +53,15 @@
       <ul>
         <li><a href="{{root}}{{home}}">{{nav_project}}</a></li>
         <li><a href="{{root}}{{home}}explore/">{{nav_explore}}</a></li>
-        <li><a href="https://github.com/JigSawFr/Atlas" rel="noreferrer">GitHub</a></li>
-        <li><a href="https://github.com/JigSawFr/Atlas/releases" rel="noreferrer">{{footer_releases}}</a></li>
-        <li><a href="https://boreale.dev/{{home}}" rel="noreferrer">Boréale</a></li>
+        <li><a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a></li>
+        <li><a href="https://github.com/JigSawFr/Atlas/releases" referrerpolicy="strict-origin">{{footer_releases}}</a></li>
+        <li><a href="https://boreale.dev/{{home}}?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Boréale</a></li>
+        <li><a href="https://boreale.dev/{{home}}legal/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">{{footer_legal}}</a></li>
         <li><a href="mailto:contact@boreale.dev">contact@boreale.dev</a></li>
       </ul>
     </nav>
     <div class="row">
-      <p class="by"><img src="{{root}}assets/boreale.svg" alt="" width="22" height="22">{{footer_made}}</p>
+      <p class="by"><img src="{{root}}assets/marks/boreale.svg" alt="" width="22" height="22">{{footer_made}}</p>
       <p>{{footer_trademarks}}</p>
     </div>
   </div>

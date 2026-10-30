@@ -10,6 +10,7 @@
   "language": "Idioma",
   "footer_label": "Mais",
   "footer_releases": "Releases semanais",
+  "footer_legal": "Privacidade e aviso legal",
   "footer_made": "Um projeto Boréale. Código sob GPL-3.0, dados de fontes abertas.",
   "footer_trademarks": "Nintendo Switch, Steam e os jogos citados aqui são marcas de seus donos. O Atlas não é afiliado a eles.",
   "hero_eyebrow": "Dados abertos · todas as plataformas",
@@ -33,6 +34,7 @@
   "platform_steam_text": "Fama pela Wikipédia e pelas análises da Steam, os mais jogados, tags, jogos parecidos e os preços da loja.",
   "platform_gog_text": "Todo o catálogo GOG, com preços e análises.",
   "platform_xbox_text": "Os preços da Microsoft Store e o que está no Game Pass.",
+  "platform_3ds_text": "Os jogos de 3DS de todas as regiões, com seus title ids, segundo a Nlib API e a Wikidata (sem preços: a eShop fechou em 2023).",
   "platform_retro_text": "Os jogos que nenhuma loja vende, a partir do Wikidata.",
   "files_eyebrow": "Os arquivos",
   "files_title": "O que é publicado, e quando",
@@ -139,5 +141,16 @@
   "x_keywords": "Palavras-chave",
   "x_perspectives": "Perspectivas",
   "x_tags": "Tags",
-  "x_not_found": "Este jogo não está no mapa."
+  "x_not_found": "Este jogo não está no mapa.",
+  "sites_label": "Os projetos Boréale",
+  "sites_homebrew": "Homebrew para Switch",
+  "sites_libraries": "Bibliotecas",
+  "sites_boreale": "Homebrew para as noites longas",
+  "sites_playguard": "Controle parental, no console",
+  "sites_playshelf": "Sua biblioteca de jogos, no console",
+  "sites_aurore": "A biblioteca de interface por trás deles",
+  "sites_soon": "Em breve",
+  "sites_open": "Dados e protocolos abertos",
+  "sites_atlas": "Um mapa de todos os jogos, em todas as plataformas",
+  "sites_lantern": "O protocolo entre servidores e consoles"
 }
