@@ -460,7 +460,7 @@ to.
 ## Running it
 
 ```sh
-python3 tools/migrate.py last/       # a data branch from before switch/: its Switch files moved there
+python3 tools/migrate.py last/       # a data branch from before platforms/: its files moved there (goes after 2026-11-02)
 # Each source, asked once: writes out/sources/<source>/ (fresh/: this run's sources one needs)
 python3 tools/collect.py wikidata weekly out/ last/
 python3 tools/collect.py titledb weekly out/ last/          # about 90 MB a region, some 10 s

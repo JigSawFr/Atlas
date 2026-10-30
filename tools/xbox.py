@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """The Xbox and Microsoft Store's files, by Microsoft Store product id (its
-"bigId", 12 characters, upper case), in xbox/:
+"bigId", 12 characters, upper case), in platforms/xbox/:
 
 - every Monday (build.yml), `tools/xbox.py catalog`:
-  - xbox/popular.json: [score, trend, critics], as switch/popular.json:
+  - platforms/xbox/popular.json: [score, trend, critics], as platforms/switch/popular.json:
     half the game's renown on Wikipedia (by the Wikidata item that gives its
     Microsoft Store id, P5885), half its players' ratings on the store; a
     game in the Game Pass lifted;
-  - xbox/games.json: each game's name, release, players' rating, Game Pass,
+  - platforms/xbox/games.json: each game's name, release, players' rating, Game Pass,
     Wikidata item and traits (developers, publishers, genres);
-  - xbox/gamepass.json: the games in the Game Pass, ["console", "pc"];
-  - xbox/upcoming.json and xbox/similar.json;
-- every day (daily.yml), `tools/xbox.py prices`: xbox/prices/<country>.json,
-  [regular, sale, until, lowest, lowest_day] as switch/prices/, for the
-  games of the last run's xbox/games.json (the store doesn't say when a sale
+  - platforms/xbox/gamepass.json: the games in the Game Pass, ["console", "pc"];
+  - platforms/xbox/upcoming.json and platforms/xbox/similar.json;
+- every day (daily.yml), `tools/xbox.py prices`: platforms/xbox/prices/<country>.json,
+  [regular, sale, until, lowest, lowest_day] as platforms/switch/prices/, for the
+  games of the last run's platforms/xbox/games.json (the store doesn't say when a sale
   ends in its short answer: `until` is 0).
 
 The games are those Wikidata gives a Microsoft Store id (some 6,500) and the
@@ -257,7 +257,7 @@ def catalog(src, out_dir, previous_dir, today):
         "the Game Pass", table, month=starts[-1].strftime("%Y-%m"), views=bool(read)), previous_dir, report)
     common.publish(out_dir, f"platforms/{XBOX}/upcoming.json", payload("Microsoft Store's catalog", coming), previous_dir, report)
     common.publish(out_dir, f"platforms/{XBOX}/similar.json", payload(
-        "xbox/games.json's traits", features.similar(traits, max_shared=300)), previous_dir, report)
+        "platforms/xbox/games.json's traits", features.similar(traits, max_shared=300)), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
 
 
