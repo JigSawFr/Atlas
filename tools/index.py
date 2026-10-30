@@ -5,7 +5,7 @@ made (its `generated`), its size and a hash of its content, so a reader
 whose hash changed.
 
 {"schema": 1,
- "files": {"popular.json": {"generated": "YYYY-MM-DD", "bytes": 70123, "sha256": "<16 hex>"}, ...}}
+ "files": {"switch/popular.json": {"generated": "YYYY-MM-DD", "bytes": 70123, "sha256": "<16 hex>"}, ...}}
 
 Usage: tools/index.py <data-dir>   (writes <data-dir>/index.json)
 """

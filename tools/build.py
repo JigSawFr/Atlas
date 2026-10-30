@@ -2,16 +2,16 @@
 """Builds PlayInsights' data files, by Nintendo Switch title id, from open
 sources that need no key:
 
-- data/popular.json: how well known each game is (a score from 0 to 100),
+- switch/popular.json: how well known each game is (a score from 0 to 100),
   whether it is read more lately (a trend, in percent) and what the critics
   gave it (0 to 100, 0 when unknown);
-- data/upcoming.json: the games whose release date is still to come, with
+- switch/upcoming.json: the games whose release date is still to come, with
   their name and date (and how many follow them on IGDB, when known);
-- data/games.json: each game's traits (series, developers, publishers,
+- switch/games.json: each game's traits (series, developers, publishers,
   genres, modes) and, for one also sold on Steam, its Steam audience;
-- data/editions.json: a game's other editions (a Deluxe, a Complete
+- switch/editions.json: a game's other editions (a Deluxe, a Complete
   Edition…), each with the game it is one of (tools/editions.py);
-- data/similar.json: the games most like each one, by their traits
+- switch/similar.json: the games most like each one, by their traits
   (tools/features.py), and for the others by what the eShop says of them
   (tools/text.py).
 
@@ -36,28 +36,26 @@ the most of all, and its popularity on IGDB. When
 Wikimedia turns too many view requests away (fewer than half read), every
 game is scored without views and none has a trend: no mixing of scales.
 
-Usage: tools/build.py [out-dir] [previous-dir]   (default: out/; previous-dir:
+Usage: tools/build.py [out-dir] [previous-dir]   (writes out-dir/switch/; previous-dir:
 the last run's files, whose Steam figures are kept for the games not asked)
 """
 import datetime
 import json
-import math
 import os
 import re
-import shutil
 import sys
 import time
 import urllib.error
 import urllib.parse
-import urllib.request
 
 import editions
 import features
 import igdb
 import text
+# Shared with the other tools, which read them here too.
+from common import (AGENT, GUARD_FLOOR, GUARD_KEEP, MAX_WAIT, SPARQL, count_in, fetch,  # noqa: F401
+                    publish, scale, sparql, summary, write)
 
-AGENT = "PlayInsights/1.0 (https://github.com/JigSawFr/PlayInsights)"
-SPARQL = "https://query.wikidata.org/sparql"
 # One query (Wikidata's service may allow one a minute): each game with a
 # Switch title id, its sitelinks and English page, and each of its critics'
 # scores with the number of reviews behind it (a row each).
@@ -76,41 +74,11 @@ TRENDING_VIEWS = 500   # last month's views below which the trend says nothing
 VIEWED = 400           # the games whose views are asked, the most sitelinks first
 PAUSE = 0.25           # seconds between two of them
 UPCOMING_DAYS = 365    # how far ahead upcoming.json looks
-MAX_WAIT = 1800        # seconds a rate-limited service is waited for, at most
-GUARD_KEEP = 0.7       # a file with fewer games than this share of the last run's is not published
-GUARD_FLOOR = 50       # games the last run's file had at least, for that to count
+SWITCH = "switch"      # the folder of the Switch's files, in the data branch
 
 
-def fetch(url, tries=4, patient=True, timeout=120):
-    """`url`'s JSON answer; None for a 404. A 429 waits as long as the
-    service says (`patient`) or is raised at once."""
-    for attempt in range(tries):
-        try:
-            request = urllib.request.Request(url, headers={"User-Agent": AGENT, "Accept": "application/json"})
-            with urllib.request.urlopen(request, timeout=timeout) as r:
-                return json.load(r)
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return None
-            if attempt == tries - 1 or (e.code == 429 and not patient):
-                raise
-            if e.code == 429:
-                wait = max(int(e.headers.get("Retry-After", "60") or 60), 60) + 5
-                if wait > MAX_WAIT:
-                    raise
-                print(f"{url.split('?')[0]}: rate-limited, again in {wait} s", file=sys.stderr)
-                time.sleep(wait)
-                continue
-        except (urllib.error.URLError, TimeoutError):
-            if attempt == tries - 1:
-                raise
-        time.sleep(2 ** attempt)
-    return None
 
 
-def sparql(query):
-    body = fetch(SPARQL + "?" + urllib.parse.urlencode({"query": query, "format": "json"}))
-    return body["results"]["bindings"]
 
 
 def base_id(value):
@@ -219,8 +187,6 @@ def read_views(known, starts, end):
     return read
 
 
-def scale(value, most):
-    return math.log1p(value) / math.log1p(most) if most > 0 else 0.0
 
 
 def popular(known, critics, read, steam=None, igdb_popularity=None):
@@ -275,63 +241,18 @@ def upcoming(titles, today, days=UPCOMING_DAYS, hypes=None):
     return dict(sorted(out.items()))
 
 
-def write(path, payload):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
-        f.write("\n")
-    print(f"{path}: {len(payload['games'])} games", file=sys.stderr)
 
 
-def count_in(path):
-    """How many games a data file has, None when there is no such file (or not one of ours)."""
-    try:
-        with open(path, encoding="utf-8") as f:
-            games_of = json.load(f).get("games")
-        return len(games_of) if isinstance(games_of, dict) else None
-    except (OSError, ValueError, AttributeError):
-        return None
 
 
-def publish(out_dir, name, payload, previous_dir, report):
-    """`payload` written as out_dir/name, unless it has lost too many games
-    against the last run's (a source down, not the world changed): then the
-    last run's file is kept, and said. Each file's line goes in `report`."""
-    path = os.path.join(out_dir, name)
-    now = len(payload["games"])
-    before = count_in(os.path.join(previous_dir, name)) if previous_dir else None
-    kept = before is not None and before >= GUARD_FLOOR and now < before * GUARD_KEEP
-    if kept:
-        shutil.copyfile(os.path.join(previous_dir, name), path)
-        print(f"::warning::{name}: {now} games against {before} last time, last run's file kept", file=sys.stderr)
-        # For the run's alert (tools/alert.sh), when the workflow asks for one.
-        if os.environ.get("ALERTS"):
-            with open(os.environ["ALERTS"], "a", encoding="utf-8") as f:
-                f.write(f"`{name}` came out with {now} games against {before} last time: the last run's file was kept.\n")
-    else:
-        write(path, payload)
-    report.append((name, before, now, kept))
-    return not kept
 
 
-def summary(report, path=None):
-    """The run's files against the last run's, as a Markdown table (for the workflow's summary)."""
-    lines = ["| File | Last run | This run | Published |", "|---|---:|---:|---|"]
-    for name, before, now, kept in report:
-        change = "" if not before else f" ({(now - before) * 100 / before:+.0f} %)"
-        lines.append(f"| `{name}` | {before if before is not None else '–'} | {now}{change} | "
-                     f"{'no: last run kept' if kept else 'yes'} |")
-    text = "\n".join(lines) + "\n"
-    path = path or os.environ.get("GITHUB_STEP_SUMMARY")
-    if path:
-        with open(path, "a", encoding="utf-8") as f:
-            f.write("### The data files\n\n" + text)
-    return text
 
 
 def previous_games(directory):
     """The last run's games.json's games, {} when there is none."""
     try:
-        with open(os.path.join(directory, "games.json"), encoding="utf-8") as f:
+        with open(os.path.join(directory, SWITCH, "games.json"), encoding="utf-8") as f:
             body = json.load(f)
         return body.get("games", {}) if body.get("schema") == 1 else {}
     except (OSError, ValueError, AttributeError):
@@ -385,7 +306,7 @@ def main():
         if tid in steam:
             entry["steam"] = steam[tid]
         table[tid] = entry
-    publish(out_dir, "games.json", {
+    publish(out_dir, f"{SWITCH}/games.json", {
         "schema": 1, "generated": today.isoformat(),
         "source": "Wikidata (P179, P178, P123, P136, P404, P1733), SteamSpy" + (" and IGDB" if found["traits"] else ""),
         "games": table}, previous_dir, report)
@@ -396,23 +317,23 @@ def main():
     by_text = text.similar(titles, base_id)
     # A game's other editions: one game, not one like it.
     of = editions.editions(titles, base_id)
-    publish(out_dir, "similar.json", {
+    publish(out_dir, f"{SWITCH}/similar.json", {
         "schema": 1, "generated": today.isoformat(),
         "source": "games.json's traits" + (" and titledb's descriptions" if by_text else ""),
         "games": editions.apart(text.merged(features.similar(game_traits), by_text), of)}, previous_dir, report)
     if of:
-        publish(out_dir, "editions.json", {
+        publish(out_dir, f"{SWITCH}/editions.json", {
             "schema": 1, "generated": today.isoformat(), "source": "blawar/titledb (US.en.json)",
             "games": of}, previous_dir, report)
 
-    publish(out_dir, "popular.json", {
+    publish(out_dir, f"{SWITCH}/popular.json", {
         "schema": 1, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
         "views": bool(read),
         "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), SteamSpy"
                   + (" and IGDB" if found["popularity"] else ""),
         "games": popular(known, critics, read, steam, found["popularity"])}, previous_dir, report)
 
-    publish(out_dir, "upcoming.json", {
+    publish(out_dir, f"{SWITCH}/upcoming.json", {
         "schema": 1, "generated": today.isoformat(),
         "source": "blawar/titledb (US.en.json)" + (" and IGDB" if found["hypes"] else ""),
         "games": upcoming(titles, today, hypes=found["hypes"])}, previous_dir, report)

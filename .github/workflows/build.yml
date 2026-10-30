@@ -39,6 +39,8 @@ jobs:
           else
             git worktree add --orphan -b data data-branch
           fi
+          # The Switch's files at the root, as before switch/: moved there.
+          python3 tools/migrate.py data-branch
       - name: Build
         # IGDB's keys, when the repository has them (tools/igdb.py): without
         # them the files are made from the other sources alone.
@@ -48,7 +50,7 @@ jobs:
         run: python3 tools/build.py out data-branch
       - name: Publish to the data branch
         run: |
-          cp out/*.json data-branch/
+          cp -r out/. data-branch/
           tools/publish.sh data-branch "data: $(date -u +%Y-%m-%d)"
       # The week's files kept as a release, each and their zip attested
       # (`gh attestation verify popular.json -R JigSawFr/PlayInsights`).

@@ -1,7 +1,7 @@
 # What changes every day: the popular games' trends on the Wikipedias of
-# PlayShelf's languages (tools/trends.py, popular.json's `trend`) and each
-# game's price and sale in a few countries' eShops (tools/prices.py, the
-# prices/ folder), committed to the `data` branch, where PlayShelf reads
+# PlayShelf's languages (tools/trends.py, switch/popular.json's `trend`) and
+# each game's price and sale in a few countries' eShops (tools/prices.py,
+# switch/prices/), committed to the `data` branch, where PlayShelf reads
 # them through jsDelivr.
 name: daily
 
@@ -37,6 +37,8 @@ jobs:
           git fetch --depth 1 origin data:refs/remotes/origin/data
           git worktree add data-branch origin/data
           git -C data-branch checkout -B data
+          # The Switch's files at the root, as before switch/: moved there.
+          python3 tools/migrate.py data-branch
       # A failure of one leaves the other's files to publish.
       - name: Trends
         id: trends
@@ -48,9 +50,9 @@ jobs:
         run: python3 tools/prices.py out data-branch
       - name: Publish to the data branch
         run: |
-          mkdir -p data-branch/prices
-          if [ -f out/popular.json ]; then cp out/popular.json data-branch/; fi
-          if ls out/prices/*.json >/dev/null 2>&1; then cp out/prices/*.json data-branch/prices/; fi
+          mkdir -p data-branch/switch/prices
+          if [ -f out/switch/popular.json ]; then cp out/switch/popular.json data-branch/switch/; fi
+          if ls out/switch/prices/*.json >/dev/null 2>&1; then cp out/switch/prices/*.json data-branch/switch/prices/; fi
           tools/publish.sh data-branch "daily: $(date -u +%Y-%m-%d)"
       # GitHub turns off a public repository's schedules after 60 days with
       # no activity, and the data branch's pushes may not count: enabling

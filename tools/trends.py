@@ -10,7 +10,7 @@ pages in each language, Wikimedia their views a day. A game read fewer than
 MIN_VIEWS times in the week has no trend; one whose views could not be read
 keeps the trend it had. When Wikimedia turns too many away, nothing changes.
 
-Usage: tools/trends.py <out-dir> <previous-dir>   (popular.json from previous-dir)
+Usage: tools/trends.py <out-dir> <previous-dir>   (switch/popular.json from previous-dir)
 """
 import datetime
 import json
@@ -21,6 +21,7 @@ import urllib.error
 import urllib.parse
 
 import build
+import common
 
 LANGS = ("en", "fr", "de", "es", "it", "ja", "nl", "pt")
 TOP = 400            # the best known games measured
@@ -130,21 +131,20 @@ def updated(popular, trends, today):
 
 def main():
     out_dir, previous_dir = sys.argv[1], sys.argv[2]
-    with open(os.path.join(previous_dir, "popular.json"), encoding="utf-8") as f:
+    with open(os.path.join(previous_dir, build.SWITCH, "popular.json"), encoding="utf-8") as f:
         popular = json.load(f)
     if popular.get("schema") != 1:
         sys.exit("trends: popular.json is not of schema 1")
     today = datetime.date.today()
     top = [tid for tid, _ in sorted(popular["games"].items(), key=lambda kv: -kv[1][0])[:TOP]]
-    by_game = all_pages(top, build.sparql)
+    by_game = all_pages(top, common.sparql)
     start, end = window(today)
-    trends = read_trends(by_game, start, end, lambda url: build.fetch(url, tries=2, patient=False, timeout=30))
+    trends = read_trends(by_game, start, end, lambda url: common.fetch(url, tries=2, patient=False, timeout=30))
     if trends is None:
         return
-    os.makedirs(out_dir, exist_ok=True)
     report = []
-    build.publish(out_dir, "popular.json", updated(popular, trends, today), previous_dir, report)
-    print(build.summary(report), file=sys.stderr)
+    common.publish(out_dir, f"{build.SWITCH}/popular.json", updated(popular, trends, today), previous_dir, report)
+    print(common.summary(report), file=sys.stderr)
 
 
 if __name__ == "__main__":
