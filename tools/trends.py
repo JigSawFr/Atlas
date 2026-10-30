@@ -126,7 +126,7 @@ def read_trends(by_game, start, end, fetch, sleep=time.sleep):
 def updated(popular, trends, today):
     """popular.json with the trends measured put in, the others' kept."""
     games = {tid: [row[0], trends.get(tid, row[1]), row[2]] for tid, row in popular["games"].items()}
-    return {**popular, "trends": today.isoformat(), "games": games}
+    return {**popular, "platform": build.SWITCH, "trends": today.isoformat(), "games": games}
 
 
 def main():

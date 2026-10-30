@@ -307,7 +307,7 @@ def main():
             entry["steam"] = steam[tid]
         table[tid] = entry
     publish(out_dir, f"{SWITCH}/games.json", {
-        "schema": 1, "generated": today.isoformat(),
+        "schema": 1, "platform": SWITCH, "generated": today.isoformat(),
         "source": "Wikidata (P179, P178, P123, P136, P404, P1733), SteamSpy" + (" and IGDB" if found["traits"] else ""),
         "games": table}, previous_dir, report)
     # The games alike: by their traits, then by what the eShop says of them
@@ -318,23 +318,23 @@ def main():
     # A game's other editions: one game, not one like it.
     of = editions.editions(titles, base_id)
     publish(out_dir, f"{SWITCH}/similar.json", {
-        "schema": 1, "generated": today.isoformat(),
+        "schema": 1, "platform": SWITCH, "generated": today.isoformat(),
         "source": "games.json's traits" + (" and titledb's descriptions" if by_text else ""),
         "games": editions.apart(text.merged(features.similar(game_traits), by_text), of)}, previous_dir, report)
     if of:
         publish(out_dir, f"{SWITCH}/editions.json", {
-            "schema": 1, "generated": today.isoformat(), "source": "blawar/titledb (US.en.json)",
+            "schema": 1, "platform": SWITCH, "generated": today.isoformat(), "source": "blawar/titledb (US.en.json)",
             "games": of}, previous_dir, report)
 
     publish(out_dir, f"{SWITCH}/popular.json", {
-        "schema": 1, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
+        "schema": 1, "platform": SWITCH, "generated": today.isoformat(), "month": starts[-1].strftime("%Y-%m"),
         "views": bool(read),
         "source": "Wikidata (P11072, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), SteamSpy"
                   + (" and IGDB" if found["popularity"] else ""),
         "games": popular(known, critics, read, steam, found["popularity"])}, previous_dir, report)
 
     publish(out_dir, f"{SWITCH}/upcoming.json", {
-        "schema": 1, "generated": today.isoformat(),
+        "schema": 1, "platform": SWITCH, "generated": today.isoformat(),
         "source": "blawar/titledb (US.en.json)" + (" and IGDB" if found["hypes"] else ""),
         "games": upcoming(titles, today, hypes=found["hypes"])}, previous_dir, report)
 

@@ -25,6 +25,7 @@ jsDelivr. Each platform has a folder of its own; the Switch's is `switch/`:
 | `switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/similar.json` |
 | `switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/editions.json` |
 | `switch/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/prices/FR.json` |
+| `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/links.json` |
 | `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/index.json` |
 
 Until 2026-10-30 the Switch's files were at the branch's root (`popular.json`,
@@ -37,8 +38,28 @@ trends and the lowest prices.
 The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`): each run only needs the last files, and keeping every day's prices would grow the repository by hundreds of MB a year.
 
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
-meaning), the day it was `generated` and its `source`. In `switch/`, a game
-is a base game's title id (16 hex digits, upper case, ending in `000`).
+meaning), the day it was `generated` and its `source`; a platform's files
+also have their `platform` (`switch`). In `switch/`, a game is a base game's
+title id (16 hex digits, upper case, ending in `000`).
+
+`links.json`, made every Monday:
+
+```json
+{"schema": 1, "generated": "2026-11-02", "source": "Wikidata (P11072, P1733, …)",
+ "games": {"Q900001": {"switch": ["0100A1B2C3D4E000"], "steam": ["900010"], "ps": ["10900001"],
+                       "ps_product": ["EP0001-PPSA00001_00-AMBERLANTERN0000"], "xbox": ["9ZZZZZZZZZZ1"],
+                       "gog": ["amber_lantern"], "epic": ["amber-lantern"]}}}
+```
+
+Every Wikidata item with an id on one of the stores, by its Wikidata id (some
+131,000; a few are software rather than games), with its ids on each: a
+Switch base game's title id (`switch`), a Steam app id (`steam`), a
+PlayStation Store concept (`ps`) and its products in North America, Europe
+and Japan (`ps_product`), a Microsoft Store product id, Xbox and PC (`xbox`),
+a GOG page's slug (`gog`), an Epic Games Store page's slug (`epic`). A
+platform the game has no id on is left out; a game may have several of one
+(editions, regions). It takes one Wikidata query; when Wikidata's service
+turns the run away, [QLever](https://qlever.dev)'s copy of Wikidata is asked.
 
 `switch/popular.json`:
 
@@ -140,7 +161,7 @@ gh attestation verify switch-popular.json -R JigSawFr/PlayInsights
 
 | Source | What it gives | Licence |
 |---|---|---|
-| [Wikidata](https://www.wikidata.org/) | Switch title ids ([P11072](https://www.wikidata.org/wiki/Property:P11072)), sitelinks, English pages, review scores ([P444](https://www.wikidata.org/wiki/Property:P444)) and their number of reviews ([P7887](https://www.wikidata.org/wiki/Property:P7887)) | CC0 |
+| [Wikidata](https://www.wikidata.org/) | The stores' ids for `links.json` ([P1733](https://www.wikidata.org/wiki/Property:P1733) Steam, [P12332](https://www.wikidata.org/wiki/Property:P12332), [P5944](https://www.wikidata.org/wiki/Property:P5944), [P5971](https://www.wikidata.org/wiki/Property:P5971), [P5999](https://www.wikidata.org/wiki/Property:P5999) PlayStation, [P5885](https://www.wikidata.org/wiki/Property:P5885) Microsoft, [P2725](https://www.wikidata.org/wiki/Property:P2725) GOG, [P6278](https://www.wikidata.org/wiki/Property:P6278) Epic); Switch title ids ([P11072](https://www.wikidata.org/wiki/Property:P11072)), sitelinks, English pages, review scores ([P444](https://www.wikidata.org/wiki/Property:P444)) and their number of reviews ([P7887](https://www.wikidata.org/wiki/Property:P7887)) | CC0 |
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
 | [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
@@ -189,6 +210,7 @@ python3 tools/migrate.py last/       # a data branch from before switch/: its Sw
 python3 tools/build.py out/ [last/]  # writes out/switch/*.json; last/: the last run's files, for Steam
 python3 tools/prices.py out/ [last/] # writes out/switch/prices/*.json, every country's (some 20 minutes)
 python3 tools/trends.py out/ last/   # last/switch/popular.json with today's trends, as out/switch/popular.json
+python3 tools/links.py out/ [last/]  # writes out/links.json
 python3 -m unittest discover -s tests
 ```
 

@@ -8,7 +8,7 @@ each region gives them with each game's title id (REGIONS). It is asked 50
 games at a time, a few requests at once.
 
 switch/prices/<country>.json:
-  {"schema": 1, "generated": "YYYY-MM-DD", "country": "FR", "currency": "EUR",
+  {"schema": 1, "platform": "switch", "generated": "YYYY-MM-DD", "country": "FR", "currency": "EUR",
    "since": "YYYY-MM-DD",
    "games": {"<title id>": [regular, sale, until, lowest, lowest_day], ...}}
 
@@ -136,7 +136,7 @@ def main():
             name = f"{build.SWITCH}/prices/{country}.json"
             last = common.previous_file(previous_dir, name) if previous_dir else {}
             common.publish(out_dir, name, {
-                "schema": 1, "generated": today, "country": country, "currency": currency or "",
+                "schema": 1, "platform": build.SWITCH, "generated": today, "country": country, "currency": currency or "",
                 "since": last.get("since") or last.get("generated") or today,
                 "source": f"Nintendo eShop's prices, by titledb's {file} eShop ids",
                 "games": with_lowest(games, last.get("games") or {}, today)}, previous_dir, report)
