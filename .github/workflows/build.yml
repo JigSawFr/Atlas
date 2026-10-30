@@ -1,7 +1,11 @@
-# The data files made again every Monday (and on demand): a job a platform,
-# side by side, then one job that commits them all to the `data` branch,
-# where PlayShelf reads them through jsDelivr, and keeps them as a release
-# (tools/archive.sh). A platform whose job fails keeps its last run's files.
+# The data files made again every Monday (and on demand), in two steps:
+# - each source asked once, side by side where nothing else is needed first
+#   (tools/collect.py: sources/<source>/, its own guard);
+# - the platforms' files made from them, asking nothing (links, switch,
+#   steam, gog, xbox, retro), then everything committed to the `data`
+#   branch, where PlayShelf reads it through jsDelivr, and kept as a release
+#   (tools/archive.sh). A source that fails leaves its last run's files, and
+#   the platforms are made from those; a platform that fails keeps its own.
 name: build
 
 on:
@@ -23,11 +27,14 @@ env:
   ALERTS: /tmp/atlas-alerts.md   # runner.temp is not allowed at this level
 
 jobs:
-  switch:
+  # The sources nothing else is needed for.
+  first:
     runs-on: ubuntu-26.04
-    timeout-minutes: 100
-    outputs:
-      links: ${{ steps.links.outcome }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [wikidata, titledb]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test
@@ -36,138 +43,137 @@ jobs:
         run: python3 -m unittest discover -s tests
       - name: The last run's files
         run: tools/data-branch.sh
-      - name: Build
-        # IGDB's keys, when the repository has them (tools/igdb.py): without
-        # them the files are made from the other sources alone.
-        env:
-          IGDB_CLIENT_ID: ${{ secrets.IGDB_CLIENT_ID }}
-          IGDB_CLIENT_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
-        run: python3 tools/build.py out data-branch
-      # Each game's ids on every platform (links.json): one Wikidata query.
-      - name: Links
-        id: links
-        continue-on-error: true
-        run: python3 tools/links.py out data-branch
+      - name: Collect
+        run: python3 tools/collect.py "${{ matrix.source }}" weekly out data-branch
       - name: Keep the files
+        if: always()
         run: |
+          mkdir -p out
           touch "$ALERTS"
-          cp "$ALERTS" out/.alerts
+          cp "$ALERTS" "out/.alerts-${{ matrix.source }}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
         with:
-          name: switch
+          name: source-${{ matrix.source }}
           path: out/
           include-hidden-files: true
           retention-days: 3
 
-  steam:
-    runs-on: ubuntu-26.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Test
-        env:
-          ALERTS: ""   # the run's alerts are not the tests' (tests/test_common.py)
-        run: python3 -m unittest discover -s tests
-      - name: The last run's files
-        run: tools/data-branch.sh
-      - name: Build
-        run: python3 tools/steam.py out data-branch
-      - name: Keep the files
-        run: |
-          touch "$ALERTS"
-          cp "$ALERTS" out/.alerts
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: steam
-          path: out/
-          include-hidden-files: true
-          retention-days: 3
-
-  gog:
-    runs-on: ubuntu-26.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Test
-        run: python3 -m unittest discover -s tests
-      - name: The last run's files
-        run: tools/data-branch.sh
-      - name: Build
-        run: python3 tools/gog.py catalog out data-branch
-      - name: Keep the files
-        run: |
-          touch "$ALERTS"
-          cp "$ALERTS" out/.alerts
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: gog
-          path: out/
-          include-hidden-files: true
-          retention-days: 3
-
-  xbox:
-    runs-on: ubuntu-26.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Test
-        run: python3 -m unittest discover -s tests
-      - name: The last run's files
-        run: tools/data-branch.sh
-      - name: Build
-        run: python3 tools/xbox.py catalog out data-branch
-      - name: Keep the files
-        run: |
-          touch "$ALERTS"
-          cp "$ALERTS" out/.alerts
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: xbox
-          path: out/
-          include-hidden-files: true
-          retention-days: 3
-
-  retro:
-    runs-on: ubuntu-26.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Test
-        run: python3 -m unittest discover -s tests
-      - name: The last run's files
-        run: tools/data-branch.sh
-      - name: Build
-        run: python3 tools/retro.py out data-branch
-      - name: Keep the files
-        run: |
-          touch "$ALERTS"
-          cp "$ALERTS" out/.alerts
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: retro
-          path: out/
-          include-hidden-files: true
-          retention-days: 3
-
-  publish:
-    needs: [switch, steam, gog, xbox, retro]
+  # The sources asked about the games Wikidata gives them.
+  stores:
+    needs: first
     if: ${{ !cancelled() }}
     runs-on: ubuntu-26.04
-    timeout-minutes: 20
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [steam-store, steamspy, gog, msstore, igdb]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: The last run's files
         run: tools/data-branch.sh
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          path: made
-      # Each platform's files that were made; the others keep the last run's.
+          name: source-wikidata
+          path: fresh
+      - name: Collect
+        # IGDB's keys, when the repository has them (tools/igdb.py): without
+        # them nothing is asked of it.
+        env:
+          IGDB_CLIENT_ID: ${{ secrets.IGDB_CLIENT_ID }}
+          IGDB_CLIENT_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
+        run: python3 tools/collect.py "${{ matrix.source }}" weekly out data-branch fresh
+      - name: Keep the files
+        if: always()
+        run: |
+          mkdir -p out
+          touch "$ALERTS"
+          cp "$ALERTS" "out/.alerts-${{ matrix.source }}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: source-${{ matrix.source }}
+          path: out/
+          include-hidden-files: true
+          retention-days: 3
+
+  # The best known games' English pages' views: which ones, the stores say.
+  wikipedia:
+    needs: [first, stores]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: The last run's files
+        run: tools/data-branch.sh
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: source-*
+          merge-multiple: true
+          path: fresh
+      - name: Collect
+        run: python3 tools/collect.py wikipedia weekly out data-branch fresh
+      - name: Keep the files
+        if: always()
+        run: |
+          mkdir -p out
+          touch "$ALERTS"
+          cp "$ALERTS" out/.alerts-wikipedia
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: source-wikipedia
+          path: out/
+          include-hidden-files: true
+          retention-days: 3
+
+  publish:
+    needs: [first, stores, wikipedia]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: The last run's files
+        run: tools/data-branch.sh
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: source-*
+          merge-multiple: true
+          path: fresh
+      # Each platform's files from the sources (this run's, else the last
+      # run's); one that fails keeps its last run's files.
+      - name: Links
+        id: links
+        continue-on-error: true
+        run: python3 tools/links.py out data-branch fresh
+      - name: Switch
+        id: switch
+        continue-on-error: true
+        run: python3 tools/build.py out data-branch fresh
+      - name: Steam
+        id: steam
+        continue-on-error: true
+        run: python3 tools/steam.py out data-branch fresh
+      - name: GOG
+        id: gog
+        continue-on-error: true
+        run: python3 tools/gog.py catalog out data-branch fresh
+      - name: Xbox
+        id: xbox
+        continue-on-error: true
+        run: python3 tools/xbox.py catalog out data-branch fresh
+      - name: Retro
+        id: retro
+        continue-on-error: true
+        run: python3 tools/retro.py out data-branch fresh
       - name: Publish to the data branch
         run: |
-          for dir in made/*/; do
-            if [ -f "$dir.alerts" ]; then cat "$dir.alerts" >> "$ALERTS"; rm "$dir.alerts"; fi
-            cp -r "$dir". data-branch/
-          done
+          for f in fresh/.alerts-*; do [ -f "$f" ] && cat "$f" >> "$ALERTS" && rm "$f"; done
+          if [ -d fresh/sources ]; then cp -r fresh/sources data-branch/; fi
+          if [ -d out ]; then cp -r out/. data-branch/; fi
           tools/publish.sh data-branch "data: $(date -u +%Y-%m-%d)"
       # The week's files kept as a release, each and their zip attested
       # (`gh attestation verify switch-popular.json -R JigSawFr/Atlas`).
@@ -186,12 +192,13 @@ jobs:
           subject-path: |
             archive/*.json
             archive/*.zip
-      # Anything wrong (a platform's job, a step that may fail, a file the
-      # guard kept): an issue labelled data-alert, or a comment on the open one.
+      # Anything wrong (a source's job, a platform's step, a step that may
+      # fail, a file the guard kept): an issue labelled data-alert, or a
+      # comment on the open one.
       - name: Alert
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_STATUS: ${{ job.status }}
-          OUTCOMES: "switch=${{ needs.switch.result }} steam=${{ needs.steam.result }} gog=${{ needs.gog.result }} xbox=${{ needs.xbox.result }} retro=${{ needs.retro.result }} links=${{ needs.switch.outputs.links }} archive=${{ steps.archive.outcome }} attestation=${{ steps.attest.outcome }}"
+          OUTCOMES: "sources=${{ needs.first.result }} stores=${{ needs.stores.result }} wikipedia=${{ needs.wikipedia.result }} links=${{ steps.links.outcome }} switch=${{ steps.switch.outcome }} steam=${{ steps.steam.outcome }} gog=${{ steps.gog.outcome }} xbox=${{ steps.xbox.outcome }} retro=${{ steps.retro.outcome }} archive=${{ steps.archive.outcome }} attestation=${{ steps.attest.outcome }}"
         run: tools/alert.sh "${{ github.workflow }}"

@@ -55,6 +55,7 @@
   "file_prices": "Prices and sales in one country, with the lowest price seen",
   "file_links": "A game's ids on every store, by its Wikidata item",
   "file_index": "Every file with its day, size and hash",
+  "file_source": "What a source answered, kept as collected (the platforms' files are made from it)",
   "use_eyebrow": "Use it",
   "use_title": "No account, no key, no limit",
   "use_lede": "The files are plain JSON. Read them from wherever suits you.",

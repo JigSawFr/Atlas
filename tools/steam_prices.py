@@ -17,7 +17,8 @@ none). A free game, or one not sold in the country, is left out.
 Steam's store (IStoreBrowseService/GetItems, no key) answers 200 apps a
 request; a few requests at once.
 
-Usage: tools/steam_prices.py <out-dir> <previous-dir>   (writes out-dir/steam/prices/)
+Usage: tools/steam_prices.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/steam/prices/,
+from sources/steam-store/prices/, tools/collect.py's)
 """
 import concurrent.futures
 import datetime
@@ -70,8 +71,8 @@ def row_of(item):
     return [regular, sale, until, lowest_30]
 
 
-def read_country(country, apps, fetch, workers=WORKERS, pause=PAUSE):
-    """{app id: [regular, sale, until, lowest_30]} of `country`'s store."""
+def read_items(country, apps, fetch, workers=WORKERS, pause=PAUSE):
+    """{app id: GetItems' item} of `country`'s store for `apps`, in the order they came."""
     apps = sorted(apps, key=int)
     batches = [apps[i:i + steam.BATCH] for i in range(0, len(apps), steam.BATCH)]
 
@@ -89,18 +90,29 @@ def read_country(country, apps, fetch, workers=WORKERS, pause=PAUSE):
             except (urllib.error.URLError, OSError, ValueError) as e:
                 print(f"steam prices: {country}: {e}", file=sys.stderr)
                 return []
-        found = []
-        for item in ((body or {}).get("response") or {}).get("store_items") or []:
-            row = row_of(item)
-            if row and item.get("appid"):
-                found.append((str(item["appid"]), row))
-        return found
+        return [(str(item["appid"]), item) for item in ((body or {}).get("response") or {}).get("store_items") or []
+                if item.get("appid")]
 
     out = {}
     with concurrent.futures.ThreadPoolExecutor(workers) as pool:
         for found in pool.map(ask, batches):
             out.update(found)
+    return out
+
+
+def rows_of(items):
+    """{app id: [regular, sale, until, lowest_30]} of the items sold."""
+    out = {}
+    for app, item in items.items():
+        row = row_of(item)
+        if row:
+            out[app] = row
     return dict(sorted(out.items(), key=lambda kv: int(kv[0])))
+
+
+def read_country(country, apps, fetch, workers=WORKERS, pause=PAUSE):
+    """{app id: [regular, sale, until, lowest_30]} of `country`'s store."""
+    return rows_of(read_items(country, apps, fetch, workers, pause))
 
 
 def with_lowest(rows, previous, today):
@@ -109,20 +121,16 @@ def with_lowest(rows, previous, today):
     return {app: kept[app] + [rows[app][3]] for app in rows}
 
 
-def main():
-    out_dir, previous_dir = sys.argv[1], sys.argv[2]
-    games = (common.previous_file(previous_dir, f"{steam.STEAM}/games.json").get("games") or {})
-    if not games:
-        print("steam prices: no steam/games.json in the last run's files, nothing to ask", file=sys.stderr)
-        return
-    today = datetime.date.today().isoformat()
-    fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
+def consolidate(src, out_dir, previous_dir, today):
+    """steam/prices/<country>.json from the store's answers collected today."""
     report = []
     for country, currency in COUNTRIES.items():
-        started = time.monotonic()
-        rows = read_country(country, games, fetch)
-        print(f"{country}: {len(rows)} games, {sum(1 for r in rows.values() if r[1])} on sale, "
-              f"{time.monotonic() - started:.0f} s", file=sys.stderr)
+        collected = common.collected_today(src, f"steam-store/prices/{country}.json", today)
+        if not collected:
+            print(f"steam prices: {country}: nothing collected today", file=sys.stderr)
+            continue
+        rows = rows_of(collected.get("games") or {})
+        print(f"{country}: {len(rows)} games, {sum(1 for r in rows.values() if r[1])} on sale", file=sys.stderr)
         name = f"{steam.STEAM}/prices/{country}.json"
         last = common.previous_file(previous_dir, name)
         common.publish(out_dir, name, {
@@ -131,6 +139,11 @@ def main():
             "source": "Steam's store (IStoreBrowseService/GetItems)",
             "games": with_lowest(rows, last.get("games") or {}, today)}, previous_dir, report)
     print(common.summary(report), file=sys.stderr)
+
+
+def main():
+    out_dir, previous_dir, sources_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+    consolidate(common.reader(sources_dir, previous_dir), out_dir, previous_dir, datetime.date.today().isoformat())
 
 
 if __name__ == "__main__":

@@ -96,7 +96,7 @@ class Main(unittest.TestCase):
         def no_network(*args, **kwargs):
             raise AssertionError("nothing to measure: no request")
         err = io.StringIO()
-        with mock.patch.object(sys, "argv", ["trends.py", self.out, self.last]), \
+        with mock.patch.object(sys, "argv", ["trends.py", self.out, self.last, os.path.join(self.tmp.name, "sources")]), \
                 mock.patch.object(common, "sparql", no_network), mock.patch.object(common, "fetch", no_network), \
                 contextlib.redirect_stderr(err):
             trends.main()

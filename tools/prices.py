@@ -19,11 +19,11 @@ and `lowest_day` (YYYYMMDD) the last day it had it: each day's price is
 weighed against the last run's file. A game no longer sold, or not in that
 eShop, is left out.
 
-Usage: tools/prices.py [out-dir] [previous-dir]   (writes out-dir/switch/prices/)
+Usage: tools/prices.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/switch/prices/,
+from the sources tools/collect.py keeps: titledb, eshop)
 """
 import concurrent.futures
 import datetime
-import os
 import sys
 import time
 import urllib.error
@@ -118,21 +118,38 @@ def read_country(country, ids, fetch, workers=WORKERS, pause=PAUSE):
 
 
 
-def main():
-    out_dir = sys.argv[1] if len(sys.argv) > 1 else "out"
-    previous_dir = sys.argv[2] if len(sys.argv) > 2 else None
-    today = datetime.date.today().isoformat()
-    fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
+def from_answers(rows, ids):
+    """{title id: [regular, sale, until]} and the currency, from the eShop's
+    answers collected (sources/eshop/prices/<country>.json: by eShop id, in
+    the order they came), as read_country reads them."""
+    games, currency = {}, None
+    for nsu, r in rows.items():
+        tid = ids.get(int(nsu)) if nsu.isdigit() else None
+        if not tid or r.get("status") != "onsale" or r.get("regular") is None:
+            continue
+        regular = r["regular"]
+        currency = currency or r.get("currency")
+        sale, until = 0, 0
+        if r.get("discount") is not None and r["discount"] < regular:
+            sale, until = r["discount"], r.get("until") or 0
+        games.setdefault(tid, [regular, sale, until])
+    return dict(sorted(games.items())), currency
+
+
+def consolidate(src, out_dir, previous_dir, today):
+    """switch/prices/<country>.json from the eShop's answers and titledb's ids collected."""
     report = []
     for file, countries in REGIONS.items():
-        titles = common.fetch(TITLEDB.format(file=file), timeout=600) or {}
+        titles = src(f"titledb/{file.split('.')[0]}.json").get("games") or {}
         ids = eshop_ids(titles, build.base_id)
         print(f"{file}: {len(ids)} games with an eShop id", file=sys.stderr)
         for country in countries:
-            started = time.monotonic()
-            games, currency = read_country(country, ids, fetch)
-            print(f"{country}: {len(games)} games, {sum(1 for r in games.values() if r[1])} on sale, "
-                  f"{time.monotonic() - started:.0f} s", file=sys.stderr)
+            answers = common.collected_today(src, f"eshop/prices/{country}.json", today).get("games")
+            if answers is None:
+                print(f"{country}: no answers collected today", file=sys.stderr)
+                continue
+            games, currency = from_answers(answers, ids)
+            print(f"{country}: {len(games)} games, {sum(1 for r in games.values() if r[1])} on sale", file=sys.stderr)
             name = f"{build.SWITCH}/prices/{country}.json"
             last = common.previous_file(previous_dir, name) if previous_dir else {}
             common.publish(out_dir, name, {
@@ -141,6 +158,11 @@ def main():
                 "source": f"Nintendo eShop's prices, by titledb's {file} eShop ids",
                 "games": with_lowest(games, last.get("games") or {}, today)}, previous_dir, report)
     print(common.summary(report), file=sys.stderr)
+
+
+def main():
+    out_dir, previous_dir, sources_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+    consolidate(common.reader(sources_dir, previous_dir), out_dir, previous_dir, datetime.date.today().isoformat())
 
 
 if __name__ == "__main__":

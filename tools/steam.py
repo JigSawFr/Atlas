@@ -17,7 +17,8 @@ games and gives their name, reviews, release, franchise, developers,
 publishers and tags. A game's renown on Wikipedia (sitelinks, critics, the
 views of the best known) is weighed as the Switch's (tools/build.py).
 
-Usage: tools/steam.py <out-dir> [previous-dir]   (writes out-dir/steam/)
+Usage: tools/steam.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/steam/, from
+the sources tools/collect.py keeps: wikidata, steam-store, wikipedia)
 """
 import datetime
 import json
@@ -49,6 +50,7 @@ ITEMS = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_jso
 TAGS = "https://api.steampowered.com/IStoreService/GetTagList/v1/?language=english"
 MOST_PLAYED = "https://api.steampowered.com/ISteamChartsService/GetMostPlayedGames/v1/"
 BATCH = 200            # apps a GetItems request (300 is too long an address)
+RETRY_WAIT = 60        # seconds before the refused GetItems requests are asked again
 PAUSE = 0.3            # seconds between two
 GAME = 0               # GetItems' type of a game (not a DLC, a tool, a video…)
 TAGS_KEPT = 10         # a game's first tags, by weight
@@ -95,21 +97,30 @@ def request(apps, country="US"):
 
 
 def read_items(apps, fetch, country="US", sleep=time.sleep):
-    """{app id: GetItems' item} of the apps it knows; a request that fails is left out."""
+    """{app id: GetItems' item} of the apps it knows. A request that fails
+    is asked once more after the others (the store refuses a burst for a
+    minute or so), then left out."""
     apps = sorted(apps, key=int)
-    out, failed = {}, 0
-    for i in range(0, len(apps), BATCH):
-        try:
-            body = fetch(request(apps[i:i + BATCH], country))
-        except (urllib.error.URLError, OSError, ValueError) as e:
-            failed += 1
-            print(f"steam: GetItems {i}: {e}", file=sys.stderr)
-            continue
-        for item in ((body or {}).get("response") or {}).get("store_items") or []:
-            if item.get("success") == 1 and item.get("appid"):
-                out[str(item["appid"])] = item
-        sleep(PAUSE)
-    print(f"steam: {len(out)} of {len(apps)} apps known to the store ({failed} requests failed)", file=sys.stderr)
+    out, failed = {}, []
+    for again in (False, True):
+        starts = failed if again else range(0, len(apps), BATCH)
+        if again and failed:
+            sleep(RETRY_WAIT)
+        failed = []
+        for i in starts:
+            try:
+                body = fetch(request(apps[i:i + BATCH], country))
+            except (urllib.error.URLError, OSError, ValueError) as e:
+                failed.append(i)
+                print(f"steam: GetItems {i}{' again' if again else ''}: {e}", file=sys.stderr)
+                continue
+            for item in ((body or {}).get("response") or {}).get("store_items") or []:
+                if item.get("success") == 1 and item.get("appid"):
+                    out[str(item["appid"])] = item
+            sleep(PAUSE)
+        if not failed:
+            break
+    print(f"steam: {len(out)} of {len(apps)} apps known to the store ({len(failed)} requests failed)", file=sys.stderr)
     return out
 
 
@@ -206,25 +217,37 @@ def similar(games, popular_table, count=SIMILAR_GAMES):
     return features.similar(traits, max_shared=MAX_SHARED)
 
 
-def main():
-    out_dir = sys.argv[1]
-    previous_dir = sys.argv[2] if len(sys.argv) > 2 else None
-    today = datetime.date.today()
-    fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
-    report = []
+def store_games(src, known, played):
+    """{app id: games.json entry} of the apps Wikidata or the most played name
+    that the store says are games (sources/steam-store/apps.json)."""
+    rows = common.bindings(src("wikidata/steam.json").get("rows") or [])
+    qids = items_of(rows)
+    found = src("steam-store/apps.json").get("games") or {}
+    return {app: entry(item, qids.get(app)) for app, item in found.items()
+            if (app in known or app in played) and item.get("type") == GAME}
 
-    rows = wikidata_rows()
+
+def views_known(src):
+    """{app id: (sitelinks, English page)} of the games whose views count."""
+    known = build.games(common.bindings(src("wikidata/steam.json").get("rows") or []), ident=app_id)
+    played = src("steam-store/most-played.json").get("items") or {}
+    return {app: known[app] for app in store_games(src, known, played) if app in known}
+
+
+def consolidate(src, out_dir, previous_dir, today):
+    """steam/'s weekly files from the sources collected (tools/collect.py)."""
+    report = []
+    rows = common.bindings(src("wikidata/steam.json").get("rows") or [])
     known = build.games(rows, ident=app_id)
     critics = build.reviews(rows, ident=app_id)
-    qids = items_of(rows)
     print(f"steam: {len(known)} apps in Wikidata, {len(critics)} with critics' scores", file=sys.stderr)
-    played = most_played(fetch(MOST_PLAYED))
-    tags = tag_names(fetch(TAGS))
-    found = read_items(set(known) | set(played), fetch)
-    games = {app: entry(item, qids.get(app)) for app, item in found.items() if item.get("type") == GAME}
+    played = src("steam-store/most-played.json").get("items") or {}
+    tags = {int(k): v for k, v in (src("steam-store/tags.json").get("items") or {}).items()}
+    games = store_games(src, known, played)
     print(f"steam: {len(games)} games", file=sys.stderr)
     starts, end = build.months(today)
-    read = build.read_views({app: known[app] for app in games if app in known}, starts, end)
+    read = build.views_from({app: known[app] for app in games if app in known},
+                            src("wikipedia/monthly.json").get("pages") or {})
     table = popular(known, critics, read, games, played)
 
     def payload(source, entries, **extra):
@@ -245,6 +268,11 @@ def main():
     common.publish(out_dir, f"{STEAM}/similar.json", payload(
         "steam/games.json's traits", similar(games, table)), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
+
+
+def main():
+    out_dir, previous_dir, sources_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+    consolidate(common.reader(sources_dir, previous_dir), out_dir, previous_dir, datetime.date.today())
 
 
 if __name__ == "__main__":

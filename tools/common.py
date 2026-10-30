@@ -23,6 +23,11 @@ GUARD_FLOOR = 50       # games the last run's file had at least, for that to cou
 # The data files' schema (README): a new field keeps it, a field changing
 # meaning moves it up. A file of another schema is read as no file at all.
 SCHEMA = 1
+# The sources' files' schema: a new field keeps it, a field changing
+# meaning moves it up; one of another schema is read as no file.
+SOURCE_SCHEMA = 1
+SOURCES = "sources"    # each source's answers, as collected (tools/collect.py)
+SHARD_BYTES = 15_000_000   # a source file larger than this is cut in parts (jsDelivr serves 20 MB at most)
 
 
 def fetch(url, tries=4, patient=True, timeout=120, data=None, headers=None):
@@ -150,3 +155,140 @@ def previous_file(previous_dir, name):
         return body if body.get("schema") == SCHEMA else {}
     except (OSError, ValueError, AttributeError, TypeError):
         return {}
+
+
+def records_key(payload):
+    """The key of a data file's records: "games" for a platform's, else a source's own."""
+    for key in ("games", "rows", "pages", "items"):
+        if key in payload:
+            return key
+    return None
+
+
+def _parts(payload, key):
+    """`payload` cut in parts of about SHARD_BYTES, each with every other field."""
+    records = payload[key]
+    items = list(records.items()) if isinstance(records, dict) else list(records)
+    size = len(json.dumps(records, ensure_ascii=False, separators=(",", ":")).encode())
+    count = max(1, -(-size // SHARD_BYTES))
+    if count == 1:
+        return [payload]
+    step = -(-len(items) // count)
+    chunks = [items[i:i + step] for i in range(0, len(items), step)]
+    out = []
+    for n, chunk in enumerate(chunks, 1):
+        part = {k: v for k, v in payload.items() if k != key}
+        part.update({"part": n, "parts": len(chunks), key: dict(chunk) if isinstance(records, dict) else chunk})
+        out.append(part)
+    return out
+
+
+def read_records(directory, name):
+    """The source file `name` (sources/<source>/<file>.json) in `directory`,
+    its parts put together when it was cut (sources/<source>/<file>/1.json…);
+    None when there is none, or it is of another schema (README)."""
+    whole = _read_records(directory, name)
+    return whole if isinstance(whole, dict) and whole.get("schema") == SOURCE_SCHEMA else None
+
+
+def _read_records(directory, name):
+    path = os.path.join(directory, name)
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        pass
+    folder = path[:-len(".json")]
+    try:
+        names = sorted((n for n in os.listdir(folder) if n.endswith(".json") and n[:-5].isdigit()),
+                       key=lambda n: int(n[:-5]))
+    except OSError:
+        return None
+    whole = None
+    for n in names:
+        try:
+            with open(os.path.join(folder, n), encoding="utf-8") as f:
+                part = json.load(f)
+        except (OSError, ValueError):
+            return None
+        try:
+            key = records_key(part)
+            if whole is None:
+                whole = {k: v for k, v in part.items() if k not in ("part", "parts")}
+            elif isinstance(part[key], dict):
+                whole[key].update(part[key])
+            else:
+                whole[key].extend(part[key])
+        except (AttributeError, KeyError, TypeError):
+            return None   # not one of ours
+    return whole
+
+
+def source(name, *directories):
+    """A source file from the first of `directories` that has it (this run's
+    collected files, then the last run's), {} when none does."""
+    for directory in directories:
+        if directory:
+            found = read_records(directory, name)
+            if found is not None:
+                return found
+    return {}
+
+
+def publish_source(out_dir, name, payload, previous_dir, report):
+    """A source's file written as out_dir/name, cut in parts when too large
+    (read_records puts them together), unless it has lost too many records
+    against the last run's: then the last run's is kept, and said."""
+    key = records_key(payload)
+    now = len(payload[key])
+    last = read_records(previous_dir, name) if previous_dir else None
+    before = len(last[records_key(last)]) if last and records_key(last) else None
+    kept = before is not None and before >= GUARD_FLOOR and now < before * GUARD_KEEP
+    if kept:
+        payload = last
+        print(f"::warning::{name}: {now} records against {before} last time, last run's kept", file=sys.stderr)
+        if os.environ.get("ALERTS"):
+            with open(os.environ["ALERTS"], "a", encoding="utf-8") as f:
+                f.write(f"`{name}` came out with {now} records against {before} last time: the last run's was kept.\n")
+    parts = _parts(payload, key)
+    path = os.path.join(out_dir, name)
+    if len(parts) == 1:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        _dump(path, parts[0])
+    else:
+        folder = path[:-len(".json")]
+        os.makedirs(folder, exist_ok=True)
+        for part in parts:
+            _dump(os.path.join(folder, f"{part['part']}.json"), part)
+    print(f"{name}: {now} records" + (f", {len(parts)} parts" if len(parts) > 1 else ""), file=sys.stderr)
+    report.append((name, before, now, kept))
+    return not kept
+
+
+def _dump(path, payload):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+        f.write("\n")
+
+
+def rows_of(bindings):
+    """A query's rows as a source keeps them: {variable: value}."""
+    return [{k: v["value"] for k, v in b.items() if isinstance(v, dict) and "value" in v} for b in bindings]
+
+
+def bindings(rows):
+    """A source's rows back as the query's answer gave them (rows_of's reverse)."""
+    return [{k: {"value": v} for k, v in r.items()} for r in rows]
+
+
+def reader(*directories):
+    """src(name): sources/<name> from the first of `directories` that has it."""
+    return lambda name: source(f"{SOURCES}/{name}", *directories)
+
+
+def collected_today(src, name, today):
+    """A source file collected today, {} when it is an older run's (a
+    collection that failed today: nothing made from the last run's)."""
+    found = src(name)
+    day = today if isinstance(today, str) else today.isoformat()
+    return found if found.get("generated") == day else {}

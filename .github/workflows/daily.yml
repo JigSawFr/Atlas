@@ -1,15 +1,16 @@
-# What changes every day, a job a platform side by side, then one job that
-# commits it all to the `data` branch, where PlayShelf reads it through
-# jsDelivr:
-# - switch: the popular games' trends on the Wikipedias of PlayShelf's
-#   languages (tools/trends.py, switch/popular.json's `trend`) and each
-#   game's price and sale in a few countries' eShops (tools/prices.py,
-#   switch/prices/);
-# - steam: each game's price and sale in the same countries' Steam stores
-#   (tools/steam_prices.py, steam/prices/);
-# - gog: the same in GOG's (tools/gog.py prices, gog/prices/);
-# - xbox: the same in the Microsoft Store's (tools/xbox.py prices, xbox/prices/).
-# A platform whose job fails keeps its last run's files.
+# What changes every day, in two steps:
+# - each source asked once, side by side (tools/collect.py: sources/<source>/):
+#   - pages: the best known Switch games' pages on the Wikipedias of
+#     PlayShelf's languages (Wikidata), then their views a day (Wikimedia);
+#   - eshop: titledb's lists (the eShop's ids), then the eShop's prices in a
+#     few countries;
+#   - steam-store, gog, msstore: each store's prices in the same countries;
+# - the platforms' files made from them, asking nothing: switch/popular.json's
+#   trends (tools/trends.py), switch/prices/ (tools/prices.py), steam/prices/
+#   (tools/steam_prices.py), gog/prices/ (tools/gog.py prices), xbox/prices/
+#   (tools/xbox.py prices); then everything committed to the `data` branch,
+#   where PlayShelf reads it through jsDelivr. A file made from nothing
+#   collected today is left as it was.
 name: daily
 
 on:
@@ -31,130 +32,93 @@ env:
   ALERTS: /tmp/atlas-alerts.md   # runner.temp is not allowed at this level
 
 jobs:
-  switch:
+  sources:
     runs-on: ubuntu-26.04
     timeout-minutes: 45
-    outputs:
-      trends: ${{ steps.trends.outcome }}
-      prices: ${{ steps.prices.outcome }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: pages
+            first: wikidata
+            then: wikipedia
+          - name: eshop
+            first: titledb
+            then: eshop
+          - name: steam-store
+            first: steam-store
+          - name: gog
+            first: gog
+          - name: msstore
+            first: msstore
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test
+        if: matrix.name == 'pages'
         env:
           ALERTS: ""   # the run's alerts are not the tests' (tests/test_common.py)
         run: python3 -m unittest discover -s tests
       - name: The data branch
         run: tools/data-branch.sh
-      # A failure of one leaves the other's files to publish.
-      - name: Trends
-        id: trends
-        continue-on-error: true
-        run: python3 tools/trends.py out data-branch
-      - name: Prices
-        id: prices
-        continue-on-error: true
-        run: python3 tools/prices.py out data-branch
+      - name: Collect
+        run: python3 tools/collect.py "${{ matrix.first }}" daily out data-branch
+      # The source the first one's answers are needed for (this run's).
+      - name: Then
+        if: matrix.then
+        run: python3 tools/collect.py "${{ matrix.then }}" daily out data-branch out
       - name: Keep the files
+        if: always()
         run: |
           mkdir -p out
           touch "$ALERTS"
-          cp "$ALERTS" out/.alerts
+          cp "$ALERTS" "out/.alerts-${{ matrix.name }}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
         with:
-          name: switch
-          path: out/
-          include-hidden-files: true
-          retention-days: 3
-
-  steam:
-    runs-on: ubuntu-26.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Test
-        env:
-          ALERTS: ""   # the run's alerts are not the tests' (tests/test_common.py)
-        run: python3 -m unittest discover -s tests
-      - name: The data branch
-        run: tools/data-branch.sh
-      - name: Prices
-        run: python3 tools/steam_prices.py out data-branch
-      - name: Keep the files
-        run: |
-          mkdir -p out
-          touch "$ALERTS"
-          cp "$ALERTS" out/.alerts
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: steam
-          path: out/
-          include-hidden-files: true
-          retention-days: 3
-
-  gog:
-    runs-on: ubuntu-26.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Test
-        run: python3 -m unittest discover -s tests
-      - name: The data branch
-        run: tools/data-branch.sh
-      - name: Prices
-        run: python3 tools/gog.py prices out data-branch
-      - name: Keep the files
-        run: |
-          mkdir -p out
-          touch "$ALERTS"
-          cp "$ALERTS" out/.alerts
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: gog
-          path: out/
-          include-hidden-files: true
-          retention-days: 3
-
-  xbox:
-    runs-on: ubuntu-26.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Test
-        run: python3 -m unittest discover -s tests
-      - name: The data branch
-        run: tools/data-branch.sh
-      - name: Prices
-        run: python3 tools/xbox.py prices out data-branch
-      - name: Keep the files
-        run: |
-          mkdir -p out
-          touch "$ALERTS"
-          cp "$ALERTS" out/.alerts
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: xbox
+          name: source-${{ matrix.name }}
           path: out/
           include-hidden-files: true
           retention-days: 3
 
   publish:
-    needs: [switch, steam, gog, xbox]
+    needs: sources
     if: ${{ !cancelled() }}
     runs-on: ubuntu-26.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: The data branch
         run: tools/data-branch.sh
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          path: made
+          pattern: source-*
+          merge-multiple: true
+          path: fresh
+      - name: Trends
+        id: trends
+        continue-on-error: true
+        run: python3 tools/trends.py out data-branch fresh
+      - name: Switch prices
+        id: switch
+        continue-on-error: true
+        run: python3 tools/prices.py out data-branch fresh
+      - name: Steam prices
+        id: steam
+        continue-on-error: true
+        run: python3 tools/steam_prices.py out data-branch fresh
+      - name: GOG prices
+        id: gog
+        continue-on-error: true
+        run: python3 tools/gog.py prices out data-branch fresh
+      - name: Xbox prices
+        id: xbox
+        continue-on-error: true
+        run: python3 tools/xbox.py prices out data-branch fresh
       - name: Publish to the data branch
         run: |
-          for dir in made/*/; do
-            if [ -f "$dir.alerts" ]; then cat "$dir.alerts" >> "$ALERTS"; rm "$dir.alerts"; fi
-            cp -r "$dir". data-branch/
-          done
+          for f in fresh/.alerts-*; do [ -f "$f" ] && cat "$f" >> "$ALERTS" && rm "$f"; done
+          if [ -d fresh/sources ]; then cp -r fresh/sources data-branch/; fi
+          if [ -d out ]; then cp -r out/. data-branch/; fi
           tools/publish.sh data-branch "daily: $(date -u +%Y-%m-%d)"
       # GitHub turns off a public repository's schedules after 60 days with
       # no activity, and the data branch's pushes may not count: enabling
@@ -165,12 +129,12 @@ jobs:
         run: |
           gh workflow enable daily.yml
           gh workflow enable build.yml
-      # Anything wrong (a platform's job, a step that may fail, a file the
-      # guard kept): an issue labelled data-alert, or a comment on the open one.
+      # Anything wrong (a source's job, a platform's step, a file the guard
+      # kept): an issue labelled data-alert, or a comment on the open one.
       - name: Alert
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_STATUS: ${{ job.status }}
-          OUTCOMES: "switch=${{ needs.switch.result }} trends=${{ needs.switch.outputs.trends }} prices=${{ needs.switch.outputs.prices }} steam=${{ needs.steam.result }} gog=${{ needs.gog.result }} xbox=${{ needs.xbox.result }}"
+          OUTCOMES: "sources=${{ needs.sources.result }} trends=${{ steps.trends.outcome }} switch=${{ steps.switch.outcome }} steam=${{ steps.steam.outcome }} gog=${{ steps.gog.outcome }} xbox=${{ steps.xbox.outcome }}"
         run: tools/alert.sh "${{ github.workflow }}"

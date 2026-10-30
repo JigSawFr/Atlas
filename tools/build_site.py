@@ -87,7 +87,7 @@ HERE = "atlas"
 # ("nav" for the header's sites menu, "footer"). A link to this site carries none.
 UTM_SOURCE = "atlas"
 # A file made every day; the others every week (late past 2 and 9 days).
-DAILY = re.compile(r"(^|/)prices/|^switch/popular\.json$")
+DAILY = re.compile(r"(^|/)prices/|^switch/popular\.json$|^sources/(eshop|titledb|gog|wikipedia)/")
 
 # Numbers and sizes as each language writes them: the thousands' and the
 # decimals' marks, the units.
@@ -249,6 +249,8 @@ def platform_cards(language: str, catalog: dict, root: str, summary: dict) -> st
 
 
 def file_kind(name: str) -> str:
+    if name.startswith("sources/"):
+        return "source"
     base = name.rsplit("/", 1)[-1]
     if "/prices/" in name or name.startswith("prices/"):
         return "prices"
@@ -260,6 +262,8 @@ def file_rows(language: str, catalog: dict, index: dict) -> str:
     groups = {}
     for name, f in sorted(((index or {}).get("files") or {}).items()):
         key = re.sub(r"prices/[A-Z]{2}\.json$", "prices/<country>.json", name)
+        # A source's files in one row (they are not copied here: sources/ stays on the data branch).
+        key = re.sub(r"^(sources/[^/]+/).*$", r"\1…", key)
         g = groups.setdefault(key, {"bytes": 0, "generated": "", "n": 0, "name": name})
         g["bytes"] += f.get("bytes", 0)
         g["generated"] = max(g["generated"], f.get("generated") or "")
@@ -341,7 +345,9 @@ def main() -> None:
     shutil.copytree(SITE / "assets", out / "assets")
     summary, index = {}, {}
     if data:
-        shutil.copytree(data, out / "data", ignore=shutil.ignore_patterns(".git", ".git*"))
+        # The sources (sources/) are not the explorer's: left on the data branch, the site smaller.
+        shutil.copytree(data, out / "data", ignore=lambda d, names: [n for n in names if n.startswith(".git")
+                                                                   or (Path(d) == data and n == "sources")])
         summary = site_data.build(str(data), str(out))
         index = site_data.read(str(data / "index.json")) or {}
     catalogs = {c: json.loads((SITE / "i18n" / f"{c}.json").read_text(encoding="utf-8")) for c, _, _, _ in LANGUAGES}

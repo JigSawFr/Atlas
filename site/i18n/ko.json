@@ -55,6 +55,7 @@
   "file_prices": "한 나라의 가격과 할인, 역대 최저가 포함",
   "file_links": "Wikidata 항목별 각 스토어의 게임 ID",
   "file_index": "각 파일의 날짜, 크기, 해시",
+  "file_source": "수집한 그대로의 출처 응답(각 플랫폼의 파일은 여기서 만들어집니다)",
   "use_eyebrow": "사용하기",
   "use_title": "계정도, 키도, 제한도 없이",
   "use_lede": "파일은 단순한 JSON입니다. 편한 곳에서 읽으세요.",
