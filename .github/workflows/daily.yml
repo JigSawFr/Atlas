@@ -31,14 +31,7 @@ jobs:
       - name: Test
         run: python3 -m unittest discover -s tests
       - name: The data branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch --depth 1 origin data:refs/remotes/origin/data
-          git worktree add data-branch origin/data
-          git -C data-branch checkout -B data
-          # The Switch's files at the root, as before switch/: moved there.
-          python3 tools/migrate.py data-branch
+        run: tools/data-branch.sh
       # A failure of one leaves the other's files to publish.
       - name: Trends
         id: trends

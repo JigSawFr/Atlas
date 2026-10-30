@@ -14,7 +14,7 @@ lines=()
 [ "${JOB_STATUS:-success}" = success ] || lines+=("- The job ended in **${JOB_STATUS}**.")
 for pair in ${OUTCOMES:-}; do
   step=${pair%%=*}; outcome=${pair#*=}
-  [ "$outcome" = failure ] && lines+=("- The **${step}** step failed; the run went on without it.")
+  [ "$outcome" = failure ] && lines+=("- **${step}** failed; the run went on without it (its files are the last run's).")
 done
 if [ -n "${ALERTS:-}" ] && [ -s "$ALERTS" ]; then
   while IFS= read -r line; do lines+=("- $line"); done < "$ALERTS"

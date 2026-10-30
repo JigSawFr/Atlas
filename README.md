@@ -25,6 +25,10 @@ jsDelivr. Each platform has a folder of its own; the Switch's is `switch/`:
 | `switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/similar.json` |
 | `switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/editions.json` |
 | `switch/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/prices/FR.json` |
+| `steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/popular.json` |
+| `steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/games.json` |
+| `steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/upcoming.json` |
+| `steam/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/similar.json` |
 | `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/links.json` |
 | `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/index.json` |
 
@@ -39,7 +43,7 @@ The `data` branch is one commit with no history, replaced at each run (`tools/pu
 
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
 meaning), the day it was `generated` and its `source`; a platform's files
-also have their `platform` (`switch`). In `switch/`, a game is a base game's
+also have their `platform` (`switch`, `steam`). In `switch/`, a game is a base game's
 title id (16 hex digits, upper case, ending in `000`).
 
 `links.json`, made every Monday:
@@ -131,6 +135,38 @@ A game's other editions (a Deluxe, a Complete Edition, a Game of the Year, the g
 
 Each game the country's eShop sells is `[regular, sale, until, lowest, lowest_day]`: its price, its sale price (0 when not on sale), the sale's last day (YYYYMMDD, 0 when none), the lowest price it has had since `since` (the day the files began) and the last day it had it, in the country's currency. Each day's price is weighed against the last run's file. The eShop's price service answers by its own ids, which differ from one region to the next: titledb's list of each region (US, GB, JP) gives them with the title ids. A game no longer sold is left out.
 
+### Steam
+
+`steam/` has the Switch's files' formats, by Steam app id (`"620"`), made every
+Monday by `tools/steam.py` in a job of its own:
+
+- `steam/popular.json`: `[score, trend, critics]` as `switch/popular.json`.
+  The score weighs half the game's renown on Wikipedia (as the Switch's:
+  sitelinks, critics, the English page's views for the 400 best known) and
+  half its Steam reviews, on a log scale against the most; Steam's 100 most
+  played of last week are lifted by their rank.
+- `steam/games.json`: the 40,000 best known games and the upcoming ones
+  (all 120,000 would make some 50 MB): each one's `name`, `release`
+  (YYYYMMDD), `reviews` (`[count, percent positive]`), `qid` (its Wikidata
+  item), and its traits: `series` (its franchise), `developers` and
+  `publishers` as `[id, name]`, and `tags`, its players' first 10 tags, by
+  Steam's tag id, whose names are in the file's `tags`.
+
+  ```json
+  {"schema": 1, "platform": "steam", "generated": "2026-11-02", "source": "...",
+   "tags": {"19": "Action", "492": "Indie"},
+   "games": {"900010": {"name": "Amber Lantern", "qid": "Q900001", "release": 20231114, "reviews": [1200, 91],
+                        "series": [["franchise:lantern", "Lantern"]], "developers": [["clan:77", "Lantern Works"]],
+                        "publishers": [["name:tiny owl", "Tiny Owl"]], "tags": [19, 492]}}}
+  ```
+- `steam/upcoming.json`: `[YYYYMMDD, name]` of the games out in the next year.
+- `steam/similar.json`: the 12 most similar, `[app id, 1..100]`, of the 30,000
+  best known games, by their traits as the Switch's (a tag weighs as a genre).
+
+The games are those Wikidata gives a Steam app id (some 128,000 items) and
+Steam's most played; Steam's store says which are games (not a DLC, a tool or
+a soundtrack) and gives the rest, 200 apps a request.
+
 ## The archives
 
 The `data` branch keeps only the last files. Every Monday's build also keeps
@@ -165,6 +201,7 @@ gh attestation verify switch-popular.json -R JigSawFr/PlayInsights
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
 | [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
+| [Steam's store](https://store.steampowered.com/) (`IStoreBrowseService/GetItems`, `IStoreService/GetTagList`, `ISteamChartsService/GetMostPlayedGames`, no key) | Steam's games: names, reviews, releases, franchises, developers, publishers, tags, most played | [Steam Web API terms](https://steamcommunity.com/dev/apiterms); data from Valve, not endorsed by it |
 | [Nintendo eShop's prices](https://api.ec.nintendo.com/v1/price) | Each game's price and sale, by country (`switch/prices/`) | as published there |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
@@ -190,6 +227,7 @@ Every source works without a key, but IGDB, which needs one:
 | Platform | Source | Key | Where | Secret |
 |---|---|---|---|---|
 | Switch | IGDB | optional (more traits, popularity, hype, players' rating) | [Twitch's developer console](https://dev.twitch.tv/console/apps) | `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` |
+| Steam | Steam's store | none (a key, `STEAM_API_KEY`, would only add Steam's full list of apps; not read yet) | [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey) | `STEAM_API_KEY` |
 
 Each key is read only when its secret is set; without it, the files are made
 from the other sources.
@@ -211,6 +249,7 @@ python3 tools/build.py out/ [last/]  # writes out/switch/*.json; last/: the last
 python3 tools/prices.py out/ [last/] # writes out/switch/prices/*.json, every country's (some 20 minutes)
 python3 tools/trends.py out/ last/   # last/switch/popular.json with today's trends, as out/switch/popular.json
 python3 tools/links.py out/ [last/]  # writes out/links.json
+python3 tools/steam.py out/ [last/]  # writes out/steam/*.json (some 15 minutes)
 python3 -m unittest discover -s tests
 ```
 
