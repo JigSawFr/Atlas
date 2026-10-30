@@ -1,0 +1,96 @@
+  <section id="platforms">
+    <div class="section-head">
+      <span class="eyebrow">{{platforms_eyebrow}}</span>
+      <h2>{{platforms_title}}</h2>
+      <p>{{platforms_lede}}</p>
+    </div>
+    <ul class="platforms">
+{{platform_cards}}
+    </ul>
+  </section>
+
+  <section id="files">
+    <div class="section-head">
+      <span class="eyebrow">{{files_eyebrow}}</span>
+      <h2>{{files_title}}</h2>
+      <p>{{files_lede}}</p>
+    </div>
+    <div class="table" tabindex="0" role="region" aria-label="{{files_title}}">
+      <table class="files">
+        <thead><tr><th scope="col">{{files_file}}</th><th scope="col">{{files_what}}</th><th scope="col">{{files_rhythm}}</th><th scope="col">{{files_size}}</th><th scope="col">{{files_updated}}</th></tr></thead>
+        <tbody>
+{{file_rows}}
+        </tbody>
+      </table>
+    </div>
+    <p class="note">{{files_note}}</p>
+  </section>
+
+  <section id="use">
+    <div class="section-head">
+      <span class="eyebrow">{{use_eyebrow}}</span>
+      <h2>{{use_title}}</h2>
+      <p>{{use_lede}}</p>
+    </div>
+    <div class="ways">
+      <article class="way">
+        <h3>{{use_cdn_title}}</h3>
+        <p>{{use_cdn_text}}</p>
+        <pre tabindex="0"><code>https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/popular.json</code></pre>
+      </article>
+      <article class="way">
+        <h3>{{use_site_title}}</h3>
+        <p>{{use_site_text}}</p>
+        <pre tabindex="0"><code>{{site}}data/steam/popular.json</code></pre>
+      </article>
+      <article class="way">
+        <h3>{{use_index_title}}</h3>
+        <p>{{use_index_text}}</p>
+        <pre tabindex="0"><code>{"files": {"switch/popular.json": {"generated": "2026-11-02", "bytes": 71646, "sha256": "11c54e3b7c6f150f"}}}</code></pre>
+      </article>
+      <article class="way">
+        <h3>{{use_releases_title}}</h3>
+        <p>{{use_releases_text}}</p>
+        <pre tabindex="0"><code>https://github.com/JigSawFr/Atlas/releases/latest/download/switch-popular.json
+gh attestation verify switch-popular.json -R JigSawFr/Atlas</code></pre>
+      </article>
+    </div>
+    <p class="note">{{use_formats}} <a href="https://github.com/JigSawFr/Atlas#the-files">README</a></p>
+  </section>
+
+  <section id="sources">
+    <div class="section-head">
+      <span class="eyebrow">{{sources_eyebrow}}</span>
+      <h2>{{sources_title}}</h2>
+      <p>{{sources_lede}}</p>
+    </div>
+    <ul class="sources">
+      <li><a href="https://www.wikidata.org/">Wikidata</a><span>{{source_wikidata}}</span><small>CC0</small></li>
+      <li><a href="https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews">Wikimedia</a><span>{{source_pageviews}}</span><small>CC0</small></li>
+      <li><a href="https://github.com/blawar/titledb">titledb</a><span>{{source_titledb}}</span><small>{{source_as_published}}</small></li>
+      <li><a href="https://store.steampowered.com/">Steam</a><span>{{source_steam}}</span><small>{{source_steam_terms}}</small></li>
+      <li><a href="https://steamspy.com/">SteamSpy</a><span>{{source_steamspy}}</span><small>{{source_as_published}}</small></li>
+      <li><a href="https://www.nintendo.com/">Nintendo eShop</a><span>{{source_eshop}}</span><small>{{source_as_published}}</small></li>
+      <li><a href="https://www.igdb.com/">IGDB</a><span>{{source_igdb}}</span><small>{{source_igdb_terms}}</small></li>
+    </ul>
+  </section>
+
+  <section id="keys">
+    <div class="section-head">
+      <span class="eyebrow">{{keys_eyebrow}}</span>
+      <h2>{{keys_title}}</h2>
+      <p>{{keys_lede}}</p>
+    </div>
+    <ul class="keys">
+      <li><span class="k"><code>IGDB_CLIENT_ID</code><code>IGDB_CLIENT_SECRET</code></span><span>{{keys_igdb}}</span></li>
+      <li><span class="k"><code>STEAM_API_KEY</code></span><span>{{keys_steam}}</span></li>
+    </ul>
+  </section>
+
+  <section class="closing">
+    <div class="cta">
+      <h2>{{closing_title}}</h2>
+      <p>{{closing_text}}</p>
+      <div class="actions"><a class="button primary" href="{{root}}{{home}}explore/">{{cta_explore}}</a></div>
+    </div>
+  </section>
