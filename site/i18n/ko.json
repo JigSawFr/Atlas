@@ -184,5 +184,9 @@
   "status_countries": "국가",
   "status_retro": "예전 기기 ({n})",
   "status_note": "연결됨: links.json이 다른 플랫폼의 같은 게임과 이어 준 것. 가격 있음: 적어도 한 국가에 가격이 있는 것. 리뷰 있음: 리뷰나 평점이 있는 것. 전체 보고서:",
-  "files_status": "각 소스와 플랫폼의 최신 상태"
+  "files_status": "각 소스와 플랫폼의 최신 상태",
+  "x_history": "가격 변동",
+  "x_history_paid": "실제 가격",
+  "x_history_lowest": "{since} 이후 최저가: {price} ({date})",
+  "x_history_chart": "{from}부터 {to}까지의 가격"
 }

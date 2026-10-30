@@ -10,7 +10,11 @@ holds them cut for a phone, one platform a folder:
 - x/<platform>/names.json: every game with a name, for the search;
 - x/<platform>/g/<shard>.json: each game's sheet (what every file says of
   it, its prices in every country, its ids on the other platforms), the
-  games spread over shards by shard() so a sheet costs one small file.
+  games spread over shards by shard() so a sheet costs one small file;
+- x/<platform>/h/<shard>.json: each game's prices' history, every month of
+  history/<platform>/ together ({country: [[YYYYMMDD, regular, sale], …]},
+  the days it changed), in shards of their own (lists.json's
+  history_shards), read only when a sheet is opened.
 
 Python's standard library only. Usage: see tools/build_site.py.
 """
@@ -127,6 +131,40 @@ def deals(prices: dict, scores: dict, names: dict) -> dict:
             "since": prices.get("since"), "floor": floor, "count": len(rows), "games": rows[:LIST]}
 
 
+def history(data_dir: str, platform: str) -> dict:
+    """{game: {country: [[YYYYMMDD, regular, sale], …]}}: every month of
+    history/<platform>/ (of our schema), oldest first, a day once."""
+    out = {}
+    base = os.path.join(data_dir, "history", platform)
+    for f in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+        body = read(os.path.join(base, f)) if f.endswith(".json") else None
+        for gid, countries in ((body or {}).get("games") or {}).items():
+            if not isinstance(countries, dict):
+                continue
+            for country, rows in countries.items():
+                kept = out.setdefault(gid, {}).setdefault(country, [])
+                for row in rows if isinstance(rows, list) else []:
+                    if isinstance(row, list) and len(row) >= 3 and (not kept or row[0] > kept[-1][0]):
+                        kept.append(row[:3])
+    return out
+
+
+def sharded(base: str, folder: str, entries: dict) -> int:
+    """Writes entries over base/folder/<i>.json by shard(), SHARD_BYTES each
+    on average; returns how many shards."""
+    os.makedirs(os.path.join(base, folder), exist_ok=True)
+    size = sum(len(json.dumps(s, separators=(",", ":"))) + len(g) + 4 for g, s in entries.items())
+    shards = 1
+    while size / shards > SHARD_BYTES:
+        shards *= 2
+    parts = [{} for _ in range(shards)]
+    for gid, entry in entries.items():
+        parts[shard(gid, shards)][gid] = entry
+    for i, part in enumerate(parts):
+        write(os.path.join(base, folder, f"{i}.json"), part)
+    return shards
+
+
 def build(data_dir: str, out_dir: str) -> dict:
     """Writes x/ into out_dir; returns {platform: summary} for the pages."""
     links = reverse_links(read(os.path.join(data_dir, "links.json")))
@@ -142,7 +180,6 @@ def build(data_dir: str, out_dir: str) -> dict:
         editions = files["editions"].get("games") or {}
         base = os.path.join(out_dir, "x", platform)
         os.makedirs(os.path.join(base, "deals"), exist_ok=True)
-        os.makedirs(os.path.join(base, "g"), exist_ok=True)
 
         best = sorted(scores.items(), key=lambda kv: (-kv[1][0], kv[0]))
         trending = sorted(((g, s) for g, s in scores.items() if s[1] > 0), key=lambda kv: (-kv[1][1], -kv[1][0], kv[0]))
@@ -204,15 +241,9 @@ def build(data_dir: str, out_dir: str) -> dict:
                 sheet["qid"] = sheet.get("qid") or link[0]
                 sheet["links"] = {p: ids for p, ids in link[1].items() if p != platform or ids != [gid]}
             sheets[gid] = sheet
-        size = sum(len(json.dumps(s, separators=(",", ":"))) + len(g) + 4 for g, s in sheets.items())
-        shards = 1
-        while size / shards > SHARD_BYTES:
-            shards *= 2
-        parts = [{} for _ in range(shards)]
-        for gid, sheet in sheets.items():
-            parts[shard(gid, shards)][gid] = sheet
-        for i, part in enumerate(parts):
-            write(os.path.join(base, "g", f"{i}.json"), part)
+        shards = sharded(base, "g", sheets)
+        past = history(data_dir, platform)
+        lists["history_shards"] = sharded(base, "h", past) if past else 0
         lists["shards"] = shards
         lists["games"] = len(sheets)
         lists["named"] = len(names)

@@ -184,5 +184,9 @@
   "status_countries": "国",
   "status_retro": "過去の機種（{n}）",
   "status_note": "リンク：links.json が他のプラットフォームの同じゲームと結び付けたもの。価格あり：少なくとも1か国で価格があるもの。レビューあり：レビューまたは評価があるもの。レポート全体：",
-  "files_status": "各ソースとプラットフォームの鮮度"
+  "files_status": "各ソースとプラットフォームの鮮度",
+  "x_history": "価格の推移",
+  "x_history_paid": "支払う価格",
+  "x_history_lowest": "{since}以降の最安値：{price}（{date}）",
+  "x_history_chart": "{from}から{to}までの価格"
 }

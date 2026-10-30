@@ -184,5 +184,9 @@
   "status_countries": "Países",
   "status_retro": "As máquinas antigas ({n})",
   "status_note": "Ligados: unidos por links.json ao mesmo jogo noutra plataforma. Com preço: um preço em pelo menos um país. Com análises: análises ou uma nota. O relatório completo:",
-  "files_status": "Quão atualizada está cada fonte e plataforma"
+  "files_status": "Quão atualizada está cada fonte e plataforma",
+  "x_history": "Histórico de preços",
+  "x_history_paid": "Preço pago",
+  "x_history_lowest": "O mais baixo desde {since}: {price}, em {date}",
+  "x_history_chart": "Preço de {from} a {to}"
 }

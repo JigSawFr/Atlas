@@ -184,5 +184,9 @@
   "status_countries": "Countries",
   "status_retro": "The old machines ({n})",
   "status_note": "Linked: tied by links.json to the same game on another platform. With prices: a price in at least one country. With reviews: reviews or a rating. The whole report:",
-  "files_status": "How fresh each source and platform is"
+  "files_status": "How fresh each source and platform is",
+  "x_history": "Price history",
+  "x_history_paid": "Price paid",
+  "x_history_lowest": "Lowest since {since}: {price}, on {date}",
+  "x_history_chart": "Price from {from} to {to}"
 }

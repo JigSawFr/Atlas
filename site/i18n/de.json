@@ -184,5 +184,9 @@
   "status_countries": "Länder",
   "status_retro": "Die alten Systeme ({n})",
   "status_note": "Verknüpft: von links.json mit demselben Spiel auf einer anderen Plattform verbunden. Mit Preis: ein Preis in mindestens einem Land. Mit Bewertungen: Bewertungen oder eine Note. Der ganze Bericht:",
-  "files_status": "Wie aktuell jede Quelle und Plattform ist"
+  "files_status": "Wie aktuell jede Quelle und Plattform ist",
+  "x_history": "Preisverlauf",
+  "x_history_paid": "Gezahlter Preis",
+  "x_history_lowest": "Am günstigsten seit {since}: {price}, am {date}",
+  "x_history_chart": "Preis vom {from} bis {to}"
 }

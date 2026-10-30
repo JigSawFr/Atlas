@@ -192,6 +192,76 @@
     setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + ` · ${t("x_loaded", { size: kb(read) })}`);
   }
 
+  // A game's prices' history in one country (x/<platform>/h/, the days the
+  // price changed: [YYYYMMDD, regular, sale]): the price paid as a step
+  // line from the first day known to the last file's, the regular price
+  // dashed, the lowest marked. Inline SVG, no library.
+  const SVG = "http://www.w3.org/2000/svg";
+  const svg = (tag, attrs, ...children) => {
+    const e = document.createElementNS(SVG, tag);
+    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+    for (const c of children) e.append(c);
+    return e;
+  };
+  const day = (n) => { const s = String(n); return Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)); };
+  const yyyymmdd = (text) => +(text || "").replace(/-/g, "") || 0;
+  const paid = (r) => (r[2] ? r[2] : r[1]);
+
+  function lowestOf(rows) {
+    let best = null;
+    for (const r of rows) if (paid(r) > 0 && (!best || paid(r) < paid(best))) best = r;
+    return best;
+  }
+
+  function chart(rows, currency, endDay) {
+    const end = yyyymmdd(endDay);
+    // As wide as the sheet (a phone reads its texts at their size), 640 at most.
+    const W = Math.round(Math.max(300, Math.min(640, sheet.clientWidth - 48))), H = 200, L = 72, R = 12, T = 12, B = 28;
+    const last = Math.max(end, rows[rows.length - 1][0]);
+    const x0 = day(rows[0][0]), x1 = day(last) + 86400000;   // the last day drawn a day wide
+    const top = Math.max(...rows.map((r) => r[1] || paid(r))) * 1.1 || 1;
+    const X = (d) => L + ((d - x0) / (x1 - x0)) * (W - L - R);
+    const Y = (v) => T + (1 - v / top) * (H - T - B);
+    const steps = (value) => {
+      let d = "";
+      rows.forEach((r, i) => {
+        const x = X(day(r[0])), y = Y(value(r));
+        d += i ? ` H${x.toFixed(1)} V${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
+      });
+      return `${d} H${X(x1).toFixed(1)}`;
+    };
+    const low = lowestOf(rows);
+    const g = svg("svg", { viewBox: `0 0 ${W} ${H}`, class: "history", role: "img",
+      "aria-label": t("x_history_chart", { from: ymd(rows[0][0]), to: ymd(last) }) });
+    for (const v of [0, top / 1.1]) {
+      g.append(svg("line", { x1: L, x2: W - R, y1: Y(v), y2: Y(v), class: "grid" }),
+        svg("text", { x: L - 8, y: Y(v) + 4, "text-anchor": "end", class: "tick" }, money(Math.round(v * 100) / 100, currency)));
+    }
+    g.append(svg("text", { x: L, y: H - 8, class: "tick" }, ymd(rows[0][0])),
+      last !== rows[0][0] ? svg("text", { x: W - R, y: H - 8, "text-anchor": "end", class: "tick" }, ymd(last)) : "");
+    g.append(svg("path", { d: steps((r) => r[1]), class: "h-regular" }), svg("path", { d: steps(paid), class: "h-paid" }));
+    if (low) g.append(svg("circle", { cx: X(day(low[0])), cy: Y(paid(low)), r: 4.5, class: "h-low" }));
+    return g;
+  }
+
+  function priceHistory(past, prices, end) {
+    const countries = Object.keys(past).filter((c) => prices && prices[c] && past[c].length);
+    if (!countries.length) return null;
+    let country = countries.includes(S._country) ? S._country : countries[0];
+    const box = el("div", { class: "history-box" });
+    const draw = () => {
+      const rows = past[country], currency = prices[country][prices[country].length - 1];
+      const low = lowestOf(rows);
+      box.replaceChildren(chart(rows, currency, end),
+        el("p", { class: "h-legend" }, el("span", { class: "h-key", text: t("x_history_paid") }), el("span", { class: "h-key h-dashed", text: t("x_regular") })),
+        low ? el("p", { class: "h-lowest" }, t("x_history_lowest", { since: ymd(rows[0][0]), price: money(paid(low), currency), date: ymd(low[0]) })) : null);
+    };
+    const pick = el("select", { "aria-label": t("x_country") }, ...countries.map((c) => el("option", { value: c, text: countryName(c), selected: c === country ? "" : null })));
+    pick.addEventListener("change", () => { country = pick.value; draw(); });
+    draw();
+    return section(t("x_history"), countries.length > 1 ? el("label", { class: "field h-country" }, el("span", { text: t("x_country") }), pick) : null, box);
+  }
+
   function section(title, ...content) {
     return el("section", {}, el("h3", { text: title }), ...content);
   }
@@ -260,6 +330,13 @@
             el("td", { class: "num", text: l30 ? money(l30, cur) : "—" }));
         })));
       sheet.append(section(t("x_prices"), el("div", { class: "table", tabindex: "0", role: "region", "aria-label": t("x_prices") }, table)));
+      if (lists.history_shards) {
+        try {
+          const past = (await get(`x/${platform}/h/${shard(id, lists.history_shards)}.json`))[id];
+          const block = past && priceHistory(past, g.prices, Object.values(lists.countries || {}).map((c) => c.generated).sort().pop());
+          if (block) sheet.append(block);
+        } catch (e) { /* the history is a plus: the sheet stands without it */ }
+      }
     }
 
     if (g.similar && g.similar.length) {

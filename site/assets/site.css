@@ -371,3 +371,17 @@ main .sheet section { padding: 0; }
 @media (prefers-reduced-motion: reduce) { .switch .chevron, .lang-button .chevron { transition: none; } }
 .switch img { width: 34px; height: 34px; }
 @media (max-width: 640px) { .switch { font-size: 1.125rem; gap: 8px; } }
+
+/* A game's prices' history (explore.js's chart(): inline SVG, no style attribute). */
+.history-box { display: grid; gap: 8px; margin-top: 10px; max-width: 760px; }
+svg.history { width: 100%; height: auto; display: block; background: rgb(14 26 51 / 0.5); border: 1px solid var(--night-line); border-radius: var(--radius); }
+svg.history .grid { stroke: var(--night-line); stroke-width: 1; }
+svg.history .tick { fill: var(--mist); font-family: var(--mono); font-size: 12px; }
+svg.history .h-paid { fill: none; stroke: var(--aurora); stroke-width: 2.5; stroke-linejoin: round; }
+svg.history .h-regular { fill: none; stroke: var(--mist); stroke-width: 1.5; stroke-dasharray: 5 4; }
+svg.history .h-low { fill: var(--abyss); stroke: var(--aurora); stroke-width: 2.5; }
+.h-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.875rem; color: var(--mist); margin: 0; }
+.h-key::before { content: ""; display: inline-block; width: 18px; height: 0; vertical-align: middle; margin-right: 6px; border-top: 2.5px solid var(--aurora); }
+.h-key.h-dashed::before { border-top: 1.5px dashed var(--mist); }
+.h-lowest { margin: 0; color: var(--snow); }
+.h-country { max-width: 320px; }

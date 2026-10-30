@@ -184,5 +184,9 @@
   "status_countries": "国家",
   "status_retro": "旧机型（{n}）",
   "status_note": "已关联：links.json 将其与其他平台上的同一游戏相连。有价格：至少在一个国家有价格。有评测：有评测或评分。完整报告：",
-  "files_status": "各来源和平台的新鲜度"
+  "files_status": "各来源和平台的新鲜度",
+  "x_history": "价格走势",
+  "x_history_paid": "实付价格",
+  "x_history_lowest": "自 {since} 以来最低：{price}（{date}）",
+  "x_history_chart": "{from} 至 {to} 的价格"
 }

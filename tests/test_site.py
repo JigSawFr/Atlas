@@ -87,6 +87,21 @@ class SiteData(unittest.TestCase):
         self.assertEqual(self.sheet("switch", "0100F0F0F0F0F000")["edition_of"], ["0100A1B2C3D4E000", ""])
         self.assertEqual(self.sheet("steam", "900010")["traits"]["tags"], ["Action"])
 
+    def test_history(self):
+        # Every month of history/ together, a day once, in shards of their own; another schema left out.
+        put(self.data, "history/switch/2026-10.json", {"schema": 1, "games": {"0100A1B2C3D4E000": {
+            "FR": [[20261020, 39.99, 0], [20261030, 39.99, 29.99]]}}})
+        put(self.data, "history/switch/2026-11.json", {"schema": 1, "games": {"0100A1B2C3D4E000": {
+            "FR": [[20261030, 39.99, 29.99], [20261102, 39.99, 19.99]], "US": [[20261102, 49.99, 0]]}}})
+        put(self.data, "history/switch/2026-12.json", {"schema": 2, "games": {"0100A1B2C3D4E000": {"FR": "?"}}})
+        site_data.build(self.data, self.out)
+        lists = self.read("x/switch/lists.json")
+        self.assertEqual(lists["history_shards"], 1)
+        past = self.read("x/switch/h/0.json")["0100A1B2C3D4E000"]
+        self.assertEqual(past["FR"], [[20261020, 39.99, 0], [20261030, 39.99, 29.99], [20261102, 39.99, 19.99]])
+        self.assertEqual(past["US"], [[20261102, 49.99, 0]])
+        self.assertEqual(self.read("x/steam/lists.json")["history_shards"], 0)
+
     def test_names(self):
         names = self.read("x/steam/names.json")
         self.assertEqual([n[1] for n in names], ["Amber Lantern", "Moss & Märchen"])
