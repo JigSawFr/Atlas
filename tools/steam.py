@@ -50,6 +50,7 @@ ITEMS = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_jso
 TAGS = "https://api.steampowered.com/IStoreService/GetTagList/v1/?language=english"
 MOST_PLAYED = "https://api.steampowered.com/ISteamChartsService/GetMostPlayedGames/v1/"
 BATCH = 200            # apps a GetItems request (300 is too long an address)
+RETRY_WAIT = 60        # seconds before the refused GetItems requests are asked again
 PAUSE = 0.3            # seconds between two
 GAME = 0               # GetItems' type of a game (not a DLC, a tool, a video…)
 TAGS_KEPT = 10         # a game's first tags, by weight
@@ -96,21 +97,30 @@ def request(apps, country="US"):
 
 
 def read_items(apps, fetch, country="US", sleep=time.sleep):
-    """{app id: GetItems' item} of the apps it knows; a request that fails is left out."""
+    """{app id: GetItems' item} of the apps it knows. A request that fails
+    is asked once more after the others (the store refuses a burst for a
+    minute or so), then left out."""
     apps = sorted(apps, key=int)
-    out, failed = {}, 0
-    for i in range(0, len(apps), BATCH):
-        try:
-            body = fetch(request(apps[i:i + BATCH], country))
-        except (urllib.error.URLError, OSError, ValueError) as e:
-            failed += 1
-            print(f"steam: GetItems {i}: {e}", file=sys.stderr)
-            continue
-        for item in ((body or {}).get("response") or {}).get("store_items") or []:
-            if item.get("success") == 1 and item.get("appid"):
-                out[str(item["appid"])] = item
-        sleep(PAUSE)
-    print(f"steam: {len(out)} of {len(apps)} apps known to the store ({failed} requests failed)", file=sys.stderr)
+    out, failed = {}, []
+    for again in (False, True):
+        starts = failed if again else range(0, len(apps), BATCH)
+        if again and failed:
+            sleep(RETRY_WAIT)
+        failed = []
+        for i in starts:
+            try:
+                body = fetch(request(apps[i:i + BATCH], country))
+            except (urllib.error.URLError, OSError, ValueError) as e:
+                failed.append(i)
+                print(f"steam: GetItems {i}{' again' if again else ''}: {e}", file=sys.stderr)
+                continue
+            for item in ((body or {}).get("response") or {}).get("store_items") or []:
+                if item.get("success") == 1 and item.get("appid"):
+                    out[str(item["appid"])] = item
+            sleep(PAUSE)
+        if not failed:
+            break
+    print(f"steam: {len(out)} of {len(apps)} apps known to the store ({len(failed)} requests failed)", file=sys.stderr)
     return out
 
 
