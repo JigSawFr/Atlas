@@ -272,7 +272,9 @@ product code and first day, asked once and kept in
 yet, two at a time, and the first some 4,400, about 25 minutes). Wikidata
 has no 3DS title id: one of its 3DS games (P400 = Q203597) is matched to a
 family by its English name, only when exactly one of each has that name;
-`links.json` gives the family as `3ds`.
+`links.json` gives the family as `3ds`. Measured live on 2026-10-30: 4,364 base titles in
+2,198 families; of Wikidata's 814 3DS games, 478 matched (59 %; 22 % of the
+families), the others left without `qid` rather than matched wrong.
 
 ### Retro
 
