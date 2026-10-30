@@ -30,6 +30,8 @@ jsDelivr. Each platform has a folder of its own; the Switch's is `switch/`:
 | `steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/upcoming.json` |
 | `steam/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/similar.json` |
 | `steam/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/prices/FR.json` |
+| `gog/popular.json`, `gog/games.json`, `gog/upcoming.json`, `gog/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/gog/popular.json`… |
+| `gog/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/gog/prices/FR.json` |
 | `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/links.json` |
 | `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/index.json` |
 
@@ -44,7 +46,7 @@ The `data` branch is one commit with no history, replaced at each run (`tools/pu
 
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
 meaning), the day it was `generated` and its `source`; a platform's files
-also have their `platform` (`switch`, `steam`). In `switch/`, a game is a base game's
+also have their `platform` (`switch`, `steam`, `gog`). In `switch/`, a game is a base game's
 title id (16 hex digits, upper case, ending in `000`).
 
 `links.json`, made every Monday:
@@ -176,6 +178,24 @@ The games are those Wikidata gives a Steam app id (some 128,000 items) and
 Steam's most played; Steam's store says which are games (not a DLC, a tool or
 a soundtrack) and gives the rest, 200 apps a request.
 
+### GOG
+
+`gog/` has the same formats, by GOG product id (`"1207658924"`), from GOG's
+catalog (`tools/gog.py`), every game and pack it sells (some 8,400):
+
+- every Monday: `gog/popular.json` (half the game's renown on Wikipedia, by
+  the Wikidata item that gives its GOG page, P2725; half its GOG reviews;
+  GOG's 100 first in its "trending" order lifted by their rank),
+  `gog/games.json` (each game's `name`, `slug`, `release`, `reviews` as
+  `[count, percent]`, its rating out of 5 doubled into a percent, `qid`,
+  `pack` for a bundle, and its traits as `[id, name]`: `developers`,
+  `publishers`, `genres`, `tags`), `gog/upcoming.json` and
+  `gog/similar.json`;
+- every day: `gog/prices/<country>.json`, `[regular, sale, until, lowest,
+  lowest_day]` as `switch/prices/`, for the 13 countries (Japan in US
+  dollars, as GOG sells there). GOG doesn't say when a sale ends: `until` is
+  0. A free game is left out.
+
 ## The archives
 
 The `data` branch keeps only the last files. Every Monday's build also keeps
@@ -211,6 +231,7 @@ gh attestation verify switch-popular.json -R JigSawFr/PlayInsights
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
 | [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
 | [Steam's store](https://store.steampowered.com/) (`IStoreBrowseService/GetItems`, `IStoreService/GetTagList`, `ISteamChartsService/GetMostPlayedGames`, no key) | Steam's games: names, reviews, releases, franchises, developers, publishers, tags, most played; their prices and sales by country (`steam/prices/`) | [Steam Web API terms](https://steamcommunity.com/dev/apiterms); data from Valve, not endorsed by it |
+| [GOG's catalog](https://www.gog.com/) (`catalog.gog.com`, no key) | GOG's games: names, releases, reviews, developers, publishers, genres, tags, trending order; prices and sales by country (`gog/prices/`) | as published there; data from GOG |
 | [Nintendo eShop's prices](https://api.ec.nintendo.com/v1/price) | Each game's price and sale, by country (`switch/prices/`) | as published there |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
@@ -236,6 +257,7 @@ Every source works without a key, but IGDB, which needs one:
 | Platform | Source | Key | Where | Secret |
 |---|---|---|---|---|
 | Switch | IGDB | optional (more traits, popularity, hype, players' rating) | [Twitch's developer console](https://dev.twitch.tv/console/apps) | `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` |
+| GOG | GOG's catalog | none | — | — |
 | Steam | Steam's store | none (a key, `STEAM_API_KEY`, would only add Steam's full list of apps; not read yet) | [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey) | `STEAM_API_KEY` |
 
 Each key is read only when its secret is set; without it, the files are made
@@ -259,6 +281,8 @@ python3 tools/prices.py out/ [last/] # writes out/switch/prices/*.json, every co
 python3 tools/trends.py out/ last/   # last/switch/popular.json with today's trends, as out/switch/popular.json
 python3 tools/links.py out/ [last/]  # writes out/links.json
 python3 tools/steam.py out/ [last/]  # writes out/steam/*.json (some 15 minutes)
+python3 tools/gog.py catalog out/ [last/]  # writes out/gog/*.json (some 5 minutes)
+python3 tools/gog.py prices out/ [last/]   # writes out/gog/prices/*.json (some 6 minutes)
 python3 tools/steam_prices.py out/ last/  # last/steam/games.json's prices, as out/steam/prices/*.json (some 10 minutes)
 python3 -m unittest discover -s tests
 ```

@@ -83,8 +83,30 @@ jobs:
           include-hidden-files: true
           retention-days: 3
 
+  gog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test
+        run: python3 -m unittest discover -s tests
+      - name: The last run's files
+        run: tools/data-branch.sh
+      - name: Build
+        run: python3 tools/gog.py catalog out data-branch
+      - name: Keep the files
+        run: |
+          touch "$ALERTS"
+          cp "$ALERTS" out/.alerts
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gog
+          path: out/
+          include-hidden-files: true
+          retention-days: 3
+
   publish:
-    needs: [switch, steam]
+    needs: [switch, steam, gog]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -127,5 +149,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_STATUS: ${{ job.status }}
-          OUTCOMES: "switch=${{ needs.switch.result }} steam=${{ needs.steam.result }} links=${{ needs.switch.outputs.links }} archive=${{ steps.archive.outcome }} attestation=${{ steps.attest.outcome }}"
+          OUTCOMES: "switch=${{ needs.switch.result }} steam=${{ needs.steam.result }} gog=${{ needs.gog.result }} links=${{ needs.switch.outputs.links }} archive=${{ steps.archive.outcome }} attestation=${{ steps.attest.outcome }}"
         run: tools/alert.sh "${{ github.workflow }}"

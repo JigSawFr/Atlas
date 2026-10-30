@@ -6,7 +6,8 @@
 #   game's price and sale in a few countries' eShops (tools/prices.py,
 #   switch/prices/);
 # - steam: each game's price and sale in the same countries' Steam stores
-#   (tools/steam_prices.py, steam/prices/).
+#   (tools/steam_prices.py, steam/prices/);
+# - gog: the same in GOG's (tools/gog.py prices, gog/prices/).
 # A platform whose job fails keeps its last run's files.
 name: daily
 
@@ -89,8 +90,31 @@ jobs:
           include-hidden-files: true
           retention-days: 3
 
+  gog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test
+        run: python3 -m unittest discover -s tests
+      - name: The data branch
+        run: tools/data-branch.sh
+      - name: Prices
+        run: python3 tools/gog.py prices out data-branch
+      - name: Keep the files
+        run: |
+          mkdir -p out
+          touch "$ALERTS"
+          cp "$ALERTS" out/.alerts
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gog
+          path: out/
+          include-hidden-files: true
+          retention-days: 3
+
   publish:
-    needs: [switch, steam]
+    needs: [switch, steam, gog]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -124,5 +148,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_STATUS: ${{ job.status }}
-          OUTCOMES: "switch=${{ needs.switch.result }} trends=${{ needs.switch.outputs.trends }} prices=${{ needs.switch.outputs.prices }} steam=${{ needs.steam.result }}"
+          OUTCOMES: "switch=${{ needs.switch.result }} trends=${{ needs.switch.outputs.trends }} prices=${{ needs.switch.outputs.prices }} steam=${{ needs.steam.result }} gog=${{ needs.gog.result }}"
         run: tools/alert.sh "${{ github.workflow }}"
