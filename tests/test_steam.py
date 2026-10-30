@@ -4,6 +4,7 @@ import datetime
 import os
 import sys
 import unittest
+import urllib.error
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
 import steam  # noqa: E402
@@ -49,6 +50,20 @@ class Steam(unittest.TestCase):
         self.assertEqual(list(got), ["900010"])
         self.assertEqual(len(asked), 1)
         self.assertIn("%22appid%22%3A900010", asked[0])
+
+    def test_read_items_asks_a_refused_request_again(self):
+        answers = [urllib.error.HTTPError("u", 429, "Too Many Requests", {}, None),
+                   {"response": {"store_items": [item(900010, "Amber Lantern")]}}]
+        waits = []
+
+        def fetch(url):
+            answer = answers.pop(0)
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+        got = steam.read_items(["900010"], fetch, sleep=waits.append)
+        self.assertEqual(list(got), ["900010"])
+        self.assertIn(steam.RETRY_WAIT, waits)
 
     def test_popular(self):
         known = {"900010": (40, None), "900011": (2, None)}

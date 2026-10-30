@@ -1,13 +1,19 @@
 """tools/trends.py without the network: the pages of each language, the
 views a day, a trend, the scores kept."""
+import contextlib
 import datetime
+import io
+import json
 import os
 import sys
+import tempfile
 import unittest
 import urllib.error
+from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
 import build  # noqa: E402
+import common  # noqa: E402
 import trends  # noqa: E402
 
 A, B, C = "0100000000010000", "0100000000020000", "0100000000030000"
@@ -67,6 +73,60 @@ class Trends(unittest.TestCase):
         got = trends.updated(popular, {A: 40, B: 0}, datetime.date(2026, 10, 29))
         self.assertEqual(got["games"], {A: [90, 40, 80], B: [50, 0, 0], C: [10, 0, 0]})
         self.assertEqual((got["trends"], got["month"]), ("2026-10-29", "2026-09"))
+
+    def test_updated_keeps_what_it_does_not_know(self):
+        popular = {"schema": 1, "games": {A: [90, 5, 80, "more"], B: [50], C: "not a row"}}
+        got = trends.updated(popular, {A: 40, B: 10, C: 10}, datetime.date(2026, 10, 29))
+        self.assertEqual(got["games"], {A: [90, 40, 80, "more"], B: [50], C: "not a row"})
+
+
+class Main(unittest.TestCase):
+    """The daily run with no last popular.json it can read: nothing to redo, said, no error."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.out = os.path.join(self.tmp.name, "out")
+        self.last = os.path.join(self.tmp.name, "last")
+        os.makedirs(os.path.join(self.last, "platforms", build.SWITCH))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_main(self):
+        def no_network(*args, **kwargs):
+            raise AssertionError("nothing to measure: no request")
+        err = io.StringIO()
+        with mock.patch.object(sys, "argv", ["trends.py", self.out, self.last, os.path.join(self.tmp.name, "sources")]), \
+                mock.patch.object(common, "sparql", no_network), mock.patch.object(common, "fetch", no_network), \
+                contextlib.redirect_stderr(err):
+            trends.main()
+        # Nothing made (the run's time alone is kept, in .runtimes/).
+        self.assertFalse(os.path.exists(os.path.join(self.out, "platforms")))
+        self.assertIn("nothing to redo", err.getvalue())
+
+    def put(self, body):
+        path = os.path.join(self.last, "platforms", build.SWITCH, "popular.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(body, f)
+        return path
+
+    def test_no_file(self):
+        self.run_main()
+
+    def test_later_schema(self):
+        body = {"schema": common.SCHEMA + 1, "games": {A: {"score": 90}}}
+        path = self.put(body)
+        self.run_main()
+        with open(path, encoding="utf-8") as f:
+            self.assertEqual(json.load(f), body)                # left as it was
+
+    def test_no_schema(self):
+        self.put({"games": {A: [90, 5, 80]}})
+        self.run_main()
+
+    def test_no_rows(self):
+        self.put({"schema": common.SCHEMA, "games": {A: [90]}})
+        self.run_main()
 
 
 if __name__ == "__main__":

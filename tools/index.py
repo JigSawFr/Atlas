@@ -20,6 +20,8 @@ import json
 import os
 import sys
 
+import common
+
 
 # A source named in a file's `source`: its terms, and whom to credit.
 LICENCES = [
@@ -33,6 +35,7 @@ LICENCES = [
     ("Microsoft", "Microsoft's terms of use", "Microsoft"),
     ("Game Pass", "Microsoft's terms of use", "Microsoft"),
     ("IGDB", "IGDB's API terms", "Data from IGDB.com"),
+    ("Nlib", "as published by Nlib API (no terms stated)", "Nlib API"),
 ]
 OWN = ("CC0-1.0", "Atlas (github.com/JigSawFr/Atlas)")   # what Atlas makes of nothing but its own files
 
@@ -81,7 +84,7 @@ def index(directory):
                 path = os.path.join(root, name)
                 files[os.path.relpath(path, directory).replace(os.sep, "/")] = entry(path)
     # No day of its own: it changes only when a file does.
-    return {"schema": 1, "files": dict(sorted(files.items()))}
+    return {"schema": common.SCHEMA, "files": dict(sorted(files.items()))}
 
 
 def main():

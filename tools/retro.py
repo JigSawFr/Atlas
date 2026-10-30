@@ -100,13 +100,13 @@ def consolidate(src, out_dir, previous_dir, today):
     read = build.views_from(known, src("wikipedia/monthly.json").get("pages") or {})
     by_id = lambda d: dict(sorted(d.items(), key=lambda kv: int(kv[0][1:])))   # noqa: E731
     # A machine a folder (platforms.RETRO): its games, scored and compared among themselves.
-    for pid, _, item, _, _ in platforms.RETRO:
+    for pid, _, item, _, _ in platforms.RETRO:   # the 3DS's own: tools/n3ds.py
         mine = {g: games[g] for g in games if any(p == item for p, _ in games[g]["platforms"])}
         if not mine:
             continue
 
         def payload(source, entries, **extra):
-            return {"schema": 1, "platform": pid, "generated": today.isoformat(), **extra, "source": source,
+            return {"schema": common.SCHEMA, "platform": pid, "generated": today.isoformat(), **extra, "source": source,
                     "games": entries}
         common.publish(out_dir, platforms.path(pid, "games.json"), payload(
             "Wikidata (P400, P179, P178, P123, P136)", by_id(mine)), previous_dir, report)

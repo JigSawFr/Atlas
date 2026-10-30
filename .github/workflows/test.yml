@@ -8,9 +8,15 @@ on:
 permissions:
   contents: read
 
+# A new push to a pull request stops the run of the previous one
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: python3 -m unittest discover -s tests -v
@@ -18,16 +24,30 @@ jobs:
   # The workflows themselves: a mistake there (a context where it is not
   # allowed, a bad expression) stops every scheduled run (as #11 did).
   workflows:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: actionlint
         env:
-          VERSION: 1.7.7
-          SHA256: 023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757
+          VERSION: 1.7.12
+          SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
         run: |
           curl -fsSL -o "$RUNNER_TEMP/actionlint.tgz" \
             "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/actionlint_${VERSION}_linux_amd64.tar.gz"
           echo "$SHA256  $RUNNER_TEMP/actionlint.tgz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/actionlint.tgz" -C "$RUNNER_TEMP" actionlint
           "$RUNNER_TEMP/actionlint" -color
+
+  # The schemas against the files the data branch has now: a schema that
+  # would turn away today's files is seen here, not at the next run.
+  schemas:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: The data branch's files checked
+        run: |
+          git fetch --depth 1 origin data:refs/remotes/origin/data
+          git worktree add "$RUNNER_TEMP/data" origin/data
+          python3 tools/schemas.py check "$RUNNER_TEMP/data"
