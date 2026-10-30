@@ -10,18 +10,14 @@
   - platforms/xbox/games.json: each game's name, release, players' rating, Game Pass,
     Wikidata item and traits (developers, publishers, genres);
   - platforms/xbox/gamepass.json: the games in the Game Pass, ["console", "pc"];
-  - platforms/xbox/upcoming.json and platforms/xbox/similar.json;
-- every day (daily.yml), `tools/xbox.py prices`: platforms/xbox/prices/<country>.json,
-  [regular, sale, until, lowest, lowest_day] as platforms/switch/prices/, for the
-  games of the last run's platforms/xbox/games.json (the store doesn't say when a sale
-  ends in its short answer: `until` is 0).
+  - platforms/xbox/upcoming.json and platforms/xbox/similar.json.
 
 The games are those Wikidata gives a Microsoft Store id (some 6,500) and the
 Game Pass's (its public lists, console and PC); the Microsoft Store's
 catalog (displaycatalog.mp.microsoft.com, no key) says which are games and
 gives the rest, 200 a request.
 
-Usage: tools/xbox.py catalog|prices <out-dir> <previous-dir> <sources-dir>
+Usage: tools/xbox.py catalog <out-dir> <previous-dir> <sources-dir>
   (from the sources tools/collect.py keeps: msstore, wikidata, wikipedia)
 """
 import concurrent.futures
@@ -39,11 +35,9 @@ import igdb
 
 XBOX = "xbox"
 PRODUCTS = ("https://displaycatalog.mp.microsoft.com/v7.0/products?bigIds={ids}&market={country}"
-            "&languages=en-us&fieldsTemplate={template}")
+            "&languages=en-us&fieldsTemplate=details")
 GAMEPASS = "https://catalog.gamepass.com/sigls/v2?id={list}&language=en-us&market=US"
 GAMEPASS_LISTS = {"console": "f6f1f99f-9b49-4ccd-b3bf-4d9767a77f5e", "pc": "fdd9e2a7-0fee-49f6-ad69-4354098401ff"}
-COUNTRIES = {"US": "USD", "CA": "CAD", "MX": "MXN", "BR": "BRL", "GB": "GBP", "FR": "EUR", "DE": "EUR",
-             "ES": "EUR", "IT": "EUR", "NL": "EUR", "PT": "EUR", "AU": "AUD", "JP": "JPY"}
 QUERY = """
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX wikibase: <http://wikiba.se/ontology#>
@@ -70,7 +64,7 @@ def big_id(value):
     return v if BIG_ID.match(v) else None
 
 
-def read_products(ids, country, fetch, template="details", workers=WORKERS, pause=PAUSE):
+def read_products(ids, country, fetch, workers=WORKERS, pause=PAUSE):
     """{bigId: the store's product} of the ids it knows in `country`."""
     ids = sorted(ids)
     batches = [ids[i:i + BATCH] for i in range(0, len(ids), BATCH)]
@@ -78,7 +72,7 @@ def read_products(ids, country, fetch, template="details", workers=WORKERS, paus
     def ask(batch):
         time.sleep(pause)
         try:
-            body = fetch(PRODUCTS.format(ids=",".join(batch), country=country, template=template))
+            body = fetch(PRODUCTS.format(ids=",".join(batch), country=country))
         except (urllib.error.URLError, OSError, ValueError) as e:
             print(f"xbox: {country}: {e}", file=sys.stderr)
             return []
@@ -93,34 +87,6 @@ def read_products(ids, country, fetch, template="details", workers=WORKERS, paus
                     out[pid] = p
     print(f"xbox: {country}: {len(out)} of {len(ids)} products known", file=sys.stderr)
     return out
-
-
-def purchase(product):
-    """The store's price of a product's first sku that can be bought: (list price, MSRP), or None."""
-    for sku in product.get("DisplaySkuAvailabilities") or []:
-        for a in sku.get("Availabilities") or []:
-            if "Purchase" in (a.get("Actions") or []):
-                price = ((a.get("OrderManagementData") or {}).get("Price")) or {}
-                try:
-                    return float(price.get("ListPrice")), float(price.get("MSRP"))
-                except (TypeError, ValueError):
-                    return None
-    return None
-
-
-def price_of(product):
-    """[regular, sale, until] of a product, or None when it is free or not sold."""
-    return row_of(purchase(product))
-
-
-def row_of(got):
-    """[regular, sale, until] of the store's (list price, MSRP), or None when free or not sold."""
-    if not got or got[0] <= 0:
-        return None
-    sale, msrp = round(got[0], 2), round(got[1], 2)
-    if msrp > sale:
-        return [msrp, sale, 0]
-    return [sale, 0, 0]
 
 
 def rating(product):
@@ -263,32 +229,9 @@ def catalog(src, out_dir, previous_dir, today):
     print(common.summary(report), file=sys.stderr)
 
 
-def prices(src, out_dir, previous_dir, today):
-    report = []
-    for country, currency in COUNTRIES.items():
-        rows = {}
-        collected = common.collected_today(src, f"msstore/prices/{country}.json", today)
-        if not collected:
-            print(f"xbox prices: {country}: nothing collected today", file=sys.stderr)
-            continue
-        for pid, got in (collected.get("games") or {}).items():
-            row = row_of(got)
-            if row:
-                rows[pid] = row
-        name = f"platforms/{XBOX}/prices/{country}.json"
-        last = common.previous_file(previous_dir, name)
-        common.publish(out_dir, name, {
-            "schema": common.SCHEMA, "platform": XBOX, "generated": today.isoformat(), "country": country, "currency": currency,
-            "since": last.get("since") or last.get("generated") or today.isoformat(),
-            "source": "Microsoft Store's catalog (displaycatalog)",
-            "games": common.with_lowest(dict(sorted(rows.items())), last.get("games") or {}, today.isoformat())},
-            previous_dir, report)
-    print(common.summary(report), file=sys.stderr)
-
-
 def main():
     what, out_dir, previous_dir, sources_dir = sys.argv[1:5]
-    common.timed(out_dir, f"xbox {what}", lambda: {"catalog": catalog, "prices": prices}[what](
+    common.timed(out_dir, f"xbox {what}", lambda: {"catalog": catalog}[what](
         common.reader(sources_dir, previous_dir), out_dir, previous_dir, datetime.date.today()))
 
 

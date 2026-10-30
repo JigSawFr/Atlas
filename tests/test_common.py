@@ -31,9 +31,9 @@ class Common(unittest.TestCase):
 
     def test_publish_in_a_folder(self):
         report = []
-        self.assertTrue(common.publish(self.out, "steam/prices/FR.json", self.payload(80), None, report))
-        self.assertEqual(common.count_in(os.path.join(self.out, "steam", "prices", "FR.json")), 80)
-        self.assertEqual(report, [("steam/prices/FR.json", None, 80, False)])
+        self.assertTrue(common.publish(self.out, "steam/upcoming.json", self.payload(80), None, report))
+        self.assertEqual(common.count_in(os.path.join(self.out, "steam", "upcoming.json")), 80)
+        self.assertEqual(report, [("steam/upcoming.json", None, 80, False)])
 
     def test_guard_in_a_folder(self):
         common.publish(self.last, "steam/popular.json", self.payload(100), None, [])
@@ -41,9 +41,9 @@ class Common(unittest.TestCase):
         self.assertEqual(common.count_in(os.path.join(self.out, "steam", "popular.json")), 100)
 
     def test_previous_file(self):
-        common.publish(self.last, "steam/prices/FR.json", self.payload(3), None, [])
-        self.assertEqual(len(common.previous_file(self.last, "steam/prices/FR.json")["games"]), 3)
-        self.assertEqual(common.previous_file(self.last, "gog/prices/FR.json"), {})
+        common.publish(self.last, "steam/upcoming.json", self.payload(3), None, [])
+        self.assertEqual(len(common.previous_file(self.last, "steam/upcoming.json")["games"]), 3)
+        self.assertEqual(common.previous_file(self.last, "gog/upcoming.json"), {})
         self.assertEqual(common.previous_file(self.tmp.name, "nothing.json"), {})
 
     def put(self, name, body):

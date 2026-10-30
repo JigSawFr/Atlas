@@ -14,7 +14,7 @@ family (one game across its regions, as a serial: "CTR-AKD" for the
   games Wikidata knows; critics 0;
 - similar.json: the games most like each one, by their traits.
 
-No prices: the 3DS's eShop closed in March 2023. No pictures nor texts.
+No pictures nor texts.
 
 The source is Nlib API's 3DS (api.nlib.cc/ctr/, no key): its lists of
 title ids by category (base games, updates, add-ons, demos), then each base

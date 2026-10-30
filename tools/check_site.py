@@ -20,8 +20,8 @@
   (referrerpolicy="strict-origin", no noreferrer), so GitHub's Traffic
   page still shows where visits come from;
 - the explorer's texts (its application/json data) read as JSON, and with a
-  data copy built in, each platform's x/<platform>/lists.json and shards
-  (the sheets' and the prices' history's);
+  data copy built in, each platform's x/<platform>/lists.json and its
+  sheets' shards;
 - its size: GitHub Pages takes a site of 1 GB at most; past SIZE_WARN a
   warning in the run (time to cut data/ or x/), past SIZE_MAX an error.
 """
@@ -195,9 +195,6 @@ def main() -> None:
         shards = sorted(int(p.stem) for p in (lists.parent / "g").glob("*.json"))
         if shards != list(range(body.get("shards", 0))):
             errors.append(f"{lists.parent.relative_to(site)}: {len(shards)} shards, not {body.get('shards')}")
-        past = sorted(int(p.stem) for p in (lists.parent / "h").glob("*.json"))
-        if past != list(range(body.get("history_shards", 0))):
-            errors.append(f"{lists.parent.relative_to(site)}: {len(past)} history shards, not {body.get('history_shards')}")
 
     total = size(site)
     if total > SIZE_MAX:

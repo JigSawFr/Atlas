@@ -27,9 +27,6 @@ def sample(base):
     put(base, "platforms/switch/upcoming.json", {"schema": 1, "games": {"0100C0C0C0C0C000": [20261204, "Frost Harbor"]}})
     put(base, "platforms/switch/similar.json", {"schema": 1, "games": {"0100A1B2C3D4E000": [["0100C0C0C0C0C000", 55]]}})
     put(base, "platforms/switch/editions.json", {"schema": 1, "games": {"0100F0F0F0F0F000": "0100A1B2C3D4E000"}})
-    put(base, "platforms/switch/prices/FR.json", {"schema": 1, "country": "FR", "currency": "EUR", "generated": "2026-11-02",
-                                        "games": {"0100A1B2C3D4E000": [39.99, 19.99, 20261110, 19.99, 20261102],
-                                                  "0100F0F0F0F0F000": [1.99, 0.99, 20261110, 0.99, 20261102]}})
     put(base, "platforms/steam/popular.json", {"schema": 1, "generated": "2026-11-02",
                                      "games": {"900010": [70, 5, 0], "900020": [40, -3, 0], "900030": [10, 0, 0]}})
     put(base, "platforms/steam/games.json", {"schema": 1, "tags": {"19": "Action"},
@@ -38,7 +35,7 @@ def sample(base):
     put(base, "links.json", {"schema": 1, "games": {"Q900001": {"switch": ["0100A1B2C3D4E000"], "steam": ["900010"],
                                                                 "gog": ["amber_lantern"]}}})
     put(base, "index.json", {"schema": 1, "files": {"platforms/switch/popular.json": {"generated": "2026-11-02", "bytes": 120, "sha256": "0" * 16},
-                                                    "platforms/switch/prices/FR.json": {"generated": "2026-11-02", "bytes": 90, "sha256": "1" * 16}}})
+                                                    "platforms/switch/games.json": {"generated": "2026-11-02", "bytes": 90, "sha256": "1" * 16}}})
 
 
 class SiteData(unittest.TestCase):
@@ -68,39 +65,28 @@ class SiteData(unittest.TestCase):
         self.assertEqual(lists["popular"][0][1], "Amber Lantern")
         self.assertEqual(self.read("x/switch/lists.json")["upcoming"][0][:3], ["0100C0C0C0C0C000", "Frost Harbor", 20261204])
 
-    def test_deals_floor(self):
-        deals = self.read("x/switch/deals/FR.json")
-        # The 1,99 € game is under the floor (5 €): left out.
-        self.assertEqual([g[0] for g in deals["games"]], ["0100A1B2C3D4E000"])
-        self.assertEqual(deals["games"][0][8], 50)
-        self.assertEqual(deals["floor"], 5)
-
     def test_sheet(self):
         s = self.sheet("switch", "0100A1B2C3D4E000")
         self.assertEqual(s["popular"], [80, 12, 90])
         self.assertEqual(s["traits"]["series"], ["Amber Saga"])
         self.assertEqual(s["similar"], [["0100C0C0C0C0C000", "Frost Harbor", 55]])
         self.assertEqual(s["editions"], [["0100F0F0F0F0F000", ""]])
-        self.assertEqual(s["prices"]["FR"][-1], "EUR")
         self.assertEqual(s["links"]["steam"], ["900010"])
         self.assertEqual(s["qid"], "Q900001")
         self.assertEqual(self.sheet("switch", "0100F0F0F0F0F000")["edition_of"], ["0100A1B2C3D4E000", ""])
         self.assertEqual(self.sheet("steam", "900010")["traits"]["tags"], ["Action"])
 
-    def test_history(self):
-        # Every month of history/ together, a day once, in shards of their own; another schema left out.
-        put(self.data, "history/switch/2026-10.json", {"schema": 1, "games": {"0100A1B2C3D4E000": {
-            "FR": [[20261020, 39.99, 0], [20261030, 39.99, 29.99]]}}})
-        put(self.data, "history/switch/2026-11.json", {"schema": 1, "games": {"0100A1B2C3D4E000": {
-            "FR": [[20261030, 39.99, 29.99], [20261102, 39.99, 19.99]], "US": [[20261102, 49.99, 0]]}}})
-        put(self.data, "history/switch/2026-12.json", {"schema": 2, "games": {"0100A1B2C3D4E000": {"FR": "?"}}})
+    def test_no_prices(self):
+        # A prices/ folder or a history/ left on the data branch (until the one-time cleanup) is not read.
+        put(self.data, "platforms/switch/prices/FR.json", {"schema": 1, "country": "FR", "currency": "EUR",
+                                                           "games": {"0100A1B2C3D4E000": [39.99, 19.99, 0, 19.99, 0]}})
+        put(self.data, "history/switch/2026-10.json", {"schema": 1, "games": {"0100A1B2C3D4E000": {"FR": [[20261020, 39.99, 0]]}}})
         site_data.build(self.data, self.out)
         lists = self.read("x/switch/lists.json")
-        self.assertEqual(lists["history_shards"], 1)
-        past = self.read("x/switch/h/0.json")["0100A1B2C3D4E000"]
-        self.assertEqual(past["FR"], [[20261020, 39.99, 0], [20261030, 39.99, 29.99], [20261102, 39.99, 19.99]])
-        self.assertEqual(past["US"], [[20261102, 49.99, 0]])
-        self.assertEqual(self.read("x/steam/lists.json")["history_shards"], 0)
+        self.assertNotIn("countries", lists)
+        self.assertNotIn("history_shards", lists)
+        self.assertNotIn("prices", self.sheet("switch", "0100A1B2C3D4E000"))
+        self.assertEqual(sorted(os.listdir(os.path.join(self.out, "x", "switch"))), ["g", "lists.json", "names.json"])
 
     def test_names(self):
         names = self.read("x/steam/names.json")
@@ -134,13 +120,14 @@ class Build(unittest.TestCase):
             with open(os.path.join(out, "fr/explore/index.html"), encoding="utf-8") as f:
                 page = f.read()
             self.assertIn('<html lang="fr"', page)
-            self.assertIn('"_country":"FR"', page)
+            self.assertNotIn('"_country"', page)
+            self.assertNotIn('data-view="deals"', page)
             # The header's menu of Boréale's sites: Atlas leads home, the others carry their UTM tags.
             self.assertIn('<a href="../../fr/" aria-current="true"><img src="../../assets/marks/atlas.svg"', page)
             self.assertIn('href="https://lantern.boreale.dev/fr/?utm_source=atlas&amp;utm_medium=nav" '
                           'referrerpolicy="strict-origin"', page)
             self.assertIn('<p class="sites-title">Données et protocoles ouverts</p>', page)
-            self.assertTrue(os.path.isfile(os.path.join(out, "data/platforms/switch/prices/FR.json")))
+            self.assertTrue(os.path.isfile(os.path.join(out, "data/platforms/switch/games.json")))
             with open(os.path.join(out, "CNAME"), encoding="utf-8") as f:
                 self.assertEqual(f.read().strip(), "atlas.boreale.dev")
 
@@ -149,15 +136,13 @@ class Build(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             data = os.path.join(tmp, "data")
             sample(data)
-            put(data, "report.json", {"schema": 1, "generated": "2026-11-02", "run": "build", "sources": {
-                "eshop": {"files": 13, "records": 2000, "bytes": 9000, "generated": "2026-11-02"},
-                "titledb": {"files": 3, "records": 900, "bytes": 5000, "generated": "2026-10-28"},
+            put(data, "report.json", {"schema": 2, "generated": "2026-11-02", "run": "build", "sources": {
+                "wikipedia": {"files": 2, "records": 2000, "bytes": 9000, "generated": "2026-11-02"},
+                "wikidata": {"files": 30, "records": 900, "bytes": 5000, "generated": "2026-10-28"},
                 "steamspy": {"files": 1, "records": 500, "bytes": 3000, "generated": "2026-10-28"},
                 "igdb": {"files": 0, "records": 0, "bytes": 0, "generated": ""}},
-                "platforms": {"switch": {"games": 2, "linked": 0.5, "priced": 1, "reviewed": 0.5, "countries": 1,
-                                         "generated": "2026-11-02"},
-                              "nes": {"games": 7, "linked": 0.25, "priced": 0, "reviewed": 0, "countries": 0,
-                                      "generated": "2026-11-02"}}})
+                "platforms": {"switch": {"games": 2, "linked": 0.5, "reviewed": 0.5, "generated": "2026-11-02"},
+                              "nes": {"games": 7, "linked": 0.25, "reviewed": 0, "generated": "2026-11-02"}}})
             out = os.path.join(tmp, "site")
             subprocess.run([sys.executable, os.path.join(ROOT, "tools/build_site.py"), out, data], check=True,
                            capture_output=True)
@@ -166,16 +151,27 @@ class Build(unittest.TestCase):
             with open(os.path.join(out, "status/index.html"), encoding="utf-8") as f:
                 page = f.read()
             row = lambda name: page.split(f"<code>{name}</code>", 1)[1].split("</tr>", 1)[0]  # noqa: E731
-            self.assertIn('class="state ok"', row("eshop"))
-            self.assertIn('class="state late"', row("titledb"))       # daily, 5 days behind the report
+            self.assertIn('class="state ok"', row("wikipedia"))
+            self.assertIn('class="state late"', row("wikidata"))      # daily, 5 days behind the report
             self.assertIn('class="state ok"', row("steamspy"))        # weekly, 5 days is in time
             self.assertIn('class="state missing"', row("igdb"))
             self.assertIn("weekly build", page)
             self.assertIn("<td class=\"num\">50%</td>", page)
             self.assertIn("The old machines (1)", page)
+            self.assertNotIn("With prices", page)
             self.assertIn('href="../data/report.json"', page)
             with open(os.path.join(out, "fr/status/index.html"), encoding="utf-8") as f:
                 self.assertIn("50\u202f%", f.read())
+            # A report of another schema (1: with `priced`; a later one) reads as none: the page says so.
+            for other in (1, 3):
+                put(data, "report.json", {"schema": other, "generated": "2026-11-02", "run": "build", "sources": {},
+                                          "platforms": {"switch": {"games": 2, "linked": 0.5, "priced": 1, "reviewed": 0.5}}})
+                subprocess.run([sys.executable, os.path.join(ROOT, "tools/build_site.py"), out, data], check=True,
+                               capture_output=True)
+                with open(os.path.join(out, "status/index.html"), encoding="utf-8") as f:
+                    page = f.read()
+                self.assertIn('class="note empty"', page)
+                self.assertNotIn("<code>wikipedia</code>", page)
 
     def test_build_without_data(self):
         with tempfile.TemporaryDirectory() as tmp:

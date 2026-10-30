@@ -2,14 +2,15 @@
 """report.json: how the data is, run after run, for whoever reads it (and
 the website's health table): for each source, its files, records, size and
 the day it last answered; for each platform, its games, how many of them
-links.json ties to another platform, how many have a price (in any
-country) and reviews or a rating, and the day its files were made; and how
-long each step of the run took.
+links.json ties to another platform, how many have reviews or a rating,
+and the day its files were made; and how long each step of the run took.
+Its schema is its own (common.REPORT_SCHEMA): 2 since `priced` and
+`countries` went (2026-10-30).
 
-{"schema": 1, "generated": "YYYY-MM-DD", "run": "build"|"daily",
+{"schema": 2, "generated": "YYYY-MM-DD", "run": "build"|"daily",
  "sources": {"steam-store": {"files": 16, "records": 131000, "bytes": 41000000, "generated": "YYYY-MM-DD"}, …},
- "platforms": {"switch": {"games": 2600, "names": 37000, "popular": 2500, "linked": 0.71, "priced": 0.93,
-                          "reviewed": 0.42, "countries": 13, "generated": "YYYY-MM-DD"}, …},
+ "platforms": {"switch": {"games": 2600, "names": 37000, "popular": 2500, "linked": 0.71,
+                          "reviewed": 0.42, "generated": "YYYY-MM-DD"}, …},
  "steps": {"collect steam-store weekly": 512.3, "switch": 41.0, …}}
 
 Usage: tools/report.py <data-dir> <run> [runtimes-dir…]   (writes <data-dir>/report.json;
@@ -70,13 +71,6 @@ def platforms(directory):
         games = read(os.path.join(folder, "games.json")).get("games") or {}
         popular = read(os.path.join(folder, "popular.json"))
         names = read(os.path.join(folder, "names.json")).get("games") or {}
-        priced, countries = set(), 0
-        prices = os.path.join(folder, "prices")
-        for f in sorted(os.listdir(prices)) if os.path.isdir(prices) else []:
-            rows = read(os.path.join(prices, f)).get("games") or {}
-            if rows:
-                countries += 1
-                priced.update(rows)
         ids = set(games) | set(popular.get("games") or {})
         share = lambda part: round(len(part & ids) / len(ids), 3) if ids else 0   # noqa: E731
         reviewed = {g for g, e in games.items() if isinstance(e, dict)
@@ -85,8 +79,8 @@ def platforms(directory):
         linked = linked_ids.get(pid, set()) | {g for g in ids if g.startswith("Q") and g in links}
         out[pid] = {"games": len(games), "names": len(names) or sum(1 for e in games.values()
                                                                     if isinstance(e, dict) and e.get("name")),
-                    "popular": len(popular.get("games") or {}), "linked": share(linked), "priced": share(priced),
-                    "reviewed": share(reviewed), "countries": countries,
+                    "popular": len(popular.get("games") or {}), "linked": share(linked),
+                    "reviewed": share(reviewed),
                     "generated": max(popular.get("generated") or "", read(os.path.join(folder, "games.json")).get(
                         "generated") or "")}
     return out
@@ -104,7 +98,7 @@ def steps(directories):
 
 
 def report(directory, run, runtimes):
-    return {"schema": common.SCHEMA, "generated": datetime.date.today().isoformat(), "run": run,
+    return {"schema": common.REPORT_SCHEMA, "generated": datetime.date.today().isoformat(), "run": run,
             "source": "Atlas (its own files: sources/, platforms/, links.json)",
             "sources": sources(directory), "platforms": platforms(directory), "steps": steps(runtimes)}
 

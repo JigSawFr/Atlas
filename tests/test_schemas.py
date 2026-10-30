@@ -23,7 +23,11 @@ def put(base, name, body):
 class Schemas(unittest.TestCase):
     def test_kinds(self):
         self.assertEqual(schemas.kind_of("platforms/switch/popular.json"), "popular")
-        self.assertEqual(schemas.kind_of("platforms/steam/prices/FR.json"), "prices")
+        # Atlas keeps no prices (2026-10-30): a file left from then is no data file of a kind.
+        self.assertEqual(schemas.kind_of("platforms/steam/prices/FR.json"), None)
+        self.assertEqual(schemas.kind_of("history/steam/2026-10.json"), None)
+        self.assertNotIn("prices", schemas.KINDS)
+        self.assertNotIn("history", schemas.KINDS)
         self.assertEqual(schemas.kind_of("sources/titledb/US/2.json"), "source")
         self.assertEqual(schemas.kind_of("schemas/x.schema.json"), None)
         self.assertEqual(schemas.schema_path("sources/titledb/US/2.json"), "schemas/sources/titledb/US.schema.json")
@@ -34,10 +38,11 @@ class Schemas(unittest.TestCase):
         self.assertEqual(schemas.errors(popular, schemas.KINDS["popular"]), [])
         popular["games"][B] = [101, 0, 0]
         self.assertTrue(schemas.errors(popular, schemas.KINDS["popular"]))
-        prices = {"schema": 1, "generated": "2026-10-30", "country": "FR", "games": {A: [19.99, 9.99, 20261101, 9.99, 20261030]}}
-        self.assertEqual(schemas.errors(prices, schemas.KINDS["prices"]), [])
-        prices["games"][A] = [19.99, "cheap", 0, 0, 0]
-        self.assertTrue(schemas.errors(prices, schemas.KINDS["prices"]))
+        # changes.json of schema 1 with its kinds today, and one from before with `sales` (a field skipped).
+        changes = {"schema": 1, "generated": "2026-11-02", "platforms": {"switch": {"new": [A], "trends": [[B, 10, 210]]}}}
+        self.assertEqual(schemas.errors(changes, schemas.KINDS["changes"]), [])
+        changes["platforms"]["switch"]["sales"] = {"FR": {"started": [A]}}
+        self.assertEqual(schemas.errors(changes, schemas.KINDS["changes"]), [])
         games = {"schema": 1, "generated": "2026-10-30", "games": {"900010": {"name": "Amber Lantern", "tags": [19, 21],
                                                                           "developers": [["clan:1", "A studio"]]}}}
         self.assertEqual(schemas.errors(games, schemas.KINDS["games"]), [])
@@ -50,8 +55,15 @@ class Schemas(unittest.TestCase):
             self.assertEqual(list(wrong), ["platforms/switch/popular.json"])
             schemas.put_back(d, "platforms/switch/popular.json")   # not on a branch: removed
             self.assertFalse(os.path.exists(os.path.join(d, "platforms/switch/popular.json")))
+            put(d, "schemas/platforms/switch/prices/FR.schema.json", {})   # a file gone: its schema goes too
+            # The last run's report.json, of schema 1: wrong when publishing, left out of a look at the branch.
+            put(d, "report.json", {"schema": 1, "generated": "2026-10-30", "sources": {}, "platforms": {}})
+            self.assertIn("report.json", schemas.check(d))
+            self.assertNotIn("report.json", schemas.check(d, strict=False))
+            os.remove(os.path.join(d, "report.json"))
             schemas.write(d)
             self.assertTrue(os.path.exists(os.path.join(d, "schemas/links.schema.json")))
+            self.assertFalse(os.path.exists(os.path.join(d, "schemas/platforms/switch/prices")))
 
 
 class Report(unittest.TestCase):
@@ -61,16 +73,17 @@ class Report(unittest.TestCase):
             put(d, "platforms/switch/games.json", {"schema": 1, "generated": "2026-10-30",
                                                    "games": {A: {"name": "Lantern Tale", "steam": {"app": 900010}}, B: {}}})
             put(d, "platforms/switch/popular.json", {"schema": 1, "generated": "2026-10-30", "games": {A: [1, 0, 0]}})
-            put(d, "platforms/switch/prices/FR.json", {"schema": 1, "games": {A: [1, 0, 0, 1, 20261030]}})
             put(d, "sources/titledb/US.json", {"schema": 1, "generated": "2026-10-30", "games": {"1": {}, "2": {}}})
             put(d, "run/.runtimes/switch.json", {"seconds": 12.34})
             got = report.report(d, "build", [os.path.join(d, "run")])
             self.assertEqual(got["platforms"]["switch"], {"games": 2, "names": 1, "popular": 1, "linked": 0.5,
-                                                          "priced": 0.5, "reviewed": 0.5, "countries": 1,
-                                                          "generated": "2026-10-30"})
+                                                          "reviewed": 0.5, "generated": "2026-10-30"})
             self.assertEqual(got["sources"]["titledb"]["records"], 2)
             self.assertEqual(got["steps"], {"switch": 12.3})
+            self.assertEqual(got["schema"], 2)
             self.assertEqual(schemas.errors(got, schemas.KINDS["report"]), [])
+            # A report of schema 1 (with `priced`) is not one of today's.
+            self.assertTrue(schemas.errors({**got, "schema": 1}, schemas.KINDS["report"]))
             # A file of a later schema counts as none, and is left as it was.
             later = {"schema": 2, "generated": "2026-11-09", "games": {A: [1, 0, 0], B: [2, 0, 0]}}
             put(d, "platforms/switch/popular.json", later)

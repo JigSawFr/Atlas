@@ -30,6 +30,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import platforms  # noqa: E402
+from common import REPORT_SCHEMA  # noqa: E402
 import site_data  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -65,9 +66,6 @@ FLAGS = {"en": "US", "fr": "FR", "fr-CA": "CA", "de": "DE", "es": "ES", "es-419"
 OG_LOCALES = {"en": "en_US", "fr": "fr_FR", "fr-CA": "fr_CA", "de": "de_DE", "es": "es_ES", "es-419": "es_LA",
               "it": "it_IT", "nl": "nl_NL", "pt": "pt_PT", "pt-BR": "pt_BR", "ru": "ru_RU", "ja": "ja_JP",
               "ko": "ko_KR", "zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}
-# Each language's country for the explorer's deals at first (the others: the US).
-COUNTRY = {"en": "US", "fr": "FR", "fr-CA": "CA", "de": "DE", "es": "ES", "es-419": "MX", "it": "IT",
-           "nl": "NL", "pt": "PT", "pt-BR": "BR", "ja": "JP"}
 # The platforms, in their order: those the data has are live, the others coming.
 PLATFORMS = [(p[0], p[1]) for p in platforms.STORES + platforms.CONSOLES] + [(p[0], p[1]) for p in platforms.RETRO]
 STORE_IDS = {p[0] for p in platforms.STORES + platforms.CONSOLES}   # a button each; the old machines in a list
@@ -90,11 +88,11 @@ HERE = "atlas"
 # ("nav" for the header's sites menu, "footer"). A link to this site carries none.
 UTM_SOURCE = "atlas"
 # A file made every day; the others every week (late past 2 and 9 days).
-# The sources collected every day (in part: steam-store's and msstore's prices,
-# wikidata's pages; tools/collect.py); the others every week. The status page
+# The sources collected every day (in part: wikidata's pages, wikipedia's
+# daily views; tools/collect.py); the others every week. The status page
 # marks one late past 2 days, or 9.
-DAILY_SOURCES = {"eshop", "titledb", "gog", "wikipedia", "wikidata", "steam-store", "msstore"}
-DAILY = re.compile(r"(^|/)prices/|^platforms/(switch|steam)/popular\.json$|^sources/(eshop|titledb|gog|wikipedia)/|^sources/wikidata/[a-z0-9]+-pages\.json$")
+DAILY_SOURCES = {"wikipedia", "wikidata"}
+DAILY = re.compile(r"^platforms/(switch|steam)/popular\.json$|^sources/wikipedia/daily\.json$|^sources/wikidata/[a-z0-9]+-pages\.json$")
 
 # Numbers and sizes as each language writes them: the thousands' and the
 # decimals' marks, the units.
@@ -235,7 +233,7 @@ def alternates(path_in: str) -> str:
 def platform_cards(language: str, catalog: dict, root: str, summary: dict) -> str:
     """A card a store, then one for every old machine together (retro)."""
     machines = [k for k, _ in PLATFORMS if k not in STORE_IDS and k in summary]
-    retro = {"games": sum(summary[k]["games"] for k in machines), "countries": [],
+    retro = {"games": sum(summary[k]["games"] for k in machines),
              "generated": max((summary[k].get("generated") or "" for k in machines), default="")}
     cards = []
     for key, name in [(k, n) for k, n in PLATFORMS if k in STORE_IDS] + [("retro", "Retro")]:
@@ -245,8 +243,6 @@ def platform_cards(language: str, catalog: dict, root: str, summary: dict) -> st
         facts = ""
         if live:
             items = [catalog["platform_games"].replace("{n}", number(s["games"], language))]
-            if s["countries"]:
-                items.append(catalog["platform_prices"].replace("{n}", str(len(s["countries"]))))
             if s.get("generated"):
                 items.append(catalog["platform_updated"].replace("{date}", day(s["generated"], language)))
             facts = '<ul class="facts">' + "".join(f"<li>{i}</li>" for i in items) + "</ul>"
@@ -264,18 +260,15 @@ def file_kind(name: str) -> str:
     if name.startswith("sources/"):
         return "source"
     base = name.rsplit("/", 1)[-1]
-    if "/prices/" in name or name.startswith("prices/"):
-        return "prices"
     return base[:-5] if base.endswith(".json") else base
 
 
 def file_rows(language: str, catalog: dict, index: dict) -> str:
-    """index.json's files, each platform's prices in one row."""
+    """index.json's files, a source's or the old machines' kind in one row."""
     groups = {}
     for name, f in sorted(((index or {}).get("files") or {}).items()):
-        key = re.sub(r"prices/[A-Z]{2}\.json$", "prices/<country>.json", name)
         # A source's files in one row (they are not copied here: sources/ stays on the data branch).
-        key = re.sub(r"^(sources/[^/]+/).*$", r"\1…", key)
+        key = re.sub(r"^(sources/[^/]+/).*$", r"\1…", name)
         # The old machines' files, one row a kind of file.
         key = re.sub(rf"^platforms/({MACHINES})/", "platforms/<machine>/", key)
         g = groups.setdefault(key, {"bytes": 0, "generated": "", "n": 0, "name": name})
@@ -331,7 +324,7 @@ def when(made: str, days: int, catalog: dict, language: str) -> str:
 def status_body(language: str, catalog: dict, root: str, report: dict, index: dict) -> str:
     """The data's status (status/), from report.json (tools/report.py) and
     index.json: the run, each source's and platform's last update and state,
-    each platform's games linked, priced and reviewed. Without a report (a
+    each platform's games linked and reviewed. Without a report (a
     build without data, a branch from before report.json), a note."""
     if not report:
         return (f'  <section id="status">\n    <p class="note empty">{catalog["status_none"]} '
@@ -375,14 +368,13 @@ def status_body(language: str, catalog: dict, root: str, report: dict, index: di
             rows.append(f'          <tr><th scope="row">{html.escape(names.get(pid, pid))}</th>'
                         f'<td>{state(p.get("generated") or "", made, days, not p.get("games"), catalog)}</td>'
                         f'<td class="num">{number(p.get("games") or 0, language)}</td>'
-                        + "".join(f'<td class="num">{percent(p.get(k), language)}</td>' for k in ("linked", "priced", "reviewed"))
-                        + f'<td class="num">{p.get("countries") or "—"}</td>'
-                        f'<td>{when(p.get("generated") or "", days, catalog, language)}</td></tr>')
+                        + "".join(f'<td class="num">{percent(p.get(k), language)}</td>' for k in ("linked", "reviewed"))
+                        + f'<td>{when(p.get("generated") or "", days, catalog, language)}</td></tr>')
         return [f'    <div class="table" tabindex="0" role="region" aria-label="{label}">', '      <table class="status">',
                 f'        <thead><tr><th scope="col">{catalog["status_platform"]}</th>{head}'
                 f'<th scope="col" class="num">{catalog["status_games"]}</th><th scope="col" class="num">{catalog["status_linked"]}</th>'
-                f'<th scope="col" class="num">{catalog["status_priced"]}</th><th scope="col" class="num">{catalog["status_reviewed"]}</th>'
-                f'<th scope="col" class="num">{catalog["status_countries"]}</th><th scope="col">{catalog["files_updated"]}</th></tr></thead>',
+                f'<th scope="col" class="num">{catalog["status_reviewed"]}</th>'
+                f'<th scope="col">{catalog["files_updated"]}</th></tr></thead>',
                 '        <tbody>', *rows, '        </tbody>', '      </table>', '    </div>']
 
     order = [k for k, _ in PLATFORMS]
@@ -412,7 +404,6 @@ def hero(page: str, catalog: dict, root: str, language: str) -> str:
 def strings(catalog: dict, language: str, summary: dict) -> str:
     """The explorer's texts and settings, as JSON in the page (data, not a script)."""
     body = {k: v for k, v in catalog.items() if k.startswith("x_")}
-    body["_country"] = COUNTRY.get(language, "US")
     body["_platforms"] = {k: summary[k]["shards"] for k in summary}
     body["_names"] = dict(PLATFORMS)
     return json.dumps(body, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
@@ -468,12 +459,13 @@ def main() -> None:
     shutil.copytree(SITE / "assets", out / "assets")
     summary, index, report = {}, {}, {}
     if data:
-        # The sources and the prices' history are not the explorer's: left on the data branch, the site smaller.
+        # The sources are not the explorer's: left on the data branch, the site smaller.
         shutil.copytree(data, out / "data", ignore=lambda d, names: [n for n in names if n.startswith(".git")
-                                                                   or (Path(d) == data and n in ("sources", "history"))])
+                                                                   or (Path(d) == data and n == "sources")])
         summary = site_data.build(str(data), str(out))
         index = site_data.read(str(data / "index.json")) or {}
-        report = site_data.read(str(data / "report.json")) or {}
+        # report.json has its own schema (common.REPORT_SCHEMA): one of another reads as none.
+        report = site_data.read(str(data / "report.json"), REPORT_SCHEMA) or {}
     catalogs = {c: json.loads((SITE / "i18n" / f"{c}.json").read_text(encoding="utf-8")) for c, _, _, _ in LANGUAGES}
     template = (SITE / "template.html").read_text(encoding="utf-8")
     urls = []

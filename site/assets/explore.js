@@ -2,7 +2,6 @@
 // under x/, read from this site, a file when a view needs it and kept for
 // the visit. The address says what is shown, so it can be shared:
 //   #<platform>/<popular|trending|upcoming>    a list
-//   #<platform>/deals/<country>                a country's sales
 //   #<platform>/search/<words>                 the games whose name has them
 //   #<platform>/game/<id>                      a game's sheet
 // The texts are the page's (#x-strings, the catalog's x_ keys).
@@ -23,7 +22,7 @@
     ps4: "PlayStation 4", ps5: "PlayStation 5", "3ds": "Nintendo 3DS",
     xbox: "Xbox", gog: "GOG", epic: "Epic Games" };
   const status = $("x-status"), results = $("x-results"), sheet = $("x-sheet");
-  const countrySelect = $("x-country"), search = $("x-search"), machine = $("x-machine");
+  const search = $("x-search"), machine = $("x-machine");
   const cache = new Map();
   let read = 0;
 
@@ -43,11 +42,6 @@
   };
   const nf = new Intl.NumberFormat(LANG);
   const num = (n) => nf.format(n);
-  const regions = (() => { try { return new Intl.DisplayNames([LANG], { type: "region" }); } catch (e) { return null; } })();
-  const countryName = (c) => (regions && regions.of(c)) || c;
-  const money = (v, currency) => {
-    try { return new Intl.NumberFormat(LANG, { style: "currency", currency }).format(v); } catch (e) { return `${v} ${currency}`; }
-  };
   const ymd = (n) => {
     if (!n) return "";
     const s = String(n);
@@ -83,7 +77,7 @@
   function route() {
     const parts = decodeURIComponent(location.hash.slice(1)).split("/");
     const platform = PLATFORMS.includes(parts[0]) ? parts[0] : PLATFORMS[0];
-    const view = ["popular", "trending", "deals", "upcoming", "search", "game"].includes(parts[1]) ? parts[1] : "popular";
+    const view = ["popular", "trending", "upcoming", "search", "game"].includes(parts[1]) ? parts[1] : "popular";
     return { platform, view, arg: parts.slice(2).join("/") };
   }
   const go = (hash) => { if (location.hash !== hash) location.hash = hash; else show(); };
@@ -121,40 +115,15 @@
     for (const i of root.querySelectorAll("i[data-w]")) i.style.width = `${Math.max(2, Math.min(100, +i.dataset.w))}%`;
   }
 
-  async function list(platform, view, country) {
+  async function list(platform, view) {
     sheet.hidden = true;
     results.hidden = false;
-    $("x-country-field").hidden = view !== "deals";
     pressed("x-views", "view", view);
     setStatus(t("x_loading"));
     const lists = await get(`x/${platform}/lists.json`);
     results.replaceChildren();
     let note = "", count = 0;
-    if (view === "deals") {
-      const countries = Object.keys(lists.countries || {});
-      if (!countries.length) {
-        countrySelect.replaceChildren();
-        setStatus(t("x_no_prices"));
-        return;
-      }
-      const c = countries.includes(country) ? country : countries.includes(S._country) ? S._country : countries[0];
-      countrySelect.replaceChildren(...countries.map((k) => el("option", { value: k, selected: k === c ? "" : null, text: countryName(k) })));
-      const deals = await get(`x/${platform}/deals/${c}.json`);
-      for (const g of deals.games) {
-        const [id, name, regular, sale, until, lowest, , lowest30, cut] = g;
-        const atLowest = lowest && sale <= lowest;
-        results.append(row(platform, id, name, [
-          el("span", { class: "cut", text: `−${cut} %` }),
-          el("strong", { class: "price", text: money(sale, deals.currency) }),
-          el("s", { text: money(regular, deals.currency) }),
-          until ? el("span", { class: "until", text: t("x_until", { date: ymd(until) }) }) : null,
-          atLowest ? el("span", { class: "lowest", text: t("x_lowest") }) : null,
-          lowest30 && !atLowest ? el("span", { class: "dim", text: `${t("x_lowest_30")} ${money(lowest30, deals.currency)}` }) : null,
-        ]));
-      }
-      count = deals.count;
-      note = t("x_deals_note", { country: countryName(c), floor: money(deals.floor, deals.currency) });
-    } else if (view === "upcoming") {
+    if (view === "upcoming") {    } else if (view === "upcoming") {
       for (const [id, name, when] of lists.upcoming) results.append(row(platform, id, name, [el("span", { class: "date", text: ymd(when) })]));
       count = lists.upcoming.length;
       note = t("x_upcoming_note");
@@ -174,7 +143,6 @@
   async function find(platform, words) {
     sheet.hidden = true;
     results.hidden = false;
-    $("x-country-field").hidden = true;
     pressed("x-views", "view", "");
     const q = fold(words.trim());
     if (!q) return go(`#${platform}/popular`);
@@ -193,83 +161,12 @@
     setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + ` · ${t("x_loaded", { size: kb(read) })}`);
   }
 
-  // A game's prices' history in one country (x/<platform>/h/, the days the
-  // price changed: [YYYYMMDD, regular, sale]): the price paid as a step
-  // line from the first day known to the last file's, the regular price
-  // dashed, the lowest marked. Inline SVG, no library.
-  const SVG = "http://www.w3.org/2000/svg";
-  const svg = (tag, attrs, ...children) => {
-    const e = document.createElementNS(SVG, tag);
-    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
-    for (const c of children) e.append(c);
-    return e;
-  };
-  const day = (n) => { const s = String(n); return Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)); };
-  const yyyymmdd = (text) => +(text || "").replace(/-/g, "") || 0;
-  const paid = (r) => (r[2] ? r[2] : r[1]);
-
-  function lowestOf(rows) {
-    let best = null;
-    for (const r of rows) if (paid(r) > 0 && (!best || paid(r) < paid(best))) best = r;
-    return best;
-  }
-
-  function chart(rows, currency, endDay) {
-    const end = yyyymmdd(endDay);
-    // As wide as the sheet (a phone reads its texts at their size), 640 at most.
-    const W = Math.round(Math.max(300, Math.min(640, sheet.clientWidth - 48))), H = 200, L = 72, R = 12, T = 12, B = 28;
-    const last = Math.max(end, rows[rows.length - 1][0]);
-    const x0 = day(rows[0][0]), x1 = day(last) + 86400000;   // the last day drawn a day wide
-    const top = Math.max(...rows.map((r) => r[1] || paid(r))) * 1.1 || 1;
-    const X = (d) => L + ((d - x0) / (x1 - x0)) * (W - L - R);
-    const Y = (v) => T + (1 - v / top) * (H - T - B);
-    const steps = (value) => {
-      let d = "";
-      rows.forEach((r, i) => {
-        const x = X(day(r[0])), y = Y(value(r));
-        d += i ? ` H${x.toFixed(1)} V${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
-      });
-      return `${d} H${X(x1).toFixed(1)}`;
-    };
-    const low = lowestOf(rows);
-    const g = svg("svg", { viewBox: `0 0 ${W} ${H}`, class: "history", role: "img",
-      "aria-label": t("x_history_chart", { from: ymd(rows[0][0]), to: ymd(last) }) });
-    for (const v of [0, top / 1.1]) {
-      g.append(svg("line", { x1: L, x2: W - R, y1: Y(v), y2: Y(v), class: "grid" }),
-        svg("text", { x: L - 8, y: Y(v) + 4, "text-anchor": "end", class: "tick" }, money(Math.round(v * 100) / 100, currency)));
-    }
-    g.append(svg("text", { x: L, y: H - 8, class: "tick" }, ymd(rows[0][0])),
-      last !== rows[0][0] ? svg("text", { x: W - R, y: H - 8, "text-anchor": "end", class: "tick" }, ymd(last)) : "");
-    g.append(svg("path", { d: steps((r) => r[1]), class: "h-regular" }), svg("path", { d: steps(paid), class: "h-paid" }));
-    if (low) g.append(svg("circle", { cx: X(day(low[0])), cy: Y(paid(low)), r: 4.5, class: "h-low" }));
-    return g;
-  }
-
-  function priceHistory(past, prices, end) {
-    const countries = Object.keys(past).filter((c) => prices && prices[c] && past[c].length);
-    if (!countries.length) return null;
-    let country = countries.includes(S._country) ? S._country : countries[0];
-    const box = el("div", { class: "history-box" });
-    const draw = () => {
-      const rows = past[country], currency = prices[country][prices[country].length - 1];
-      const low = lowestOf(rows);
-      box.replaceChildren(chart(rows, currency, end),
-        el("p", { class: "h-legend" }, el("span", { class: "h-key", text: t("x_history_paid") }), el("span", { class: "h-key h-dashed", text: t("x_regular") })),
-        low ? el("p", { class: "h-lowest" }, t("x_history_lowest", { since: ymd(rows[0][0]), price: money(paid(low), currency), date: ymd(low[0]) })) : null);
-    };
-    const pick = el("select", { "aria-label": t("x_country") }, ...countries.map((c) => el("option", { value: c, text: countryName(c), selected: c === country ? "" : null })));
-    pick.addEventListener("change", () => { country = pick.value; draw(); });
-    draw();
-    return section(t("x_history"), countries.length > 1 ? el("label", { class: "field h-country" }, el("span", { text: t("x_country") }), pick) : null, box);
-  }
-
   function section(title, ...content) {
     return el("section", {}, el("h3", { text: title }), ...content);
   }
 
   async function game(platform, id) {
     results.hidden = true;
-    $("x-country-field").hidden = true;
     pressed("x-views", "view", "");
     setStatus(t("x_loading"));
     const lists = await get(`x/${platform}/lists.json`);
@@ -314,32 +211,6 @@
       sheet.append(dl);
     }
 
-    if (g.prices) {
-      const countries = Object.keys(g.prices);
-      const table = el("table", { class: "prices" },
-        el("thead", {}, el("tr", {}, ...["x_country", "x_regular", "x_sale", "x_lowest", "x_lowest_30"].map((k) => el("th", { scope: "col", text: t(k) })))),
-        el("tbody", {}, ...countries.map((c) => {
-          const r = g.prices[c], cur = r[r.length - 1];
-          const [regular, sale, until, lowest, lowestDay] = r;
-          const l30 = r.length > 6 ? r[5] : 0;
-          return el("tr", { class: c === S._country ? "here" : null },
-            el("th", { scope: "row", text: countryName(c) }),
-            el("td", { class: "num", text: money(regular, cur) }),
-            el("td", { class: "num" }, sale ? el("strong", { text: money(sale, cur) }) : el("span", { class: "dim", text: t("x_not_on_sale") }),
-              sale && until ? el("small", { text: ` ${t("x_until", { date: ymd(until) })}` }) : null),
-            el("td", { class: "num" }, lowest ? money(lowest, cur) : "—", lowestDay ? el("small", { text: ` ${ymd(lowestDay)}` }) : null),
-            el("td", { class: "num", text: l30 ? money(l30, cur) : "—" }));
-        })));
-      sheet.append(section(t("x_prices"), el("div", { class: "table", tabindex: "0", role: "region", "aria-label": t("x_prices") }, table)));
-      if (lists.history_shards) {
-        try {
-          const past = (await get(`x/${platform}/h/${shard(id, lists.history_shards)}.json`))[id];
-          const block = past && priceHistory(past, g.prices, Object.values(lists.countries || {}).map((c) => c.generated).sort().pop());
-          if (block) sheet.append(block);
-        } catch (e) { /* the history is a plus: the sheet stands without it */ }
-      }
-    }
-
     if (g.similar && g.similar.length) {
       sheet.append(section(t("x_similar"), el("ol", { class: "similar" }, ...g.similar.map(([o, name, s]) =>
         el("li", {}, el("a", { href: `#${platform}/game/${encodeURIComponent(o)}` }, nameOf(o, name, platform)), el("span", { class: "dim", text: `${s}` }))))));
@@ -379,7 +250,7 @@
     try {
       if (view === "game") await game(platform, arg);
       else if (view === "search") { if (search.value !== arg) search.value = arg; await find(platform, arg); }
-      else await list(platform, view, arg);
+      else await list(platform, view);
     } catch (e) {
       setStatus(t("x_error"));
     }
@@ -388,9 +259,9 @@
   document.getElementById("x-platforms").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-platform]");
     if (!b) return;
-    const { view, arg } = route();
+    const { view } = route();
     const keep = view === "game" || view === "search" ? "popular" : view;
-    go(`#${b.dataset.platform}/${keep}${keep === "deals" && arg ? `/${arg}` : ""}`);
+    go(`#${b.dataset.platform}/${keep}`);
   });
   machine.addEventListener("change", () => { if (machine.value) go(`#${machine.value}/popular`); });
   document.getElementById("x-views").addEventListener("click", (e) => {
@@ -399,7 +270,6 @@
     search.value = "";
     go(`#${route().platform}/${b.dataset.view}`);
   });
-  countrySelect.addEventListener("change", () => go(`#${route().platform}/deals/${countrySelect.value}`));
   let timer = 0;
   search.addEventListener("input", () => {
     clearTimeout(timer);

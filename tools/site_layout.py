@@ -17,7 +17,7 @@ what axe finds against WCAG 2.2 A and AA on an iPhone, on every page.
 Usage: tools/site_layout.py <site-dir>   (needs Playwright for Python with
 Chromium, PLAYWRIGHT_CHROMIUM=<path> for a browser of its own). Adapted from
 boreale.dev's tools/site_layout.py. The explorer is also opened on a list,
-a country's deals and a game's sheet (EXTRA), once their data is read.
+the trending and a game's sheet (EXTRA), once their data is read.
 """
 import asyncio
 import functools
@@ -32,7 +32,7 @@ SITE = sys.argv[1]
 AXE = os.environ.get("SITE_AXE")
 AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]
 # The explorer's views, in English and one other language (their data is shared).
-EXTRA = ["explore/#steam/popular", "explore/#switch/deals/FR", "fr/explore/#switch/game/0100000000010000",
+EXTRA = ["explore/#steam/popular", "explore/#switch/trending", "fr/explore/#switch/game/0100000000010000",
          "explore/#steam/search/portal", "explore/#steam/game/620"]
 SCREENS = [("small phone", 320, 640, True), ("iPhone", 402, 874, True), ("phone in landscape", 874, 402, True),
            ("tablet", 1024, 768, False), ("desktop", 1440, 900, False)]

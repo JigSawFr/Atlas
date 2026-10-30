@@ -24,11 +24,11 @@ class Sizes(unittest.TestCase):
         self.assertTrue(lines[1].startswith("`b.json` weighs 0.05 MB against 0.10 MB last time (-51 %)"))
 
     def test_left_out(self):
-        # Small files, the run's own, the history, a file new or gone: not weighed.
+        # Small files, the run's own, a file new or gone: not weighed.
         before = {"small.json": {"bytes": 1000}, "changes.json": {"bytes": 100_000}, "report.json": {"bytes": 60_000},
-                  "history/steam/2026-11.json": {"bytes": 100_000}, "gone.json": {"bytes": 100_000}}
+                  "gone.json": {"bytes": 100_000}}
         now = {"small.json": {"bytes": 40_000}, "changes.json": {"bytes": 900_000}, "report.json": {"bytes": 1},
-               "history/steam/2026-11.json": {"bytes": 900_000}, "new.json": {"bytes": 900_000}}
+               "new.json": {"bytes": 900_000}}
         self.assertEqual(index.sizes(before, now), [])
 
     def test_parts_weighed_together(self):
@@ -66,16 +66,16 @@ class Sizes(unittest.TestCase):
 class Index(unittest.TestCase):
     def test_index(self):
         with tempfile.TemporaryDirectory() as d:
-            os.makedirs(os.path.join(d, "prices"))
+            os.makedirs(os.path.join(d, "steam"))
             os.makedirs(os.path.join(d, ".git"))
             for path, body in (("popular.json", '{"schema":1,"generated":"2026-10-29","games":{}}'),
-                               ("prices/FR.json", '{"schema":1,"generated":"2026-10-30","games":{}}'),
+                               ("steam/games.json", '{"schema":1,"generated":"2026-10-30","games":{}}'),
                                ("index.json", "{}"), ("notes.txt", "x"), (".git/x.json", "{}")):
                 with open(os.path.join(d, path), "w") as f:
                     f.write(body)
             got = index.index(d)
-            self.assertEqual(sorted(got["files"]), ["popular.json", "prices/FR.json"])
-            self.assertEqual(got["files"]["prices/FR.json"]["generated"], "2026-10-30")
+            self.assertEqual(sorted(got["files"]), ["popular.json", "steam/games.json"])
+            self.assertEqual(got["files"]["steam/games.json"]["generated"], "2026-10-30")
             self.assertEqual(got["files"]["popular.json"]["bytes"], 48)
             self.assertEqual(len(got["files"]["popular.json"]["sha256"]), 16)
             # The same files, the same index.
