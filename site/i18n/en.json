@@ -33,6 +33,7 @@
   "platform_steam_text": "Renown from Wikipedia and Steam's reviews, the most played, tags, games alike, and the store's prices.",
   "platform_gog_text": "The whole GOG catalogue with its prices and reviews.",
   "platform_xbox_text": "The Microsoft Store's prices and what is in Game Pass.",
+  "platform_3ds_text": "The 3DS's games across their regions, with their title ids, from Nlib API and Wikidata (no prices: its eShop closed in 2023).",
   "platform_retro_text": "The games no store sells any more, from Wikidata.",
   "files_eyebrow": "The files",
   "files_title": "What is published, and when",

@@ -63,8 +63,8 @@ OG_LOCALES = {"en": "en_US", "fr": "fr_FR", "fr-CA": "fr_CA", "de": "de_DE", "es
 COUNTRY = {"en": "US", "fr": "FR", "fr-CA": "CA", "de": "DE", "es": "ES", "es-419": "MX", "it": "IT",
            "nl": "NL", "pt": "PT", "pt-BR": "BR", "ja": "JP"}
 # The platforms, in their order: those the data has are live, the others coming.
-PLATFORMS = [(p[0], p[1]) for p in platforms.STORES] + [(p[0], p[1]) for p in platforms.RETRO]
-STORE_IDS = {p[0] for p in platforms.STORES}
+PLATFORMS = [(p[0], p[1]) for p in platforms.STORES + platforms.CONSOLES] + [(p[0], p[1]) for p in platforms.RETRO]
+STORE_IDS = {p[0] for p in platforms.STORES + platforms.CONSOLES}   # a button each; the old machines in a list
 MACHINES = "|".join(re.escape(p[0]) for p in platforms.RETRO)
 # The pages, by their path under each language's folder.
 PAGES = {"": "home", "explore/": "explore"}

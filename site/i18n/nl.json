@@ -33,6 +33,7 @@
   "platform_steam_text": "Bekendheid uit Wikipedia en de recensies op Steam, de meest gespeelde, tags, vergelijkbare games en de prijzen van de winkel.",
   "platform_gog_text": "De hele GOG-catalogus, met prijzen en recensies.",
   "platform_xbox_text": "De prijzen van de Microsoft Store en wat er in Game Pass zit.",
+  "platform_3ds_text": "De 3DS-games van alle regio's, met hun title ids, volgens Nlib API en Wikidata (geen prijzen: de eShop sloot in 2023).",
   "platform_retro_text": "De games die geen winkel meer verkoopt, uit Wikidata.",
   "files_eyebrow": "De bestanden",
   "files_title": "Wat er gepubliceerd wordt, en wanneer",

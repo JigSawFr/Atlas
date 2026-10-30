@@ -100,7 +100,7 @@ def consolidate(src, out_dir, previous_dir, today):
     read = build.views_from(known, src("wikipedia/monthly.json").get("pages") or {})
     by_id = lambda d: dict(sorted(d.items(), key=lambda kv: int(kv[0][1:])))   # noqa: E731
     # A machine a folder (platforms.RETRO): its games, scored and compared among themselves.
-    for pid, _, item, _, _ in platforms.RETRO:
+    for pid, _, item, _, _ in platforms.RETRO:   # the 3DS's own: tools/n3ds.py
         mine = {g: games[g] for g in games if any(p == item for p, _ in games[g]["platforms"])}
         if not mine:
             continue

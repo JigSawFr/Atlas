@@ -18,7 +18,7 @@ A, B = "0100000000010000", "0100000000020000"
 class Registry(unittest.TestCase):
     def test_ids(self):
         got = platforms.registry(datetime.date(2026, 10, 30))["platforms"]
-        self.assertEqual(len(got), len(platforms.STORES) + len(platforms.RETRO))
+        self.assertEqual(len(got), len(platforms.STORES) + len(platforms.CONSOLES) + len(platforms.RETRO))
         self.assertEqual(got["switch"]["aurore"], "switch")
         self.assertEqual(got["3ds"]["aurore"], "3ds")
         self.assertEqual(got["psv"]["aurore"], "psv")
@@ -26,8 +26,9 @@ class Registry(unittest.TestCase):
         self.assertNotIn("aurore", got["steam"])
         for pid in got:
             self.assertRegex(pid, r"^[a-z0-9-]+$")
-        qids = [r[2] for r in platforms.RETRO]
-        self.assertEqual(sorted(qids), sorted(retro.PLATFORMS))   # every machine retro.py asks has its folder
+        qids = [r[2] for r in platforms.RETRO] + list(platforms.OWN)
+        self.assertEqual(sorted(qids), sorted(retro.PLATFORMS))
+        self.assertEqual(got["3ds"]["kind"], "console")   # every machine retro.py asks has its folder
         self.assertEqual(platforms.path("nes", "games.json"), "platforms/nes/games.json")
 
 

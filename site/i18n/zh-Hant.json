@@ -33,6 +33,7 @@
   "platform_steam_text": "來自維基百科與 Steam 評論的知名度、最多人玩的遊戲、標籤、相似遊戲與商店價格。",
   "platform_gog_text": "完整的 GOG 目錄，含價格與評論。",
   "platform_xbox_text": "Microsoft Store 的價格與 Game Pass 中的遊戲。",
+  "platform_3ds_text": "各地區的 3DS 遊戲及其 title id，來自 Nlib API 和 Wikidata（沒有價格：其 eShop 已於 2023 年關閉）。",
   "platform_retro_text": "已無任何商店販售的遊戲，來自 Wikidata。",
   "files_eyebrow": "檔案",
   "files_title": "發佈了什麼，何時發佈",

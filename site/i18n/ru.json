@@ -33,6 +33,7 @@
   "platform_steam_text": "Известность по Википедии и отзывам Steam, самые популярные, метки, похожие игры и цены магазина.",
   "platform_gog_text": "Весь каталог GOG с ценами и отзывами.",
   "platform_xbox_text": "Цены Microsoft Store и то, что есть в Game Pass.",
+  "platform_3ds_text": "Игры 3DS всех регионов с их title id по данным Nlib API и Wikidata (без цен: eShop закрылся в 2023 году).",
   "platform_retro_text": "Игры, которые уже не продаёт ни один магазин, по Wikidata.",
   "files_eyebrow": "Файлы",
   "files_title": "Что публикуется и когда",

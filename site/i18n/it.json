@@ -33,6 +33,7 @@
   "platform_steam_text": "Notorietà da Wikipedia e dalle recensioni di Steam, i più giocati, tag, giochi simili e i prezzi del negozio.",
   "platform_gog_text": "L'intero catalogo GOG, con prezzi e recensioni.",
   "platform_xbox_text": "I prezzi del Microsoft Store e cosa c'è nel Game Pass.",
+  "platform_3ds_text": "I giochi 3DS di tutte le regioni, con i loro title id, da Nlib API e Wikidata (niente prezzi: il suo eShop ha chiuso nel 2023).",
   "platform_retro_text": "I giochi che nessun negozio vende più, da Wikidata.",
   "files_eyebrow": "I file",
   "files_title": "Cosa viene pubblicato, e quando",
