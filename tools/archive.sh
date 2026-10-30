@@ -3,7 +3,7 @@
 # release: data-YYYY-MM-DD, tagged on the commit of main that made them, with
 # each file attached on its own (switch/prices/FR.json as switch-prices-FR.json: a
 # release's files have no folders), all of them in one zip
-# (playinsights-data-YYYY-MM-DD.zip, with its folders), and a SHA256SUMS.txt. The data branch
+# (atlas-data-YYYY-MM-DD.zip, with its folders), and a SHA256SUMS.txt. The data branch
 # keeps no history; these releases are its history, one a week, kept for
 # good. Run again the same day, the release is made again.
 #
@@ -15,7 +15,7 @@ rm -rf "$out"; mkdir -p "$out"
 (cd "$dir" && find . -type f -not -name .git -not -path './.git/*' -printf '%P\n') | sort |
   while IFS= read -r f; do cp "$dir/$f" "$out/${f//\//-}"; done
 # The same files give the same zip: sorted, dates fixed.
-python3 - "$dir" "$day" "$out/playinsights-data-$day.zip" <<'PY'
+python3 - "$dir" "$day" "$out/atlas-data-$day.zip" <<'PY'
 import os, sys, zipfile
 src, day, dest = sys.argv[1:]
 stamp = tuple(int(x) for x in day.split("-")) + (0, 0, 0)
@@ -32,7 +32,7 @@ PY
 (cd "$out" && sha256sum -- * > ../SHA256SUMS.txt && mv ../SHA256SUMS.txt . && cat SHA256SUMS.txt)
 
 files=$(python3 -c "import json,sys; print(len(json.load(open(sys.argv[1]))['files']))" "$dir/index.json")
-notes="PlayInsights' data files as published on $day: $files files, the same as the \`data\` branch had that day (\`switch/prices/FR.json\` is \`switch-prices-FR.json\` here). Their format is in the README."
+notes="Atlas' data files as published on $day: $files files, the same as the \`data\` branch had that day (\`switch/prices/FR.json\` is \`switch-prices-FR.json\` here). Their format is in the README."
 if gh release view "$tag" >/dev/null 2>&1; then
   gh release delete "$tag" --yes --cleanup-tag
 fi

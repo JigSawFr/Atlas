@@ -77,5 +77,20 @@ class Features(unittest.TestCase):
         self.assertTrue(all(1 <= s <= 100 for row_ in got.values() for _, s in row_))
 
 
+class SteamReviews(unittest.TestCase):
+    def test_reviews_of(self):
+        item = {"reviews": {"summary_filtered": {"review_count": 1200, "percent_positive": 91}}}
+        self.assertEqual(features.reviews_of(item), (1092, 108))
+        for none in (None, {}, {"reviews": {"summary_filtered": {"review_count": 0, "percent_positive": 0}}}):
+            self.assertIsNone(features.reviews_of(none))
+
+    def test_with_reviews(self):
+        apps = {A: 900010, B: 900011, C: 900012}
+        spied = {A: {"app": 900010, "positive": 10, "negative": 2, "owners": 50000, "ccu": 7}}
+        got = features.with_reviews(spied, {A: (1092, 108), B: (5, 1)}, apps)
+        self.assertEqual(got, {A: {"app": 900010, "positive": 1092, "negative": 108, "owners": 50000, "ccu": 7},
+                               B: {"app": 900011, "positive": 5, "negative": 1, "owners": 0, "ccu": 0}})
+
+
 if __name__ == "__main__":
     unittest.main()

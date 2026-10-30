@@ -32,7 +32,7 @@ SIMILAR = 12                     # the games kept as like each one
 MAX_TRAITS = 12                  # of a kind, a game's first ones
 STEAMSPY = "https://steamspy.com/api.php?request=appdetails&appid={}"
 STEAM_PAUSE = 1.05               # SteamSpy allows a request a second
-STEAM_BUDGET = 2700              # seconds spent on SteamSpy a run, at most
+STEAM_BUDGET = 600               # seconds spent on SteamSpy a run, at most (its owners and players)
 
 TRAIT_QUERY = """
 SELECT ?tid ?value ?valueLabel WHERE {{
@@ -125,6 +125,36 @@ def read_steam(apps, previous, fetch, budget=STEAM_BUDGET, now=time.monotonic, s
         if tid not in out and tid in known:
             out[tid] = previous[tid]
     print(f"steam: {asked} of {len(apps)} asked, {len(out)} known", file=sys.stderr)
+    return out
+
+
+def reviews_of(item):
+    """(positive, negative) of Steam's store's reviews of an app (GetItems'
+    item), or None when it has none."""
+    summary = (((item or {}).get("reviews") or {}).get("summary_filtered")) or {}
+    count, percent = summary.get("review_count"), summary.get("percent_positive")
+    if not isinstance(count, int) or count <= 0 or not isinstance(percent, int):
+        return None
+    positive = round(count * percent / 100)
+    return positive, count - positive
+
+
+def with_reviews(spied, reviews, apps):
+    """Each game's Steam figures: its reviews from Steam's store (every game,
+    every run), its owners and players from SteamSpy (`spied`, as many as
+    its budget allows, the others' kept from the last run); a game neither
+    knows is left out."""
+    out = {}
+    for tid, app in apps.items():
+        spy, store = spied.get(tid), reviews.get(tid)
+        if not spy and not store:
+            continue
+        entry = {"app": app, "positive": 0, "negative": 0, "owners": 0, "ccu": 0}
+        if spy:
+            entry.update({k: spy[k] for k in ("positive", "negative", "owners", "ccu") if k in spy})
+        if store:
+            entry["positive"], entry["negative"] = store
+        out[tid] = entry
     return out
 
 

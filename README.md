@@ -1,15 +1,20 @@
-# PlayInsights
+# Atlas
 
-Open data about Nintendo Switch games, by title id, rebuilt every week from
-sources that need no account: which games are well known, which are read
-about more lately, what critics gave them, which come out soon, what each
-game is (its series, developers, publishers, genres, modes), how it does on
-Steam, and which games are most like it. With IGDB's keys (see below), it
-also takes each game's themes, keywords, perspectives, popularity and hype
-from IGDB.
-[PlayShelf](https://github.com/JigSawFr/PlayShelf) reads it for its Home
-tab's **Popular**, **Trending** and **Coming soon** rows; anything else may
-too.
+Open data about video games on every platform it can read without an
+account, rebuilt every week, with prices every day: which games are well
+known, which are read about more lately, what critics and players gave them,
+which come out soon, what each game is (its series, developers, publishers,
+genres), which games are most like it, and what it costs in 13 countries.
+Each platform has a folder: the Nintendo Switch (`switch/`, by title id),
+Steam (`steam/`), GOG (`gog/`) and the Xbox and Microsoft Store (`xbox/`);
+`links.json` ties a game's ids on every platform together. With IGDB's keys
+(see "Keys"), the Switch's files also take IGDB's themes, keywords,
+perspectives, popularity and hype.
+[PlayShelf](https://github.com/JigSawFr/PlayShelf) reads the Switch's for its
+Home tab; anything else may too.
+
+Atlas was called PlayInsights until 2026-10-30; the data's formats and paths
+didn't change with the name.
 
 ## The files
 
@@ -19,19 +24,23 @@ jsDelivr. Each platform has a folder of its own; the Switch's is `switch/`:
 
 | File | Address |
 |---|---|
-| `switch/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/popular.json` |
-| `switch/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/upcoming.json` |
-| `switch/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/games.json` |
-| `switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/similar.json` |
-| `switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/editions.json` |
-| `switch/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/prices/FR.json` |
-| `steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/popular.json` |
-| `steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/games.json` |
-| `steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/upcoming.json` |
-| `steam/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/similar.json` |
-| `steam/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/prices/FR.json` |
-| `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/links.json` |
-| `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/index.json` |
+| `switch/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/popular.json` |
+| `switch/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/upcoming.json` |
+| `switch/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/games.json` |
+| `switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/similar.json` |
+| `switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/editions.json` |
+| `switch/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/prices/FR.json` |
+| `steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/steam/popular.json` |
+| `steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/steam/games.json` |
+| `steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/steam/upcoming.json` |
+| `steam/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/steam/similar.json` |
+| `steam/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/steam/prices/FR.json` |
+| `gog/popular.json`, `gog/games.json`, `gog/upcoming.json`, `gog/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/gog/popular.json`… |
+| `gog/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/gog/prices/FR.json` |
+| `xbox/popular.json`, `xbox/games.json`, `xbox/gamepass.json`, `xbox/upcoming.json`, `xbox/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/xbox/popular.json`… |
+| `xbox/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/xbox/prices/FR.json` |
+| `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/links.json` |
+| `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/index.json` |
 
 Until 2026-10-30 the Switch's files were at the branch's root (`popular.json`,
 `prices/FR.json`…); the first run after it moved them into `switch/`
@@ -44,7 +53,7 @@ The `data` branch is one commit with no history, replaced at each run (`tools/pu
 
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
 meaning), the day it was `generated` and its `source`; a platform's files
-also have their `platform` (`switch`, `steam`). In `switch/`, a game is a base game's
+also have their `platform` (`switch`, `steam`, `gog`, `xbox`). In `switch/`, a game is a base game's
 title id (16 hex digits, upper case, ending in `000`).
 
 `links.json`, made every Monday:
@@ -99,7 +108,7 @@ The games whose release date, as the US eShop gives it, is in the next year: `[Y
    "steam": {"app": 504230, "positive": 117545, "negative": 3057, "owners": 2000000, "ccu": 1174}}}}
 ```
 
-Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`, and `igdb_rating`: `[players' rating 0..100, how many rated]` (IGDB's users, not the critics). `steam` is there for a game also sold on Steam: its reviews, the lower bound of its owners and its players at once when SteamSpy last saw it. SteamSpy allows a request a second, so each run asks it for as many games as 45 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
+Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`, and `igdb_rating`: `[players' rating 0..100, how many rated]` (IGDB's users, not the critics). `steam` is there for a game also sold on Steam: its reviews (`positive`, `negative`), from Steam's store at every run (its count and share of positive reviews), and the lower bound of its `owners` and its players at once (`ccu`) when SteamSpy last saw it (0 when it never did). SteamSpy allows a request a second, so each run asks it for as many games as 10 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
 
 `switch/similar.json`:
 
@@ -176,6 +185,42 @@ The games are those Wikidata gives a Steam app id (some 128,000 items) and
 Steam's most played; Steam's store says which are games (not a DLC, a tool or
 a soundtrack) and gives the rest, 200 apps a request.
 
+### GOG
+
+`gog/` has the same formats, by GOG product id (`"1207658924"`), from GOG's
+catalog (`tools/gog.py`), every game and pack it sells (some 8,400):
+
+- every Monday: `gog/popular.json` (half the game's renown on Wikipedia, by
+  the Wikidata item that gives its GOG page, P2725; half its GOG reviews;
+  GOG's 100 first in its "trending" order lifted by their rank),
+  `gog/games.json` (each game's `name`, `slug`, `release`, `reviews` as
+  `[count, percent]`, its rating out of 5 doubled into a percent, `qid`,
+  `pack` for a bundle, and its traits as `[id, name]`: `developers`,
+  `publishers`, `genres`, `tags`), `gog/upcoming.json` and
+  `gog/similar.json`;
+- every day: `gog/prices/<country>.json`, `[regular, sale, until, lowest,
+  lowest_day]` as `switch/prices/`, for the 13 countries (Japan in US
+  dollars, as GOG sells there). GOG doesn't say when a sale ends: `until` is
+  0. A free game is left out.
+
+### Xbox and the Microsoft Store
+
+`xbox/` has the same formats, by Microsoft Store product id (`"9N7TB1SB2M0K"`,
+Xbox and PC alike), for the games Wikidata gives a Microsoft Store id (P5885)
+and the Game Pass's (some 6,700), from the store's catalog
+(`displaycatalog.mp.microsoft.com`, no key, `tools/xbox.py`):
+
+- every Monday: `xbox/popular.json` (half the game's renown on Wikipedia,
+  half its players' ratings on the store; a game in the Game Pass lifted),
+  `xbox/games.json` (each game's `name`, `release`, `rating` as `[count,
+  percent]`, its stars out of 5 into a percent, `gamepass`, `qid`, and its
+  traits as `[id, name]`: `developers`, `publishers`, `genres`),
+  `xbox/gamepass.json` (the games in the Game Pass: `["console", "pc"]`, from
+  its public lists), `xbox/upcoming.json`, `xbox/similar.json`;
+- every day: `xbox/prices/<country>.json`, `[regular, sale, until, lowest,
+  lowest_day]` as `switch/prices/`, for the 13 countries. The store's short
+  answer doesn't say when a sale ends: `until` is 0. A free game is left out.
+
 ## The archives
 
 The `data` branch keeps only the last files. Every Monday's build also keeps
@@ -183,7 +228,7 @@ them as a [release](../../releases), `data-YYYY-MM-DD`, tagged on the commit
 that made them: each file the branch had that day, attached on its own
 (`switch/prices/FR.json` as `switch-prices-FR.json`, a release's files having
 no folders),
-all of them in one zip with their folders (`playinsights-data-YYYY-MM-DD.zip`,
+all of them in one zip with their folders (`atlas-data-YYYY-MM-DD.zip`,
 about 3 MB), and their `SHA256SUMS.txt`. Some 17 MB a week, kept for good, as the data's
 history: the prices of a Monday, the trends of a week.
 
@@ -191,15 +236,15 @@ The last week's files have addresses of their own, which follow each new
 release:
 
 ```
-https://github.com/JigSawFr/PlayInsights/releases/latest/download/switch-popular.json
-https://github.com/JigSawFr/PlayInsights/releases/download/data-2026-11-02/switch-prices-FR.json
-https://github.com/JigSawFr/PlayInsights/releases/download/data-2026-11-02/playinsights-data-2026-11-02.zip
+https://github.com/JigSawFr/Atlas/releases/latest/download/switch-popular.json
+https://github.com/JigSawFr/Atlas/releases/download/data-2026-11-02/switch-prices-FR.json
+https://github.com/JigSawFr/Atlas/releases/download/data-2026-11-02/atlas-data-2026-11-02.zip
 ```
 
 Each file, and the zip, is attested:
 
 ```sh
-gh attestation verify switch-popular.json -R JigSawFr/PlayInsights
+gh attestation verify switch-popular.json -R JigSawFr/Atlas
 ```
 
 ## Website
@@ -213,8 +258,10 @@ Atlas's website, [atlas.boreale.dev](https://atlas.boreale.dev/), shows the proj
 | [Wikidata](https://www.wikidata.org/) | The stores' ids for `links.json` ([P1733](https://www.wikidata.org/wiki/Property:P1733) Steam, [P12332](https://www.wikidata.org/wiki/Property:P12332), [P5944](https://www.wikidata.org/wiki/Property:P5944), [P5971](https://www.wikidata.org/wiki/Property:P5971), [P5999](https://www.wikidata.org/wiki/Property:P5999) PlayStation, [P5885](https://www.wikidata.org/wiki/Property:P5885) Microsoft, [P2725](https://www.wikidata.org/wiki/Property:P2725) GOG, [P6278](https://www.wikidata.org/wiki/Property:P6278) Epic); Switch title ids ([P11072](https://www.wikidata.org/wiki/Property:P11072)), sitelinks, English pages, review scores ([P444](https://www.wikidata.org/wiki/Property:P444)) and their number of reviews ([P7887](https://www.wikidata.org/wiki/Property:P7887)) | CC0 |
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
-| [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
+| [SteamSpy](https://steamspy.com/api.php) | Steam owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
 | [Steam's store](https://store.steampowered.com/) (`IStoreBrowseService/GetItems`, `IStoreService/GetTagList`, `ISteamChartsService/GetMostPlayedGames`, no key) | Steam's games: names, reviews, releases, franchises, developers, publishers, tags, most played; their prices and sales by country (`steam/prices/`) | [Steam Web API terms](https://steamcommunity.com/dev/apiterms); data from Valve, not endorsed by it |
+| [GOG's catalog](https://www.gog.com/) (`catalog.gog.com`, no key) | GOG's games: names, releases, reviews, developers, publishers, genres, tags, trending order; prices and sales by country (`gog/prices/`) | as published there; data from GOG |
+| [Microsoft Store's catalog](https://www.xbox.com/) (`displaycatalog.mp.microsoft.com`, `catalog.gamepass.com`, no key) | The Xbox and PC games: names, releases, players' ratings, developers, publishers, genres, the Game Pass; prices and sales by country (`xbox/prices/`) | as published there; data from Microsoft |
 | [Nintendo eShop's prices](https://api.ec.nintendo.com/v1/price) | Each game's price and sale, by country (`switch/prices/`) | as published there |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
@@ -240,6 +287,8 @@ Every source works without a key, but IGDB, which needs one:
 | Platform | Source | Key | Where | Secret |
 |---|---|---|---|---|
 | Switch | IGDB | optional (more traits, popularity, hype, players' rating) | [Twitch's developer console](https://dev.twitch.tv/console/apps) | `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` |
+| GOG | GOG's catalog | none | — | — |
+| Xbox / Microsoft Store | the store's catalog, the Game Pass's lists | none | — | — |
 | Steam | Steam's store | none (a key, `STEAM_API_KEY`, would only add Steam's full list of apps; not read yet) | [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey) | `STEAM_API_KEY` |
 
 Each key is read only when its secret is set; without it, the files are made
@@ -263,6 +312,10 @@ python3 tools/prices.py out/ [last/] # writes out/switch/prices/*.json, every co
 python3 tools/trends.py out/ last/   # last/switch/popular.json with today's trends, as out/switch/popular.json
 python3 tools/links.py out/ [last/]  # writes out/links.json
 python3 tools/steam.py out/ [last/]  # writes out/steam/*.json (some 15 minutes)
+python3 tools/gog.py catalog out/ [last/]  # writes out/gog/*.json (some 5 minutes)
+python3 tools/gog.py prices out/ [last/]   # writes out/gog/prices/*.json (some 6 minutes)
+python3 tools/xbox.py catalog out/ [last/]  # writes out/xbox/*.json (under a minute)
+python3 tools/xbox.py prices out/ last/     # last/xbox/games.json's prices, as out/xbox/prices/*.json (some 4 minutes)
 python3 tools/steam_prices.py out/ last/  # last/steam/games.json's prices, as out/steam/prices/*.json (some 10 minutes)
 python3 -m unittest discover -s tests
 ```
@@ -271,5 +324,5 @@ python3 -m unittest discover -s tests
 service, the guard and publishing a file, the lowest price kept from run to
 run.
 
-Python 3.10 or later, no package to install. It takes up to an hour: SteamSpy's
-45 minutes, the pageviews, and titledb's list (about 90 MB).
+Python 3.10 or later, no package to install. `build.py` takes some 25 minutes:
+SteamSpy's 10, the pageviews, and titledb's list (about 90 MB).

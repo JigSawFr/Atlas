@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """links.json: each game Wikidata knows on a store, by its Wikidata item
 (QID), with its ids on every platform, so a reader can go from a game on one
-platform to the same game on another ("also on Steam"), and PlayInsights
+platform to the same game on another ("also on Steam"), and Atlas
 can weigh a game's renown (Wikipedia) once for all its platforms.
 
 {"schema": 1, "generated": "YYYY-MM-DD", "source": "Wikidata",
