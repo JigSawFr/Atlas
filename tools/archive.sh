@@ -36,5 +36,8 @@ notes="PlayInsights' data files as published on $day: $files files, the same as 
 if gh release view "$tag" >/dev/null 2>&1; then
   gh release delete "$tag" --yes --cleanup-tag
 fi
-gh release create "$tag" "$out"/* --target "$GITHUB_SHA" --latest \
+# The tag pushed by git first, the release then made on it: the first run
+# (2026-10-30) had the API refuse a release that made its own tag (403).
+git push --force origin "$GITHUB_SHA:refs/tags/$tag"
+gh release create "$tag" "$out"/* --verify-tag --latest \
   --title "Data of $day" --notes "$notes"
