@@ -64,6 +64,23 @@ or `retro` (Wikidata alone). It has a
 does not know.
 
 `index.json` lists every file with the day it was made, its size and a hash of its content: a reader can ask for it every day and fetch only the files whose hash changed.
+Each entry also says the file's `source`, its `license` (the terms of the
+sources it was made from: CC0-1.0 for Wikidata's and Wikimedia's, the
+store's own terms for a store's) and its `attribution` (whom to credit).
+
+`schemas/` has a [JSON Schema](https://json-schema.org/) (2020-12) for every
+file, at the same path (`schemas/platforms/switch/popular.schema.json` for
+`platforms/switch/popular.json`). Every file is checked against its own
+before it is published: one that does not match is not published (the last
+run's stays) and the run says so; the tests also check the data branch's
+files against this branch's schemas.
+
+`report.json` says how the data is: for each source its files, records,
+size and the last day it answered; for each platform its games, how many
+have a name, a score, a link to another platform (`linked`), a price
+(`priced`, in any country) and reviews or a rating (`reviewed`), as shares
+of 1; and how long each step of the run took. A file of another schema
+counts as none there.
 
 The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`): each run only needs the last files, and keeping every day's prices would grow the repository by hundreds of MB a year.
 

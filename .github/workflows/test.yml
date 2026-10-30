@@ -38,3 +38,16 @@ jobs:
           echo "$SHA256  $RUNNER_TEMP/actionlint.tgz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/actionlint.tgz" -C "$RUNNER_TEMP" actionlint
           "$RUNNER_TEMP/actionlint" -color
+
+  # The schemas against the files the data branch has now: a schema that
+  # would turn away today's files is seen here, not at the next run.
+  schemas:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: The data branch's files checked
+        run: |
+          git fetch --depth 1 origin data:refs/remotes/origin/data
+          git worktree add "$RUNNER_TEMP/data" origin/data
+          python3 tools/schemas.py check "$RUNNER_TEMP/data"

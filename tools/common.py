@@ -292,3 +292,15 @@ def collected_today(src, name, today):
     found = src(name)
     day = today if isinstance(today, str) else today.isoformat()
     return found if found.get("generated") == day else {}
+
+
+def timed(out_dir, name, run):
+    """run() timed: its seconds kept in out_dir/.runtimes/<name>.json, for report.json."""
+    import time as clock
+    start = clock.monotonic()
+    try:
+        return run()
+    finally:
+        os.makedirs(os.path.join(out_dir, ".runtimes"), exist_ok=True)
+        with open(os.path.join(out_dir, ".runtimes", f"{name}.json"), "w", encoding="utf-8") as f:
+            json.dump({"seconds": round(clock.monotonic() - start, 1)}, f)

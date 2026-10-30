@@ -100,7 +100,8 @@ class Main(unittest.TestCase):
                 mock.patch.object(common, "sparql", no_network), mock.patch.object(common, "fetch", no_network), \
                 contextlib.redirect_stderr(err):
             trends.main()
-        self.assertFalse(os.path.exists(self.out))
+        # Nothing made (the run's time alone is kept, in .runtimes/).
+        self.assertFalse(os.path.exists(os.path.join(self.out, "platforms")))
         self.assertIn("nothing to redo", err.getvalue())
 
     def put(self, body):

@@ -251,8 +251,8 @@ def prices(src, out_dir, previous_dir, today):
 
 def main():
     what, out_dir, previous_dir, sources_dir = sys.argv[1:5]
-    {"catalog": catalog, "prices": prices}[what](common.reader(sources_dir, previous_dir), out_dir, previous_dir,
-                                                 datetime.date.today())
+    common.timed(out_dir, f"gog {what}", lambda: {"catalog": catalog, "prices": prices}[what](
+        common.reader(sources_dir, previous_dir), out_dir, previous_dir, datetime.date.today()))
 
 
 if __name__ == "__main__":
