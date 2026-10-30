@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Each popular game's trend, every day: how much more (or less) it was read
-on the Wikipedias of PlayShelf's languages (LANGS) in the last seven days
-than in a week of the four before. It goes into popular.json's `trend`, the
-weekly build's scores kept (tools/build.py), with the day it was measured
-(`trends`).
+"""Each popular game's trend, every day, on the Switch and on Steam
+(PLATFORMS): how much more (or less) it was read on the Wikipedias of
+PlayShelf's languages (LANGS) in the last seven days than in a week of the
+four before. It goes into the platform's popular.json's `trend`, the weekly
+build's scores kept (tools/build.py, tools/steam.py), with the day it was
+measured (`trends`).
 
-The best known games (TOP, by score) are measured: Wikidata gives their
-pages in each language, Wikimedia their views a day. A game read fewer than
+Each platform's best known games (TOP, by score) are measured: Wikidata
+gives their pages in each language (by the platform's id: the Switch's title
+id, Steam's app id), Wikimedia their views a day. A game read fewer than
 MIN_VIEWS times in the week has no trend; one whose views could not be read
 keeps the trend it had. When Wikimedia turns too many away, nothing changes.
 
-Usage: tools/trends.py <out-dir> <previous-dir> <sources-dir>   (switch/popular.json from
+Usage: tools/trends.py <out-dir> <previous-dir> <sources-dir>   (each platform's popular.json from
 previous-dir, the pages and their views from the sources tools/collect.py keeps)
 """
 import datetime
@@ -21,38 +23,57 @@ import urllib.parse
 
 import build
 import common
+import steam
 
 LANGS = ("en", "fr", "de", "es", "it", "ja", "nl", "pt")
 TOP = 400            # the best known games measured
 MIN_VIEWS = 300      # views in the last seven days below which a trend says nothing
 DAYS = 35            # the last seven days and the four weeks before
 PAUSE = 0.1          # seconds between two requests
+MISSES = 5           # pages in a row not read after which the day's collection stops
+WAIT_MIN, WAIT_MAX = 30, 120   # seconds waited after a page not read (Wikimedia's Retry-After within them)
+WAIT_BUDGET = 600    # seconds a day's collection may wait for Wikimedia, at most
 BATCH = 80           # games a Wikidata query asks for: more makes too long an address (414)
 DAILY = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{lang}.wikipedia/all-access/user/"
          "{article}/daily/{start}/{end}")
 PAGES = """
 SELECT ?tid ?article WHERE {{
   VALUES ?tid {{ {tids} }}
-  ?game wdt:P11072 ?tid.
+  ?game wdt:{prop} ?tid.
   ?article schema:about ?game; schema:isPartOf ?wiki.
   FILTER(?wiki IN ({wikis}))
 }}
 """
 
 
-def all_pages(tids, sparql, sleep=time.sleep):
-    """{title id: [(language, page title)]} for `tids`, asked of Wikidata BATCH at a time."""
+def app_id(value):
+    """A Steam app id as Wikidata gives it (P1733), or None."""
+    value = (value or "").strip()
+    return value if value.isdigit() else None
+
+
+# The platforms measured: (id, the Wikidata property of a game's id there, that id from Wikidata's value).
+PLATFORMS = ((build.SWITCH, "P11072", build.base_id), (steam.STEAM, "P1733", app_id))
+
+
+def all_pages(tids, sparql, sleep=time.sleep, prop="P11072", base_id=build.base_id):
+    """{game id: [(language, page title)]} for `tids`, asked of Wikidata BATCH at a time."""
     out = {}
     for i in range(0, len(tids), BATCH):
         if i:
             sleep(5)
-        out.update(pages(sparql(pages_query(tids[i:i + BATCH])), build.base_id))
+        out.update(pages(sparql(pages_query(tids[i:i + BATCH], prop)), base_id))
     return out
 
 
-def pages_query(tids):
+def pages_query(tids, prop="P11072"):
     wikis = ", ".join(f"<https://{lang}.wikipedia.org/>" for lang in LANGS)
-    return PAGES.format(tids=" ".join(f'"{t}"' for t in tids), wikis=wikis)
+    return PAGES.format(tids=" ".join(f'"{t}"' for t in tids), wikis=wikis, prop=prop)
+
+
+def top(popular):
+    """popular.json's TOP best known games, by score."""
+    return [tid for tid, _ in sorted(rows(popular).items(), key=lambda kv: -kv[1][0])[:TOP]]
 
 
 def pages(rows, base_id):
@@ -130,24 +151,48 @@ def trends_of(by_game, views_of, sleep=time.sleep):
 
 def fetch_daily(by_game, start, end, fetch, sleep=time.sleep):
     """{"lang:title": [views a day]} of the games' pages, asked in turn
-    (read_trends' order); a page refused or not reached (a network error,
-    an answer not read) is left out, and after five, no more: the ones read
-    so far kept."""
-    out, refused = {}, 0
+    (read_trends' order). A page refused for too many requests (429) is
+    asked again once, after as long as Wikimedia says (Retry-After, within
+    WAIT_MIN and WAIT_MAX), while the run has waited less than WAIT_BUDGET;
+    a page not read is left out, and after MISSES in a row, no more: the
+    ones read so far kept."""
+    out, missed, waited = {}, 0, 0
     for tid, langs in by_game.items():
         for lang, title in langs:
-            try:
-                out[f"{lang}:{title}"] = daily(lang, title, start, end, fetch)
-            except common.NOT_READ as e:
-                refused += 1
-                print(f"trends: {lang}:{title}: {common.why(e)}", file=sys.stderr)
-                if refused >= 5:
-                    print(f"trends: {refused} pages not read, stopped after {len(out)} pages", file=sys.stderr)
-                    return out
-                sleep(30)
+            if f"{lang}:{title}" in out:   # the same game on two platforms: its page read once
                 continue
+            for again in (False, True):
+                try:
+                    out[f"{lang}:{title}"] = daily(lang, title, start, end, fetch)
+                    missed = 0
+                    break
+                except common.NOT_READ as e:
+                    print(f"trends: {lang}:{title}: {common.why(e)}", file=sys.stderr)
+                    wait = retry_after(e)
+                    if not again and getattr(e, "code", None) == 429 and waited + wait <= WAIT_BUDGET:
+                        waited += wait
+                        sleep(wait)
+                        continue
+                    missed += 1
+                    if missed >= MISSES:
+                        print(f"trends: {missed} pages in a row not read, stopped after {len(out)} pages "
+                              f"({waited} s waited)", file=sys.stderr)
+                        return out
+                    sleep(wait)
+                    break
             sleep(PAUSE)
+    print(f"trends: {len(out)} pages read ({waited} s waited for Wikimedia)", file=sys.stderr)
     return out
+
+
+def retry_after(error):
+    """The seconds Wikimedia asks to wait (Retry-After), within WAIT_MIN and WAIT_MAX."""
+    headers = getattr(error, "headers", None) or {}
+    try:
+        wait = int(headers.get("Retry-After") or WAIT_MIN)
+    except (TypeError, ValueError):
+        wait = WAIT_MIN
+    return max(WAIT_MIN, min(WAIT_MAX, wait))
 
 
 def from_pages(by_game, pages):
@@ -168,34 +213,36 @@ def rows(popular):
             if isinstance(row, list) and len(row) >= 3 and isinstance(row[0], (int, float))}
 
 
-def updated(popular, trends, today):
+def updated(popular, trends, today, platform=build.SWITCH):
     """popular.json with the trends measured put in, the others' kept (and
     a row not of the shape known, as it is)."""
     known = rows(popular)
     games = {tid: [row[0], trends.get(tid, row[1]), *row[2:]] if tid in known else row
              for tid, row in popular["games"].items()}
-    return {**popular, "platform": build.SWITCH, "trends": today.isoformat(), "games": games}
+    return {**popular, "platform": platform, "trends": today.isoformat(), "games": games}
 
 
 def consolidate(src, out_dir, previous_dir, today):
-    """switch/popular.json with today's trends, from the sources collected."""
-    # None, or one of another schema: the weekly build makes the next one.
-    popular = common.previous_file(previous_dir, f"platforms/{build.SWITCH}/popular.json")
-    if not rows(popular):
-        print(f"trends: no platforms/{build.SWITCH}/popular.json of schema {common.SCHEMA} in {previous_dir}, nothing to redo",
-              file=sys.stderr)
-        return
-    by_game = pages(common.bindings(src("wikidata/switch-pages.json").get("rows") or []), build.base_id)
-    collected = common.collected_today(src, "wikipedia/daily.json", today)
-    if not by_game or not collected:
-        print("trends: no pages or views collected today, nothing changes", file=sys.stderr)
-        return
-    trends = from_pages(by_game, collected.get("pages") or {})
-    if trends is None:
-        return
+    """Each platform's popular.json with today's trends, from the sources collected."""
     report = []
-    common.publish(out_dir, f"platforms/{build.SWITCH}/popular.json", updated(popular, trends, today), previous_dir, report)
-    print(common.summary(report), file=sys.stderr)
+    for platform, _, base_id in PLATFORMS:
+        name = f"platforms/{platform}/popular.json"
+        # None, or one of another schema: the weekly build makes the next one.
+        popular = common.previous_file(previous_dir, name)
+        if not rows(popular):
+            print(f"trends: no {name} of schema {common.SCHEMA} in {previous_dir}, nothing to redo", file=sys.stderr)
+            continue
+        by_game = pages(common.bindings(src(f"wikidata/{platform}-pages.json").get("rows") or []), base_id)
+        collected = common.collected_today(src, "wikipedia/daily.json", today)
+        if not by_game or not collected:
+            print(f"trends: {platform}: no pages or views collected today, nothing changes", file=sys.stderr)
+            continue
+        trends = from_pages(by_game, collected.get("pages") or {})
+        if trends is None:
+            continue
+        common.publish(out_dir, name, updated(popular, trends, today, platform), previous_dir, report)
+    if report:
+        print(common.summary(report), file=sys.stderr)
 
 
 def main():

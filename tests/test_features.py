@@ -28,6 +28,11 @@ class Features(unittest.TestCase):
         self.assertEqual(got[B], {"series": [["Q1", "Saga"]]})
         self.assertNotIn(C, got)
 
+    def test_trait_labels_fall_back_to_mul(self):
+        # Many items (studios, platforms) have only a "mul" label now: asked after English.
+        query = features.TRAIT_QUERY.format(prop="P178")
+        self.assertIn('wikibase:language "en,mul"', query)
+
     def test_steam(self):
         rows = [{"tid": {"value": A}, "steam": {"value": "504230"}}, {"tid": {"value": A}, "steam": {"value": "400"}},
                 {"tid": {"value": B}, "steam": {"value": "x1"}}]

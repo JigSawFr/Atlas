@@ -2,16 +2,16 @@
 """Builds Atlas' data files, by Nintendo Switch title id, from open
 sources that need no key:
 
-- switch/popular.json: how well known each game is (a score from 0 to 100),
+- platforms/switch/popular.json: how well known each game is (a score from 0 to 100),
   whether it is read more lately (a trend, in percent) and what the critics
   gave it (0 to 100, 0 when unknown);
-- switch/upcoming.json: the games whose release date is still to come, with
+- platforms/switch/upcoming.json: the games whose release date is still to come, with
   their name and date (and how many follow them on IGDB, when known);
-- switch/games.json: each game's traits (series, developers, publishers,
+- platforms/switch/games.json: each game's traits (series, developers, publishers,
   genres, modes) and, for one also sold on Steam, its Steam audience;
-- switch/editions.json: a game's other editions (a Deluxe, a Complete
+- platforms/switch/editions.json: a game's other editions (a Deluxe, a Complete
   Edition…), each with the game it is one of (tools/editions.py);
-- switch/similar.json: the games most like each one, by their traits
+- platforms/switch/similar.json: the games most like each one, by their traits
   (tools/features.py), and for the others by what the eShop says of them
   (tools/text.py).
 
@@ -40,7 +40,7 @@ game is scored without views and none has a trend: no mixing of scales.
 Every source is asked beforehand (tools/collect.py), its answers kept in
 sources/; this makes the files from them, asking nothing.
 
-Usage: tools/build.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/switch/;
+Usage: tools/build.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/platforms/switch/;
 previous-dir: the last run's files, whose SteamSpy figures are kept for the
 games not asked; sources-dir: this run's sources, else the last run's)
 """
@@ -338,7 +338,7 @@ def steam_figures(src, apps, before):
 
 
 def consolidate(src, out_dir, previous_dir, today):
-    """switch/'s weekly files from the sources collected (tools/collect.py)."""
+    """platforms/switch/'s weekly files from the sources collected (tools/collect.py)."""
     before = previous_games(previous_dir) if previous_dir else {}
     report = []
     starts, end = months(today)

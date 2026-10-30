@@ -85,7 +85,7 @@ def views_known(src):
 
 
 def consolidate(src, out_dir, previous_dir, today):
-    """retro/'s files from the sources collected (tools/collect.py)."""
+    """The old machines' files (platforms/<machine>/) from the sources collected (tools/collect.py)."""
     report = []
     rows = common.bindings(src("wikidata/retro.json").get("rows") or [])
     known = build.games(rows, ident=qid)

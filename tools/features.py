@@ -37,7 +37,7 @@ STEAM_BUDGET = 600               # seconds spent on SteamSpy a run, at most (its
 TRAIT_QUERY = """
 SELECT ?tid ?value ?valueLabel WHERE {{
   ?game wdt:P11072 ?tid; wdt:{prop} ?value.
-  SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
+  SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en,mul". }}
 }}
 """
 STEAM_QUERY = """
@@ -62,7 +62,7 @@ def traits(rows_by_kind, base_id):
             if not tid or not value:
                 continue
             label = b.get("valueLabel", {}).get("value", "")
-            # No English label: Wikidata gives the id itself.
+            # No label in English nor in "mul" (the one for every language): Wikidata gives the id itself.
             if not label or label == value:
                 label = ""
             have = out.setdefault(tid, {}).setdefault(kind, [])

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Steam's files, by Steam app id, in steam/ (made every Monday, build.yml):
+"""Steam's files, by Steam app id, in platforms/steam/ (made every Monday, build.yml):
 
-- steam/popular.json: how well known each game is, [score, trend, critics],
-  as switch/popular.json, its Steam reviews weighing half;
-- steam/games.json: the GAMES_KEPT best known games' name, release day,
+- platforms/steam/popular.json: how well known each game is, [score, trend, critics],
+  as platforms/switch/popular.json, its Steam reviews weighing half;
+- platforms/steam/games.json: the GAMES_KEPT best known games' name, release day,
   Steam reviews, Wikidata item and traits (its franchise as series,
   developers, publishers, and its players' tags by id, their names in the
   file's `tags`);
-- steam/upcoming.json: the games still to come, [YYYYMMDD, name];
-- steam/similar.json: the games most like each one, by their traits.
+- platforms/steam/upcoming.json: the games still to come, [YYYYMMDD, name];
+- platforms/steam/similar.json: the games most like each one, by their traits.
 
 The games are those Wikidata gives a Steam app id (P1733, some 128,000
 items), and Steam's most played of last week; Steam's store
@@ -17,7 +17,7 @@ games and gives their name, reviews, release, franchise, developers,
 publishers and tags. A game's renown on Wikipedia (sitelinks, critics, the
 views of the best known) is weighed as the Switch's (tools/build.py).
 
-Usage: tools/steam.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/steam/, from
+Usage: tools/steam.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/platforms/steam/, from
 the sources tools/collect.py keeps: wikidata, steam-store, wikipedia)
 """
 import datetime
@@ -235,7 +235,7 @@ def views_known(src):
 
 
 def consolidate(src, out_dir, previous_dir, today):
-    """steam/'s weekly files from the sources collected (tools/collect.py)."""
+    """platforms/steam/'s weekly files from the sources collected (tools/collect.py)."""
     report = []
     rows = common.bindings(src("wikidata/steam.json").get("rows") or [])
     known = build.games(rows, ident=app_id)
@@ -266,7 +266,7 @@ def consolidate(src, out_dir, previous_dir, today):
     common.publish(out_dir, f"platforms/{STEAM}/upcoming.json", payload(
         "Steam's store (GetItems)", upcoming(games, today)), previous_dir, report)
     common.publish(out_dir, f"platforms/{STEAM}/similar.json", payload(
-        "steam/games.json's traits", similar(games, table)), previous_dir, report)
+        "platforms/steam/games.json's traits", similar(games, table)), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
 
 
