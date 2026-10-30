@@ -272,6 +272,7 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
         "platform_buttons": "\n".join(
             f'        <button type="button" data-platform="{k}">{n}</button>' for k, n in PLATFORMS
             if k in summary and k in STORE_IDS) if page == "explore" else "",
+        "machine_hidden": "" if any(k in summary and k not in STORE_IDS for k, _ in PLATFORMS) else " hidden",
         "machine_options": "\n".join(
             f'          <option value="{k}">{html.escape(n)}</option>' for k, n in PLATFORMS
             if k in summary and k not in STORE_IDS) if page == "explore" else "",
