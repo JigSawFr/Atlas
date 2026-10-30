@@ -95,8 +95,13 @@ class Guard(unittest.TestCase):
         os.makedirs(self.out)
         os.makedirs(self.last)
         build.write(os.path.join(self.last, "popular.json"), {"schema": 1, "games": {f"{i:016X}": [1, 0, 0] for i in range(100)}})
+        # The workflows set ALERTS for the run: these made-up files must not write to it.
+        from unittest import mock
+        self.env = mock.patch.dict(os.environ, {"ALERTS": os.path.join(self.tmp.name, "test-alerts.md")})
+        self.env.start()
 
     def tearDown(self):
+        self.env.stop()
         self.tmp.cleanup()
 
     def payload(self, n):
