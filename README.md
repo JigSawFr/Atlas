@@ -57,6 +57,16 @@ meaning), the day it was `generated` and its `source`; a platform's files
 also have their `platform` (`switch`, `steam`, `gog`, `xbox`, `retro`). In `switch/`, a game is a base game's
 title id (16 hex digits, upper case, ending in `000`).
 
+The schema moves up only when a field changes meaning (its unit, its type,
+or it goes). A reader skips the fields it does not know, and takes a file
+of another schema as no file. Schema 2 of a file will be published at a
+path of its own, `switch/v2/popular.json` next to `switch/popular.json`,
+both made at each run until the readers of schema 1 (PlayShelf's
+installed versions) are gone; only then does the old path stop. The tools
+read the last run's files back the same way: one of another schema counts
+as none (the guard lets the new file through, the lowest prices start over,
+the daily trends wait for the weekly build).
+
 `links.json`, made every Monday:
 
 ```json

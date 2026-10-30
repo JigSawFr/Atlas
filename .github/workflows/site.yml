@@ -9,9 +9,9 @@ name: site
 on:
   push:
     branches: [ main ]
-    paths: [ "site/**", "tools/build_site.py", "tools/site_data.py", "tools/check_site.py", "tools/site_layout.py", ".github/workflows/site.yml" ]
+    paths: [ "site/**", "tools/build_site.py", "tools/site_data.py", "tools/common.py", "tools/check_site.py", "tools/site_layout.py", ".github/workflows/site.yml" ]
   pull_request:
-    paths: [ "site/**", "tools/build_site.py", "tools/site_data.py", "tools/check_site.py", "tools/site_layout.py", ".github/workflows/site.yml" ]
+    paths: [ "site/**", "tools/build_site.py", "tools/site_data.py", "tools/common.py", "tools/check_site.py", "tools/site_layout.py", ".github/workflows/site.yml" ]
   workflow_run:
     workflows: [ build, daily ]
     types: [ completed ]

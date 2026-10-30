@@ -126,7 +126,7 @@ def main():
         name = f"{steam.STEAM}/prices/{country}.json"
         last = common.previous_file(previous_dir, name)
         common.publish(out_dir, name, {
-            "schema": 1, "platform": steam.STEAM, "generated": today, "country": country, "currency": currency,
+            "schema": common.SCHEMA, "platform": steam.STEAM, "generated": today, "country": country, "currency": currency,
             "since": last.get("since") or last.get("generated") or today,
             "source": "Steam's store (IStoreBrowseService/GetItems)",
             "games": with_lowest(rows, last.get("games") or {}, today)}, previous_dir, report)
