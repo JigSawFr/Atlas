@@ -48,6 +48,11 @@ jobs:
           IGDB_CLIENT_ID: ${{ secrets.IGDB_CLIENT_ID }}
           IGDB_CLIENT_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
         run: python3 tools/build.py out data-branch
+      # Each game's ids on every platform (links.json): one Wikidata query.
+      - name: Links
+        id: links
+        continue-on-error: true
+        run: python3 tools/links.py out data-branch
       - name: Publish to the data branch
         run: |
           cp -r out/. data-branch/
@@ -76,5 +81,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_STATUS: ${{ job.status }}
-          OUTCOMES: "archive=${{ steps.archive.outcome }} attestation=${{ steps.attest.outcome }}"
+          OUTCOMES: "links=${{ steps.links.outcome }} archive=${{ steps.archive.outcome }} attestation=${{ steps.attest.outcome }}"
         run: tools/alert.sh "${{ github.workflow }}"
