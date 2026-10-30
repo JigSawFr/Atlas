@@ -50,7 +50,7 @@ jobs:
         run: |
           cp out/*.json data-branch/
           tools/publish.sh data-branch "data: $(date -u +%Y-%m-%d)"
-      # The week's files kept as a release, each attested
+      # The week's files kept as a release, each and their zip attested
       # (`gh attestation verify popular.json -R JigSawFr/PlayInsights`).
       - name: Archive
         id: archive
@@ -64,7 +64,9 @@ jobs:
         continue-on-error: true
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: archive/*.json
+          subject-path: |
+            archive/*.json
+            archive/*.zip
       # Anything wrong (the job, a step that may fail, a file the guard
       # kept): an issue labelled data-alert, or a comment on the open one.
       - name: Alert
