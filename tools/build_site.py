@@ -26,7 +26,7 @@ import shutil
 import sys
 from datetime import date
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import site_data  # noqa: E402
@@ -71,6 +71,21 @@ COUNTRY = {"en": "US", "fr": "FR", "fr-CA": "CA", "de": "DE", "es": "ES", "es-41
 PLATFORMS = [("switch", "Nintendo Switch"), ("steam", "Steam"), ("gog", "GOG"), ("xbox", "Xbox"), ("retro", "Retro")]
 # The pages, by their path under each language's folder.
 PAGES = {"": "home", "explore/": "explore"}
+# Boréale's sites, in the header's menu (switcher()): boreale.dev's
+# reference (boreale/tools/build_site.py), then the open data and protocols,
+# this one and Lantern.
+SITES = [(None, [("boreale", "Boréale", "https://boreale.dev/")]),
+         ("sites_homebrew", [("playguard", "PlayGuard", "https://guard.boreale.dev/"),
+                             ("playshelf", "PlayShelf", "https://shelf.boreale.dev/")]),
+         ("sites_libraries", [("aurore", "Aurore", "https://aurore.boreale.dev/")]),
+         ("sites_open", [("atlas", "Atlas", "https://atlas.boreale.dev/"),
+                         ("lantern", "Lantern", "https://lantern.boreale.dev/")])]
+HERE = "atlas"
+# Where a visit to another of Boréale's sites came from, for Umami (Boréale's
+# audience rules): a link from this site to another *.boreale.dev site
+# carries utm_source=atlas and a utm_medium telling where on the page it is
+# ("nav" for the header's sites menu, "footer"). A link to this site carries none.
+UTM_SOURCE = "atlas"
 # A file made every day; the others every week (late past 2 and 9 days).
 DAILY = re.compile(r"(^|/)prices/|^switch/popular\.json$|^sources/(eshop|titledb|gog|wikipedia)/")
 
@@ -131,6 +146,48 @@ def day(text: str, language: str) -> str:
         return ""
     month = MONTHS[language][d.month - 1] if language in MONTHS else ""
     return DATES.get(language, "{d} {m} {y}").format(d=d.day, m=month, n=d.month, y=d.year)
+
+
+def utm(url: str, medium: str) -> str:
+    """`url` tagged for its medium, or as it is when it leads out of Boréale's
+    sites or to this site itself."""
+    u = urlsplit(url)
+    host = (u.hostname or "").lower()
+    if u.scheme != "https" or not (host == "boreale.dev" or host.endswith(".boreale.dev")):
+        return url
+    query = [(k, v) for k, v in parse_qsl(u.query, keep_blank_values=True) if not k.startswith("utm_")]
+    if host != (urlsplit(SITE_URL).hostname or ""):
+        query += [("utm_source", UTM_SOURCE), ("utm_medium", medium)]
+    return urlunsplit(u._replace(query=urlencode(query)))
+
+
+def switcher(language: str, catalog: dict, root: str) -> str:
+    """The header's name, a button that opens the menu of Boréale's sites
+    (site.css's and site.js's "site switcher" blocks, boreale.dev's), this
+    one marked and leading home. A popover: the browser closes it on Esc or
+    a click elsewhere. The other sites keep the origin and carry their UTM
+    tags (utm()); no versions: this build reads nothing from boreale.dev."""
+    label = catalog["sites_label"]
+    groups = []
+    for title, sites in SITES:
+        items = []
+        for key, name, url in sites:
+            if key == HERE:
+                link = f'href="{root}{folder(language)}" aria-current="true"'
+            else:
+                link = f'href="{html.escape(utm(url + folder(language), "nav"))}" referrerpolicy="strict-origin"'
+            soon = f'<em class="soon">{catalog["sites_soon"]}</em>' if key == "playshelf" else ""
+            items.append(f'<li><a {link}>'
+                         f'<img src="{root}assets/marks/{key}.svg" alt="" width="36" height="36">'
+                         f'<span><strong>{name}</strong><small>{catalog[f"sites_{key}"]}</small></span>{soon}</a></li>')
+        heading = f'<p class="sites-title">{catalog[title]}</p>' if title else ""
+        groups.append(f'        {heading}<ul>\n          ' + "\n          ".join(items) + '\n        </ul>')
+    return (f'<div class="switcher">\n'
+            f'      <button class="brand switch" type="button" popovertarget="sites" aria-label="Atlas · {label}">'
+            f'<img src="{root}assets/mark.svg" alt="" width="34" height="34">Atlas'
+            f'<svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>\n'
+            f'      <div id="sites" class="sites" popover aria-label="{label}">\n'
+            + "\n".join(groups) + '\n      </div>\n    </div>')
 
 
 def flag(language: str) -> str:
@@ -259,6 +316,7 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
         "first_visit": ' data-first-visit=""' if language == "en" and path == "" else "",
         "indexing": indexing(folder(language) + path) + "\n" + alternates(path),
         "languages": languages(language, catalog, root, path),
+        "switcher": switcher(language, catalog, root),
         "current_project": ' aria-current="page"' if page == "home" else "",
         "current_explore": ' aria-current="page"' if page == "explore" else "",
         "scripts": f'<script src="{root}assets/explore.js" defer></script>' if page == "explore" else "",

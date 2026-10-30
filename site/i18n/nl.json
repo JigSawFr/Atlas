@@ -139,5 +139,16 @@
   "x_keywords": "Trefwoorden",
   "x_perspectives": "Perspectieven",
   "x_tags": "Tags",
-  "x_not_found": "Deze game staat niet op de kaart."
+  "x_not_found": "Deze game staat niet op de kaart.",
+  "sites_label": "De projecten van Boréale",
+  "sites_homebrew": "Switch-homebrew",
+  "sites_libraries": "Bibliotheken",
+  "sites_boreale": "Homebrew voor de lange nachten",
+  "sites_playguard": "Ouderlijk toezicht, op de console",
+  "sites_playshelf": "Je gamebibliotheek, op de console",
+  "sites_aurore": "De interfacebibliotheek erachter",
+  "sites_soon": "Binnenkort",
+  "sites_open": "Open data en protocollen",
+  "sites_atlas": "Een kaart van alle games, op elk platform",
+  "sites_lantern": "Het protocol tussen servers en consoles"
 }

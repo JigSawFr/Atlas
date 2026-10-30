@@ -139,5 +139,16 @@
   "x_keywords": "Palavras-chave",
   "x_perspectives": "Perspetivas",
   "x_tags": "Etiquetas",
-  "x_not_found": "Este jogo não está no mapa."
+  "x_not_found": "Este jogo não está no mapa.",
+  "sites_label": "Os projetos Boréale",
+  "sites_homebrew": "Homebrew para Switch",
+  "sites_libraries": "Bibliotecas",
+  "sites_boreale": "Homebrew para as noites longas",
+  "sites_playguard": "Controlo parental, na consola",
+  "sites_playshelf": "A tua biblioteca de jogos, na consola",
+  "sites_aurore": "A biblioteca de interface por trás deles",
+  "sites_soon": "Em breve",
+  "sites_open": "Dados e protocolos abertos",
+  "sites_atlas": "Um mapa de todos os jogos, em todas as plataformas",
+  "sites_lantern": "O protocolo entre servidores e consolas"
 }

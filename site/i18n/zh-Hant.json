@@ -139,5 +139,16 @@
   "x_keywords": "關鍵字",
   "x_perspectives": "視角",
   "x_tags": "標籤",
-  "x_not_found": "這款遊戲不在地圖上。"
+  "x_not_found": "這款遊戲不在地圖上。",
+  "sites_label": "Boréale 的專案",
+  "sites_homebrew": "Switch 自製軟體",
+  "sites_libraries": "函式庫",
+  "sites_boreale": "為漫漫長夜而作的自製軟體",
+  "sites_playguard": "在主機上進行家長監護",
+  "sites_playshelf": "在主機上管理你的遊戲庫",
+  "sites_aurore": "它們背後的介面函式庫",
+  "sites_soon": "即將推出",
+  "sites_open": "開放資料與協定",
+  "sites_atlas": "所有平台上所有遊戲的地圖",
+  "sites_lantern": "伺服器與主機之間的協定"
 }

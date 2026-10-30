@@ -139,5 +139,16 @@
   "x_keywords": "키워드",
   "x_perspectives": "시점",
   "x_tags": "태그",
-  "x_not_found": "이 게임은 지도에 없습니다."
+  "x_not_found": "이 게임은 지도에 없습니다.",
+  "sites_label": "Boréale 프로젝트",
+  "sites_homebrew": "Switch 홈브루",
+  "sites_libraries": "라이브러리",
+  "sites_boreale": "긴 밤을 위한 홈브루",
+  "sites_playguard": "본체에서 자녀 보호",
+  "sites_playshelf": "본체에서 보는 게임 라이브러리",
+  "sites_aurore": "그 뒤의 UI 라이브러리",
+  "sites_soon": "출시 예정",
+  "sites_open": "열린 데이터와 프로토콜",
+  "sites_atlas": "모든 플랫폼의 모든 게임 지도",
+  "sites_lantern": "서버와 콘솔 사이의 프로토콜"
 }
