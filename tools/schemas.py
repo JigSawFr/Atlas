@@ -91,6 +91,23 @@ KINDS = {
                                                                             "attribution": {"type": "string"},
                                                                             "sha256": {"type": "string",
                                                                                        "pattern": "^[0-9a-f]{16}$"}}}}}},
+    "changes": {"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "What the run changed",
+                "type": "object", "required": ["schema", "generated", "platforms"],
+                "properties": {"schema": {"const": common.SCHEMA}, "generated": DATE, "source": {"type": "string"},
+                               "platforms": {"type": "object", "additionalProperties": {
+                                   "type": "object", "properties": {
+                                       "new": {"type": "array", "items": {"type": "string"}},
+                                       "out_today": {"type": "array", "items": {"type": "string"}},
+                                       "trends": {"type": "array", "items": {
+                                           "type": "array", "prefixItems": [{"type": "string"}, {"type": "integer"},
+                                                                            {"type": "integer"}]}},
+                                       "sales": {"type": "object", "additionalProperties": {
+                                           "type": "object", "additionalProperties": {
+                                               "type": "array", "items": {"type": "string"}}}}}}}}},
+    "history": file_schema("A month's prices, by game and country, on each day they changed: [[YYYYMMDD, regular, sale]]", {
+        "type": "object", "additionalProperties": {"type": "array", "items": {
+            "type": "array", "minItems": 3, "maxItems": 3, "prefixItems": [DAY, MONEY, MONEY]}}},
+        extra={"month": {"type": "string", "pattern": r"^\d{4}-\d{2}$"}}),
     "report": {"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "How the data is", "type": "object",
                "required": ["schema", "generated", "sources", "platforms"],
                "properties": {"schema": {"const": common.SCHEMA}, "generated": DATE, "run": {"enum": ["build", "daily"]},
@@ -116,12 +133,14 @@ def kind_of(path):
     """The kind of a data file, by its path on the branch (None: not a data file)."""
     if path.startswith("sources/"):
         return "source"
-    if path in ("links.json", "platforms.json", "index.json", "report.json"):
+    if path in ("links.json", "platforms.json", "index.json", "report.json", "changes.json"):
         return path[:-5]
-    m = re.match(r"^platforms/[a-z0-9-]+/(prices/[A-Z]{2}|popular|games|similar|upcoming|editions|names|gamepass)\.json$",
-                 path)
+    if re.match(r"^history/[a-z0-9-]+/\d{4}-\d{2}\.json$", path):
+        return "history"
+    m = re.match(r"^platforms/[a-z0-9-]+/(prices/[A-Z]{2}|popular|games|games\.lite|similar|upcoming|editions|names|"
+                 r"gamepass)\.json$", path)
     if m:
-        return "prices" if m.group(1).startswith("prices/") else m.group(1)
+        return "prices" if m.group(1).startswith("prices/") else m.group(1).replace(".lite", "")
     return None
 
 
