@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://gateway.umami.is; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <title>{{title}}</title>
 <meta name="description" content="{{description}}">
 <meta name="theme-color" content="#0b1424">
@@ -26,6 +26,7 @@
 <script src="{{root}}assets/lang.js"></script>
 <script src="{{root}}assets/site.js" defer></script>
 {{scripts}}
+{{audience}}
 </head>
 <body class="{{page}}" data-root="{{root}}" data-lang="{{lang}}">
 <a class="skip" href="#main">{{skip}}</a>
@@ -55,6 +56,7 @@
         <li><a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a></li>
         <li><a href="https://github.com/JigSawFr/Atlas/releases" referrerpolicy="strict-origin">{{footer_releases}}</a></li>
         <li><a href="https://boreale.dev/{{home}}" referrerpolicy="strict-origin">Boréale</a></li>
+        <li><a href="https://boreale.dev/{{home}}legal/" referrerpolicy="strict-origin">{{footer_legal}}</a></li>
         <li><a href="mailto:contact@boreale.dev">contact@boreale.dev</a></li>
       </ul>
     </nav>
