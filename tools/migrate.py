@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-"""The data branch as it was before each platform had its folder: the
-Switch's files at its root (popular.json, games.json, similar.json,
-upcoming.json, editions.json, prices/<country>.json) moved into switch/,
-so a run reads them there as the last run's (the guard's counts, the
-lowest prices, the trends' scores). A file already in switch/ wins, and
-the root's copy goes. Run on a branch already moved, it does nothing.
+"""The data branch as it was before, moved to today's folders, so a run
+reads the last run's files where it writes its own (the guard's counts, the
+lowest prices and their `since`, the trends' scores):
+
+- before each platform had its folder, the Switch's files were at its root
+  (popular.json, games.json, similar.json, upcoming.json, editions.json,
+  prices/<country>.json): moved into platforms/switch/;
+- before platforms/, each platform's folder was at the root (switch/,
+  steam/, gog/, xbox/): moved into platforms/<id>/; retro/ (all the old
+  machines in one folder, now one folder each) goes.
+
+A file already where it goes wins, and the old copy goes. Run on a branch
+already moved, it does nothing.
 
 Usage: tools/migrate.py <data-dir>   (the data branch's worktree, before a run)
 """
@@ -14,6 +21,9 @@ import sys
 
 SWITCH = "switch"
 ROOT_FILES = ("popular.json", "games.json", "similar.json", "upcoming.json", "editions.json")
+FOLDERS = ("switch", "steam", "gog", "xbox")
+GONE = ("retro",)
+TARGET = "platforms"
 
 
 def legacy(directory):
@@ -25,27 +35,47 @@ def legacy(directory):
     return found
 
 
+def move(old, new, moved, name):
+    if os.path.exists(new):
+        os.remove(old)
+    else:
+        os.makedirs(os.path.dirname(new), exist_ok=True)
+        shutil.move(old, new)
+        moved.append(name)
+
+
+def prune(folder):
+    """Empty folders under `folder` removed, `folder` too when it is left empty."""
+    for root, dirs, files in os.walk(folder, topdown=False):
+        if not os.listdir(root):
+            os.rmdir(root)
+
+
 def migrate(directory):
-    """Moves the root's Switch files into switch/; the moved paths."""
+    """Moves the old places' files to today's; the moved paths."""
     moved = []
     for name in legacy(directory):
-        old = os.path.join(directory, name)
-        new = os.path.join(directory, SWITCH, name)
-        if os.path.exists(new):
-            os.remove(old)
-        else:
-            os.makedirs(os.path.dirname(new), exist_ok=True)
-            shutil.move(old, new)
-            moved.append(name)
-    prices = os.path.join(directory, "prices")
-    if os.path.isdir(prices) and not os.listdir(prices):
-        os.rmdir(prices)
+        move(os.path.join(directory, name), os.path.join(directory, TARGET, SWITCH, name), moved, name)
+    for folder in FOLDERS:
+        base = os.path.join(directory, folder)
+        if not os.path.isdir(base):
+            continue
+        for root, _, files in os.walk(base):
+            for f in sorted(files):
+                rel = os.path.relpath(os.path.join(root, f), directory)
+                move(os.path.join(directory, rel), os.path.join(directory, TARGET, rel), moved, rel)
+        prune(base)
+    for folder in GONE:
+        if os.path.isdir(os.path.join(directory, folder)):
+            shutil.rmtree(os.path.join(directory, folder))
+    if os.path.isdir(os.path.join(directory, "prices")):
+        prune(os.path.join(directory, "prices"))
     return moved
 
 
 def main():
     moved = migrate(sys.argv[1])
-    print(f"migrate: {len(moved)} files moved into {SWITCH}/" if moved else "migrate: nothing to move", file=sys.stderr)
+    print(f"migrate: {len(moved)} files moved into {TARGET}/" if moved else "migrate: nothing to move", file=sys.stderr)
 
 
 if __name__ == "__main__":

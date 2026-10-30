@@ -20,25 +20,25 @@ def put(base, path, body):
 
 def sample(base):
     """A data branch of made-up games: two Switch games, three Steam ones."""
-    put(base, "switch/popular.json", {"schema": 1, "generated": "2026-11-02",
+    put(base, "platforms/switch/popular.json", {"schema": 1, "generated": "2026-11-02",
                                       "games": {"0100A1B2C3D4E000": [80, 12, 90], "0100F0F0F0F0F000": [20, 0, 0]}})
-    put(base, "switch/games.json", {"schema": 1, "games": {"0100A1B2C3D4E000": {
+    put(base, "platforms/switch/games.json", {"schema": 1, "games": {"0100A1B2C3D4E000": {
         "series": [["Q900100", "Amber Saga"]], "developers": [["Q900200", "Tiny Owl"]], "steam": {"app": 900010, "owners": 5000}}}})
-    put(base, "switch/upcoming.json", {"schema": 1, "games": {"0100C0C0C0C0C000": [20261204, "Frost Harbor"]}})
-    put(base, "switch/similar.json", {"schema": 1, "games": {"0100A1B2C3D4E000": [["0100C0C0C0C0C000", 55]]}})
-    put(base, "switch/editions.json", {"schema": 1, "games": {"0100F0F0F0F0F000": "0100A1B2C3D4E000"}})
-    put(base, "switch/prices/FR.json", {"schema": 1, "country": "FR", "currency": "EUR", "generated": "2026-11-02",
+    put(base, "platforms/switch/upcoming.json", {"schema": 1, "games": {"0100C0C0C0C0C000": [20261204, "Frost Harbor"]}})
+    put(base, "platforms/switch/similar.json", {"schema": 1, "games": {"0100A1B2C3D4E000": [["0100C0C0C0C0C000", 55]]}})
+    put(base, "platforms/switch/editions.json", {"schema": 1, "games": {"0100F0F0F0F0F000": "0100A1B2C3D4E000"}})
+    put(base, "platforms/switch/prices/FR.json", {"schema": 1, "country": "FR", "currency": "EUR", "generated": "2026-11-02",
                                         "games": {"0100A1B2C3D4E000": [39.99, 19.99, 20261110, 19.99, 20261102],
                                                   "0100F0F0F0F0F000": [1.99, 0.99, 20261110, 0.99, 20261102]}})
-    put(base, "steam/popular.json", {"schema": 1, "generated": "2026-11-02",
+    put(base, "platforms/steam/popular.json", {"schema": 1, "generated": "2026-11-02",
                                      "games": {"900010": [70, 5, 0], "900020": [40, -3, 0], "900030": [10, 0, 0]}})
-    put(base, "steam/games.json", {"schema": 1, "tags": {"19": "Action"},
+    put(base, "platforms/steam/games.json", {"schema": 1, "tags": {"19": "Action"},
                                    "games": {"900010": {"name": "Amber Lantern", "qid": "Q900001", "tags": [19]},
                                              "900020": {"name": "Moss & Märchen"}}})
     put(base, "links.json", {"schema": 1, "games": {"Q900001": {"switch": ["0100A1B2C3D4E000"], "steam": ["900010"],
                                                                 "gog": ["amber_lantern"]}}})
-    put(base, "index.json", {"schema": 1, "files": {"switch/popular.json": {"generated": "2026-11-02", "bytes": 120, "sha256": "0" * 16},
-                                                    "switch/prices/FR.json": {"generated": "2026-11-02", "bytes": 90, "sha256": "1" * 16}}})
+    put(base, "index.json", {"schema": 1, "files": {"platforms/switch/popular.json": {"generated": "2026-11-02", "bytes": 120, "sha256": "0" * 16},
+                                                    "platforms/switch/prices/FR.json": {"generated": "2026-11-02", "bytes": 90, "sha256": "1" * 16}}})
 
 
 class SiteData(unittest.TestCase):
@@ -111,7 +111,7 @@ class Build(unittest.TestCase):
                 page = f.read()
             self.assertIn('<html lang="fr"', page)
             self.assertIn('"_country":"FR"', page)
-            self.assertTrue(os.path.isfile(os.path.join(out, "data/switch/prices/FR.json")))
+            self.assertTrue(os.path.isfile(os.path.join(out, "data/platforms/switch/prices/FR.json")))
             with open(os.path.join(out, "CNAME"), encoding="utf-8") as f:
                 self.assertEqual(f.read().strip(), "atlas.boreale.dev")
 

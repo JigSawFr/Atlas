@@ -88,6 +88,8 @@
   "closing_title": "Trouvez votre chemin, jeu par jeu",
   "closing_text": "L'explorateur lit les mêmes fichiers : cherchez un jeu, comparez son prix d'un pays à l'autre, trouvez ceux qui lui ressemblent.",
   "x_platform": "Plateforme",
+  "x_machine": "Machine ancienne",
+  "x_machine_pick": "Choisir…",
   "x_view": "Liste",
   "x_popular": "Les plus connus",
   "x_trending": "Tendances",

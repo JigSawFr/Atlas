@@ -131,7 +131,7 @@ def consolidate(src, out_dir, previous_dir, today):
             continue
         rows = rows_of(collected.get("games") or {})
         print(f"{country}: {len(rows)} games, {sum(1 for r in rows.values() if r[1])} on sale", file=sys.stderr)
-        name = f"{steam.STEAM}/prices/{country}.json"
+        name = f"platforms/{steam.STEAM}/prices/{country}.json"
         last = common.previous_file(previous_dir, name)
         common.publish(out_dir, name, {
             "schema": 1, "platform": steam.STEAM, "generated": today, "country": country, "currency": currency,

@@ -216,13 +216,13 @@ def catalog(src, out_dir, previous_dir, today):
         return {"schema": 1, "platform": GOG, "generated": today.isoformat(), **extra, "source": source,
                 "games": entries}
     by_id = lambda d: dict(sorted(d.items(), key=lambda kv: int(kv[0])))   # noqa: E731
-    common.publish(out_dir, f"{GOG}/games.json", payload("GOG's catalog, Wikidata (P2725)", by_id(games)),
+    common.publish(out_dir, f"platforms/{GOG}/games.json", payload("GOG's catalog, Wikidata (P2725)", by_id(games)),
                    previous_dir, report)
-    common.publish(out_dir, f"{GOG}/popular.json", payload(
+    common.publish(out_dir, f"platforms/{GOG}/popular.json", payload(
         "Wikidata (P2725, sitelinks, P444 with P7887), Wikimedia pageviews (en.wikipedia), GOG's reviews and trending",
         table, month=starts[-1].strftime("%Y-%m"), views=bool(read)), previous_dir, report)
-    common.publish(out_dir, f"{GOG}/upcoming.json", payload("GOG's catalog", coming), previous_dir, report)
-    common.publish(out_dir, f"{GOG}/similar.json", payload(
+    common.publish(out_dir, f"platforms/{GOG}/upcoming.json", payload("GOG's catalog", coming), previous_dir, report)
+    common.publish(out_dir, f"platforms/{GOG}/similar.json", payload(
         "gog/games.json's traits", features.similar(traits, max_shared=300)), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
 
@@ -239,7 +239,7 @@ def prices(src, out_dir, previous_dir, today):
             row = price_of(product)
             if row:
                 rows[str(product["id"])] = row
-        name = f"{GOG}/prices/{country}.json"
+        name = f"platforms/{GOG}/prices/{country}.json"
         last = common.previous_file(previous_dir, name) if previous_dir else {}
         common.publish(out_dir, name, {
             "schema": 1, "platform": GOG, "generated": today.isoformat(), "country": country, "currency": currency,

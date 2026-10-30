@@ -29,6 +29,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import platforms  # noqa: E402
 import site_data  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -62,11 +63,13 @@ OG_LOCALES = {"en": "en_US", "fr": "fr_FR", "fr-CA": "fr_CA", "de": "de_DE", "es
 COUNTRY = {"en": "US", "fr": "FR", "fr-CA": "CA", "de": "DE", "es": "ES", "es-419": "MX", "it": "IT",
            "nl": "NL", "pt": "PT", "pt-BR": "BR", "ja": "JP"}
 # The platforms, in their order: those the data has are live, the others coming.
-PLATFORMS = [("switch", "Nintendo Switch"), ("steam", "Steam"), ("gog", "GOG"), ("xbox", "Xbox"), ("retro", "Retro")]
+PLATFORMS = [(p[0], p[1]) for p in platforms.STORES] + [(p[0], p[1]) for p in platforms.RETRO]
+STORE_IDS = {p[0] for p in platforms.STORES}
+MACHINES = "|".join(re.escape(p[0]) for p in platforms.RETRO)
 # The pages, by their path under each language's folder.
 PAGES = {"": "home", "explore/": "explore"}
 # A file made every day; the others every week (late past 2 and 9 days).
-DAILY = re.compile(r"(^|/)prices/|^switch/popular\.json$|^sources/(eshop|titledb|gog|wikipedia)/")
+DAILY = re.compile(r"(^|/)prices/|^platforms/switch/popular\.json$|^sources/(eshop|titledb|gog|wikipedia)/")
 
 # Numbers and sizes as each language writes them: the thousands' and the
 # decimals' marks, the units.
@@ -163,10 +166,15 @@ def alternates(path_in: str) -> str:
 
 
 def platform_cards(language: str, catalog: dict, root: str, summary: dict) -> str:
+    """A card a store, then one for every old machine together (retro)."""
+    machines = [k for k, _ in PLATFORMS if k not in STORE_IDS and k in summary]
+    retro = {"games": sum(summary[k]["games"] for k in machines), "countries": [],
+             "generated": max((summary[k].get("generated") or "" for k in machines), default="")}
     cards = []
-    for key, name in PLATFORMS:
-        live = key in summary
-        s = summary.get(key) or {}
+    for key, name in [(k, n) for k, n in PLATFORMS if k in STORE_IDS] + [("retro", "Retro")]:
+        s = retro if key == "retro" else (summary.get(key) or {})
+        live = bool(machines) if key == "retro" else key in summary
+        target = machines[0] if key == "retro" and machines else key
         facts = ""
         if live:
             items = [catalog["platform_games"].replace("{n}", number(s["games"], language))]
@@ -175,7 +183,7 @@ def platform_cards(language: str, catalog: dict, root: str, summary: dict) -> st
             if s.get("generated"):
                 items.append(catalog["platform_updated"].replace("{date}", day(s["generated"], language)))
             facts = '<ul class="facts">' + "".join(f"<li>{i}</li>" for i in items) + "</ul>"
-            more = f'<a class="more" href="{root}{folder(language)}explore/#{key}/popular">{catalog["platform_explore"]}</a>'
+            more = f'<a class="more" href="{root}{folder(language)}explore/#{target}/popular">{catalog["platform_explore"]}</a>'
             state = f'<span class="state live">{catalog["platform_live"]}</span>'
         else:
             more = ""
@@ -201,6 +209,8 @@ def file_rows(language: str, catalog: dict, index: dict) -> str:
         key = re.sub(r"prices/[A-Z]{2}\.json$", "prices/<country>.json", name)
         # A source's files in one row (they are not copied here: sources/ stays on the data branch).
         key = re.sub(r"^(sources/[^/]+/).*$", r"\1…", key)
+        # The old machines' files, one row a kind of file.
+        key = re.sub(rf"^platforms/({MACHINES})/", "platforms/<machine>/", key)
         g = groups.setdefault(key, {"bytes": 0, "generated": "", "n": 0, "name": name})
         g["bytes"] += f.get("bytes", 0)
         g["generated"] = max(g["generated"], f.get("generated") or "")
@@ -260,8 +270,11 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
         "platform_cards": platform_cards(language, catalog, root, summary) if page == "home" else "",
         "file_rows": file_rows(language, catalog, index) if page == "home" else "",
         "platform_buttons": "\n".join(
-            f'        <button type="button" data-platform="{k}">{n}</button>' for k, n in PLATFORMS if k in summary)
-        if page == "explore" else "",
+            f'        <button type="button" data-platform="{k}">{n}</button>' for k, n in PLATFORMS
+            if k in summary and k in STORE_IDS) if page == "explore" else "",
+        "machine_options": "\n".join(
+            f'          <option value="{k}">{html.escape(n)}</option>' for k, n in PLATFORMS
+            if k in summary and k not in STORE_IDS) if page == "explore" else "",
         "strings": strings(catalog, language, summary) if page == "explore" else "",
     })
     values["body"] = fill(body, values)

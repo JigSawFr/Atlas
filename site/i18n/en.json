@@ -88,6 +88,8 @@
   "closing_title": "Find your way, game by game",
   "closing_text": "The explorer reads the same files: search a game, compare its prices from country to country, find the ones like it.",
   "x_platform": "Platform",
+  "x_machine": "Older machine",
+  "x_machine_pick": "Choose one…",
   "x_view": "List",
   "x_popular": "Best known",
   "x_trending": "Trending",

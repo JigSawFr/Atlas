@@ -50,10 +50,11 @@ def read(path):
 
 
 def platforms(data_dir: str) -> list:
-    """The platforms the data has: each folder with a popular.json."""
+    """The platforms the data has: each folder of platforms/ with a popular.json."""
     out = []
-    for name in sorted(os.listdir(data_dir)):
-        if os.path.isfile(os.path.join(data_dir, name, "popular.json")):
+    base = os.path.join(data_dir, "platforms")
+    for name in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+        if os.path.isfile(os.path.join(base, name, "popular.json")):
             out.append(name)
     return out
 
@@ -81,7 +82,7 @@ def trait_names(game: dict, tags: dict) -> dict:
 
 
 def platform_files(data_dir: str, platform: str) -> dict:
-    base = os.path.join(data_dir, platform)
+    base = os.path.join(data_dir, "platforms", platform)
     files = {k: read(os.path.join(base, f"{k}.json")) or {} for k in ("popular", "games", "upcoming", "similar", "editions")}
     prices = {}
     pdir = os.path.join(base, "prices")

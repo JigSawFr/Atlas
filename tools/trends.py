@@ -168,7 +168,7 @@ def updated(popular, trends, today):
 
 def consolidate(src, out_dir, previous_dir, today):
     """switch/popular.json with today's trends, from the sources collected."""
-    with open(os.path.join(previous_dir, build.SWITCH, "popular.json"), encoding="utf-8") as f:
+    with open(os.path.join(previous_dir, "platforms", build.SWITCH, "popular.json"), encoding="utf-8") as f:
         popular = json.load(f)
     if popular.get("schema") != 1:
         sys.exit("trends: popular.json is not of schema 1")
@@ -181,7 +181,7 @@ def consolidate(src, out_dir, previous_dir, today):
     if trends is None:
         return
     report = []
-    common.publish(out_dir, f"{build.SWITCH}/popular.json", updated(popular, trends, today), previous_dir, report)
+    common.publish(out_dir, f"platforms/{build.SWITCH}/popular.json", updated(popular, trends, today), previous_dir, report)
     print(common.summary(report), file=sys.stderr)
 
 

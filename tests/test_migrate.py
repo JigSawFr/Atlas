@@ -1,5 +1,6 @@
-"""tools/migrate.py: the Switch's files moved from the data branch's root into
-switch/, read there by the next run as the last run's."""
+"""tools/migrate.py: the old places' files (the Switch's at the root, each
+platform's folder at the root) moved into platforms/<id>/, read there by the
+next run as the last run's."""
 import json
 import os
 import sys
@@ -34,24 +35,37 @@ class Migrate(unittest.TestCase):
         self.put("index.json", {})
         moved = migrate.migrate(self.dir)
         self.assertEqual(len(moved), 6)
-        self.assertEqual(sorted(os.listdir(self.dir)), ["index.json", "switch"])
+        self.assertEqual(sorted(os.listdir(self.dir)), ["index.json", "platforms"])
         # The next run's guard and lowest prices read them there.
-        self.assertEqual(common.count_in(os.path.join(self.dir, "switch", "popular.json")), 1)
-        last = common.previous_file(self.dir, "switch/prices/FR.json")
+        self.assertEqual(common.count_in(os.path.join(self.dir, "platforms", "switch", "popular.json")), 1)
+        last = common.previous_file(self.dir, "platforms/switch/prices/FR.json")
         self.assertEqual(last["games"][A][3:], [4.99, 20261001])
 
     def test_switch_folder_wins(self):
         self.put("popular.json", {A: [1, 0, 0]})
-        self.put("switch/popular.json", {A: [2, 0, 0], "0100000000020000": [1, 0, 0]})
+        self.put("platforms/switch/popular.json", {A: [2, 0, 0], "0100000000020000": [1, 0, 0]})
         self.assertEqual(migrate.migrate(self.dir), [])
         self.assertFalse(os.path.exists(os.path.join(self.dir, "popular.json")))
-        self.assertEqual(common.count_in(os.path.join(self.dir, "switch", "popular.json")), 2)
+        self.assertEqual(common.count_in(os.path.join(self.dir, "platforms", "switch", "popular.json")), 2)
+
+    def test_folders_move(self):
+        self.put("switch/prices/FR.json", {A: [9.99, 0, 0, 4.99, 20261001]})
+        self.put("steam/games.json", {"900010": {}})
+        self.put("gog/prices/US.json", {})
+        self.put("platforms/xbox/games.json", {"9ZZZZZZZZZZ1": {}})
+        self.put("xbox/games.json", {})
+        self.put("retro/games.json", {"Q900001": {}})
+        moved = migrate.migrate(self.dir)
+        self.assertEqual(sorted(moved), ["gog/prices/US.json", "steam/games.json", "switch/prices/FR.json"])
+        self.assertEqual(sorted(os.listdir(self.dir)), ["platforms"])
+        self.assertEqual(sorted(os.listdir(os.path.join(self.dir, "platforms"))), ["gog", "steam", "switch", "xbox"])
+        self.assertEqual(common.count_in(os.path.join(self.dir, "platforms", "xbox", "games.json")), 1)
 
     def test_again_does_nothing(self):
         self.put("prices/JP.json", {})
         migrate.migrate(self.dir)
         self.assertEqual(migrate.migrate(self.dir), [])
-        self.assertTrue(os.path.exists(os.path.join(self.dir, "switch", "prices", "JP.json")))
+        self.assertTrue(os.path.exists(os.path.join(self.dir, "platforms", "switch", "prices", "JP.json")))
         self.assertFalse(os.path.exists(os.path.join(self.dir, "prices")))
 
 

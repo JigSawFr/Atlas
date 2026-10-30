@@ -88,6 +88,8 @@
   "closing_title": "ゲームごとに道を見つけよう",
   "closing_text": "エクスプローラーは同じファイルを読みます。ゲームを探し、国ごとの価格を比べ、似ているゲームを見つけましょう。",
   "x_platform": "プラットフォーム",
+  "x_machine": "過去の機種",
+  "x_machine_pick": "選択…",
   "x_view": "リスト",
   "x_popular": "有名なゲーム",
   "x_trending": "トレンド",

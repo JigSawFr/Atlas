@@ -88,6 +88,8 @@
   "closing_title": "Finde deinen Weg, Spiel für Spiel",
   "closing_text": "Der Explorer liest dieselben Dateien: Suche ein Spiel, vergleiche seinen Preis von Land zu Land, finde die, die ihm ähneln.",
   "x_platform": "Plattform",
+  "x_machine": "Ältere Plattform",
+  "x_machine_pick": "Auswählen…",
   "x_view": "Liste",
   "x_popular": "Bekannteste",
   "x_trending": "Im Trend",

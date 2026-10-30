@@ -88,6 +88,8 @@
   "closing_title": "Vind je weg, game voor game",
   "closing_text": "De verkenner leest dezelfde bestanden: zoek een game, vergelijk zijn prijs van land tot land, vind de games die erop lijken.",
   "x_platform": "Platform",
+  "x_machine": "Ouder platform",
+  "x_machine_pick": "Kies…",
   "x_view": "Lijst",
   "x_popular": "Bekendste",
   "x_trending": "Trending",
