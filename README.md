@@ -290,8 +290,12 @@ branch: the platforms' files are then made from these, asking nothing more
 | `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records (with its keys only) | Monday |
 | `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (their pages' views a day, 8 languages) | Monday, every day |
 
-Each file says its source, its licence or terms, and the day it was
-collected (`generated`).
+Each file says its source, its licence or terms, the day it was
+collected (`generated`) and its `schema` (1), which moves up like a
+platform file's: a new field keeps it, a field changing meaning moves it.
+A tool reads a source file of another schema as no file (the guard lets
+the new one through, the platform's file is made from the last run's or
+left as it was), and skips the fields it does not know.
 
 | Source | What it gives | Licence |
 |---|---|---|

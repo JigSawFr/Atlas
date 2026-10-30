@@ -54,8 +54,8 @@ TITLEDB_SHORT = ("id", "nsuId", "name", "releaseDate", "isDemo")
 
 
 def payload(name, today, source, licence, **records):
-    return {"schema": 1, "source_id": name, "generated": today.isoformat(), "source": source,
-            "license": licence, **records}
+    return {"source_id": name, "generated": today.isoformat(), "source": source,
+            "license": licence, **records, "schema": common.SOURCE_SCHEMA}
 
 
 def wikidata_weekly():
