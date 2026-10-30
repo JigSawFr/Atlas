@@ -20,7 +20,9 @@
   (referrerpolicy="strict-origin", no noreferrer), so GitHub's Traffic
   page still shows where visits come from;
 - the explorer's texts (its application/json data) read as JSON, and with a
-  data copy built in, each platform's x/<platform>/lists.json and shards.
+  data copy built in, each platform's x/<platform>/lists.json and shards;
+- its size: GitHub Pages takes a site of 1 GB at most; past SIZE_WARN a
+  warning in the run (time to cut data/ or x/), past SIZE_MAX an error.
 """
 import json
 import os
@@ -32,6 +34,13 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
+SIZE_WARN = 500 * 1000 ** 2   # bytes: half of what Pages takes
+SIZE_MAX = 900 * 1000 ** 2    # bytes: a margin below Pages' 1 GB
+
+
+def size(site: Path) -> int:
+    """The site's bytes, every file counted."""
+    return sum(p.stat().st_size for p in site.rglob("*") if p.is_file())
 
 
 def own(href: str) -> bool:
@@ -174,11 +183,17 @@ def main() -> None:
         if shards != list(range(body.get("shards", 0))):
             errors.append(f"{lists.parent.relative_to(site)}: {len(shards)} shards, not {body.get('shards')}")
 
+    total = size(site)
+    if total > SIZE_MAX:
+        errors.append(f"{total / 1e6:.0f} MB, more than {SIZE_MAX / 1e6:.0f} MB (GitHub Pages takes 1 GB at most)")
+    elif total > SIZE_WARN:
+        print(f"::warning::check_site: {total / 1e6:.0f} MB, past {SIZE_WARN / 1e6:.0f} MB: GitHub Pages takes 1 GB at most")
+
     for e in errors:
         print(f"check_site: {e}")
     if errors:
         sys.exit(1)
-    print(f"check_site: {len(pages)} pages, {len(catalogs)} catalogs, nothing wrong")
+    print(f"check_site: {len(pages)} pages, {len(catalogs)} catalogs, {total / 1e6:.1f} MB, nothing wrong")
 
 
 if __name__ == "__main__":

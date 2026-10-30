@@ -5,7 +5,7 @@
 ```sh
 git clone --depth 1 -b data https://github.com/JigSawFr/Atlas data   # the data branch
 python3 tools/build_site.py build data    # the pages, data/ and x/ (some 80 MB)
-python3 tools/check_site.py build         # links, catalogs, CSP, the explorer's shards
+python3 tools/check_site.py build         # links, catalogs, CSP, the explorer's shards, its size (Pages: 1 GB)
 python3 -m http.server -d build           # then http://localhost:8000/
 SITE_AXE=axe.min.js python3 tools/site_layout.py build   # phones to desktop, with axe (Playwright)
 ```

@@ -177,3 +177,19 @@ class Referrer(unittest.TestCase):
                                     f'<a href="https://atlas.boreale.dev/?utm_source=github"{own}>Atlas</a>'
                                     '<a href="https://store.example.com/?utm_source=atlas" rel="noreferrer">store</a>')
         self.assertEqual(len(problems), 3)
+
+
+class Size(unittest.TestCase):
+    """The site's size against what GitHub Pages takes (1 GB)."""
+
+    def test_size(self):
+        import check_site
+        with tempfile.TemporaryDirectory() as tmp:
+            os.makedirs(os.path.join(tmp, "x", "steam"))
+            for name, n in (("index.html", 100), ("x/steam/lists.json", 250)):
+                with open(os.path.join(tmp, name), "wb") as f:
+                    f.write(b"a" * n)
+            from pathlib import Path
+            self.assertEqual(check_site.size(Path(tmp)), 350)
+        self.assertLess(check_site.SIZE_WARN, check_site.SIZE_MAX)
+        self.assertLess(check_site.SIZE_MAX, 1000 ** 3)
