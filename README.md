@@ -41,6 +41,7 @@ jsDelivr. Each platform has a folder of its own in `platforms/`, by its id
 | `platforms/gog/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/gog/prices/FR.json` |
 | `platforms/xbox/popular.json`, `platforms/xbox/games.json`, `platforms/xbox/gamepass.json`, `platforms/xbox/upcoming.json`, `platforms/xbox/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/xbox/popular.json`… |
 | `platforms/xbox/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/xbox/prices/FR.json` |
+| `platforms/3ds/games.json`, `popular.json`, `similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/3ds/games.json`… |
 | `platforms/<machine>/popular.json`, `games.json`, `similar.json` (the old machines: `nes`, `snes`, `gba`, `ps2`…) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/nes/popular.json`… |
 | `platforms.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms.json` |
 | `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/links.json` |
@@ -56,7 +57,9 @@ the trends and the lowest prices; `retro/` made way for a folder a machine.
 `platforms.json` is the platforms' registry, `{"platforms": {id: {name,
 qid, igdb, aurore, kind}}}`: its Wikidata item, its IGDB platform (slug),
 [Aurore](https://github.com/JigSawFr/Aurore)'s id when Aurore runs there
-(`switch`, `3ds`, `psv`…: the same ids), and `store` or `retro`. It has a
+(`switch`, `3ds`, `psv`…: the same ids), and its kind: `store`, `console`
+(no store sells its games any more, but it has a source of its own: the 3DS)
+or `retro` (Wikidata alone). It has a
 `schema` like every file: a reader skips an entry's fields, and a kind, it
 does not know.
 
@@ -245,12 +248,40 @@ and the Game Pass's (some 6,700), from the store's catalog
   lowest_day]` as `platforms/switch/prices/`, for the 13 countries. The store's short
   answer doesn't say when a sale ends: `until` is 0. A free game is left out.
 
+### Nintendo 3DS
+
+`platforms/3ds/`, every Monday (`tools/n3ds.py`), a game a family: one game
+across its regions, by its product code's serial (`"CTR-AKD"` for the
+`CTR-N-AKDJ`, `CTR-N-AKDE`… of its cards and downloads; `KTR-` for the New
+3DS's own).
+
+- `games.json`: each family's `name` (its American or European one first),
+  `regions`, `tids` (its base games' title ids by region), its `updates`',
+  `dlc`'s and `demos`' title ids, `publisher`, `release` (its first day on
+  the eShop), and for the ones Wikidata knows, `qid` and traits
+  (`series`, `developers`, `publishers`, `genres`).
+- `popular.json`: `[score, trend, critics]` as `platforms/switch/popular.json`,
+  from Wikidata and Wikipedia for the games Wikidata knows; `critics` is 0.
+- `similar.json`: the 12 most alike, by their traits.
+
+No prices: the 3DS's eShop closed in March 2023. No pictures nor texts.
+The titles come from [Nlib API](https://api.nlib.cc/ctr/)'s 3DS (its lists
+of title ids by category, then each base game's name, region, publisher,
+product code and first day, asked once and kept in
+`sources/nlib-ctr/titles.json`: a run asks only the titles it does not know
+yet, two at a time, and the first some 4,400, about 25 minutes). Wikidata
+has no 3DS title id: one of its 3DS games (P400 = Q203597) is matched to a
+family by its English name, only when exactly one of each has that name;
+`links.json` gives the family as `3ds`. Measured live on 2026-10-30: 4,364 base titles in
+2,198 families; of Wikidata's 814 3DS games, 478 matched (59 %; 22 % of the
+families), the others left without `qid` rather than matched wrong.
+
 ### Retro
 
 The consoles, handhelds and computers no store Atlas reads sells any more
 have a folder each, `platforms/<machine>/` (`nes`, `snes`, `n64`, `gba`,
-`3ds`, `ps2`, `psv`, `xbox360`, `genesis`, `arcade`, `c64`, `dos`…: 40, see
-`platforms.json`), their games by Wikidata item (`"Q900001"`), every Monday,
+`ps2`, `psv`, `xbox360`, `genesis`, `arcade`, `c64`, `dos`…: 39, see
+`platforms.json`; the 3DS has its own, above), their games by Wikidata item (`"Q900001"`), every Monday,
 from Wikidata alone (`tools/retro.py`): some 25,000 games. A game on
 several machines is in each one's folder; a game also sold today (on Steam,
 say) is here too, by its Wikidata item: `links.json` gives its store ids.
@@ -311,6 +342,7 @@ branch: the platforms' files are then made from these, asking nothing more
 | `sources/steamspy/` | `apps.json`: owners and players by app id, as many as 10 minutes allow | Monday |
 | `sources/gog/catalog/` | The catalog's products by product id, in its trending order, a country a file | Monday (US), every day |
 | `sources/msstore/` | `products.json`, `gamepass.json`; `prices/<country>.json` ([list price, MSRP] by product id) | Monday, every day |
+| `sources/nlib-ctr/` | `categories.json` (the 3DS's title ids by category), `titles.json` (each base game's name, region, publisher, product code, first day; kept from run to run) | Monday |
 | `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records (with its keys only) | Monday |
 | `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (their pages' views a day, 8 languages) | Monday, every day |
 
@@ -331,6 +363,7 @@ left as it was), and skips the fields it does not know.
 | [GOG's catalog](https://www.gog.com/) (`catalog.gog.com`, no key) | GOG's games: names, releases, reviews, developers, publishers, genres, tags, trending order; prices and sales by country (`platforms/gog/prices/`) | as published there; data from GOG |
 | [Microsoft Store's catalog](https://www.xbox.com/) (`displaycatalog.mp.microsoft.com`, `catalog.gamepass.com`, no key) | The Xbox and PC games: names, releases, players' ratings, developers, publishers, genres, the Game Pass; prices and sales by country (`platforms/xbox/prices/`) | as published there; data from Microsoft |
 | [Nintendo eShop's prices](https://api.ec.nintendo.com/v1/price) | Each game's price and sale, by country (`platforms/switch/prices/`) | as published there |
+| [Nlib API](https://api.nlib.cc/ctr/) (3DS, no key; asked as `Atlas/1.0 (+https://atlas.boreale.dev)`, two requests at a time) | The 3DS's titles: names, regions, publishers, product codes, first days on the eShop; their updates', add-ons' and demos' title ids | as published there (no terms stated) |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
 ## When a source fails
@@ -388,6 +421,7 @@ python3 tools/collect.py steamspy weekly out/ last/ out/    # 10 minutes
 python3 tools/collect.py gog weekly out/ last/
 python3 tools/collect.py msstore weekly out/ last/ out/
 python3 tools/collect.py igdb weekly out/ last/ out/        # with IGDB_CLIENT_ID and IGDB_CLIENT_SECRET only
+python3 tools/collect.py nlib-ctr weekly out/ last/         # the 3DS's titles not known yet (the first time some 25 minutes)
 python3 tools/collect.py wikipedia weekly out/ last/ out/   # after the stores: their best known games' pages
 python3 tools/collect.py wikidata daily out/ last/          # the pages of last/platforms/switch/popular.json's best known
 python3 tools/collect.py wikipedia daily out/ last/ out/
@@ -402,6 +436,7 @@ python3 tools/steam.py out/ last/ out/          # out/platforms/steam/*.json
 python3 tools/gog.py catalog out/ last/ out/    # out/platforms/gog/*.json
 python3 tools/xbox.py catalog out/ last/ out/   # out/platforms/xbox/*.json
 python3 tools/retro.py out/ last/ out/          # out/platforms/<machine>/*.json
+python3 tools/n3ds.py out/ last/ out/           # out/platforms/3ds/*.json
 python3 tools/trends.py out/ last/ out/         # last/platforms/switch/popular.json with today's trends
 python3 tools/prices.py out/ last/ out/         # out/platforms/switch/prices/*.json
 python3 tools/steam_prices.py out/ last/ out/   # out/platforms/steam/prices/*.json

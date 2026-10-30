@@ -34,6 +34,7 @@
   "platform_steam_text": "来自维基百科和 Steam 评测的知名度、最多人玩的游戏、标签、相似游戏和商店价格。",
   "platform_gog_text": "完整的 GOG 目录，含价格和评测。",
   "platform_xbox_text": "Microsoft Store 的价格和 Game Pass 中的游戏。",
+  "platform_3ds_text": "各地区的 3DS 游戏及其 title id，来自 Nlib API 和 Wikidata（没有价格：其 eShop 已于 2023 年关闭）。",
   "platform_retro_text": "已无任何商店出售的游戏，来自 Wikidata。",
   "files_eyebrow": "文件",
   "files_title": "发布了什么，何时发布",

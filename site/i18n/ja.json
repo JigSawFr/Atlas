@@ -34,6 +34,7 @@
   "platform_steam_text": "Wikipedia と Steam のレビューからの知名度、最もプレイされたゲーム、タグ、似ているゲーム、ストアの価格。",
   "platform_gog_text": "GOG の全カタログを、価格とレビューつきで。",
   "platform_xbox_text": "Microsoft Store の価格と Game Pass の内容。",
+  "platform_3ds_text": "全地域の3DSソフトとそのタイトルID（Nlib APIとWikidataより。ニンテンドーeショップは2023年に終了したため価格なし）。",
   "platform_retro_text": "どのストアでも売られていないゲームを Wikidata から。",
   "files_eyebrow": "ファイル",
   "files_title": "何が、いつ公開されるか",
