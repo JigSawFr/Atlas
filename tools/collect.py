@@ -12,7 +12,9 @@ is kept and said (common.publish_source).
     switch-igdb (P5794), steam (P1733), gog (P2725), xbox (P5885), links
     (every store's ids), retro (P400) and retro-<kind>, playstation (the
     PS4's and PS5's games, P400), playstation-<kind> (their series,
-    developers, publishers, genres, modes) and playstation-dates (P577);
+    developers, publishers, genres, modes) and playstation-dates (P577), 3ds
+    (the 3DS's games' Japanese labels, English aliases, dates and GameTDB
+    codes, for tools/n3ds.py's match);
   - daily: switch-pages (the best known Switch games' pages in LANGS).
 - titledb (daily): blawar/titledb's US, GB and JP lists, by titledb's key.
 - eshop (daily): prices/<country>.json, the eShop's answer by eShop id.
@@ -46,6 +48,7 @@ import features
 import gog
 import igdb
 import links
+import n3ds
 import playstation
 import prices
 import retro
@@ -81,6 +84,7 @@ def wikidata_weekly():
     for kind in playstation.KINDS:
         out.append((f"playstation-{kind}", lambda kind=kind: common.sparql(playstation.query(kind))))
     out.append(("playstation-dates", lambda: common.sparql(playstation.DATES)))
+    out.append(("3ds", lambda: common.sparql(n3ds.EXTRA)))
     return out
 
 
@@ -362,7 +366,6 @@ def collect_wikipedia(what, out_dir, previous_dir, fresh, today, report):
 
 
 def collect_nlib_ctr(what, out_dir, previous_dir, fresh, today, report):
-    import n3ds
     n3ds.collect(out_dir, previous_dir, fresh, today, report)
 
 

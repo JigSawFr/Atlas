@@ -114,8 +114,8 @@ def main():
     games = links(common.bindings(src("wikidata/links.json").get("rows") or []))
     # The 3DS's games Wikidata knows by their name (it has no 3DS title id): their family.
     import n3ds
-    for qid, family in n3ds.built(src)[1].items():
-        games.setdefault(qid, {})[n3ds.N3DS] = [family]
+    for qid, found in n3ds.built(src)[1].items():
+        games.setdefault(qid, {})[n3ds.N3DS] = found
     # The PS4's and PS5's games, by their Wikidata item: tied to the ones it has
     # ids of elsewhere, or to each other when a game is on both.
     import playstation

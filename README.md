@@ -292,11 +292,28 @@ of title ids by category, then each base game's name, region, publisher,
 product code and first day, asked once and kept in
 `sources/nlib-ctr/titles.json`: a run asks only the titles it does not know
 yet, two at a time, and the first some 4,400, about 25 minutes). Wikidata
-has no 3DS title id: one of its 3DS games (P400 = Q203597) is matched to a
-family by its English name, only when exactly one of each has that name;
-`links.json` gives the family as `3ds`. Measured live on 2026-10-30: 4,364 base titles in
-2,198 families; of Wikidata's 814 3DS games, 478 matched (59 %; 22 % of the
-families), the others left without `qid` rather than matched wrong.
+has no 3DS title id; one of its 3DS games (P400 = Q203597) is matched to
+its families (`tools/n3ds.py`'s `matches`), each family to one game:
+
+1. by its GameTDB code (P8087, `3DS/AMKE`), whose serial is the family's;
+2. by its name (its English, "mul" and Japanese labels and English
+   aliases, against every region's names), compared without marks
+   (™, ®, accents), case, punctuation, a leading "the", a trailing "for
+   Nintendo 3DS", Roman numerals from II written as figures: when one game
+   has the name, every family with it (one game is often a serial a region:
+   `CTR-AMK` in America, another in Japan), unless two of them share a
+   region; when several games have it, the one whose year (P577, within a
+   year of the family's first day) and publisher agree, if it alone does;
+3. by the family's title before its subtitle (`Lantern Tale: Moon Tide`
+   for Wikidata's `Lantern Tale`), when no other game nor family has that
+   title and year or publisher agrees.
+
+`links.json` gives the families as `3ds`. Measured live on 2026-10-30: 4,364
+base titles in 2,198 families; of Wikidata's 814 3DS games, 647 matched
+(79 %; 660 families, 30 %; by English name alone, 478 and 22 %), the others
+left without `qid` rather than matched wrong. Wikidata knows fewer 3DS games
+than there are families: most of the others are download-only titles it has
+no item for.
 
 ### PlayStation 4 and PlayStation 5
 
@@ -417,7 +434,7 @@ branch: the platforms' files are then made from these, asking nothing more
 
 | Folder | What it keeps | When |
 |---|---|---|
-| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`, `playstation`, `playstation-<kind>`, `playstation-dates`; `switch-pages`, `steam-pages` (daily) | Monday, every day |
+| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`, `playstation`, `playstation-<kind>`, `playstation-dates`, `3ds` (the 3DS games' Japanese labels, English aliases, dates, GameTDB codes); `switch-pages`, `steam-pages` (daily) | Monday, every day |
 | `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers; the others with ids and names) | every day |
 | `sources/eshop/prices/` | The eShop's answer by eShop id: status, regular price, discount, its last day, currency | every day |
 | `sources/steam-store/` | `apps.json` (GetItems by app id), `tags.json`, `most-played.json`; `prices/<country>.json` (GetItems' prices) | Monday, every day |
