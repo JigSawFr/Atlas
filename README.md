@@ -29,6 +29,7 @@ jsDelivr. Each platform has a folder of its own; the Switch's is `switch/`:
 | `steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/games.json` |
 | `steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/upcoming.json` |
 | `steam/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/similar.json` |
+| `steam/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/prices/FR.json` |
 | `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/links.json` |
 | `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/index.json` |
 
@@ -163,6 +164,14 @@ Monday by `tools/steam.py` in a job of its own:
 - `steam/similar.json`: the 12 most similar, `[app id, 1..100]`, of the 30,000
   best known games, by their traits as the Switch's (a tag weighs as a genre).
 
+- `steam/prices/<country>.json`, made every day (`tools/steam_prices.py`)
+  for the same 13 countries as the Switch's, for the games of
+  `steam/games.json`: each row is `[regular, sale, until, lowest,
+  lowest_day, lowest_30]`, the first five as `switch/prices/`, and
+  `lowest_30` Steam's own lowest price of the last 30 days (as its store
+  shows it in Europe; 0 when it gives none). A free game, or one a country's
+  store does not sell (Germany's sells some 4,000 fewer), is left out.
+
 The games are those Wikidata gives a Steam app id (some 128,000 items) and
 Steam's most played; Steam's store says which are games (not a DLC, a tool or
 a soundtrack) and gives the rest, 200 apps a request.
@@ -201,7 +210,7 @@ gh attestation verify switch-popular.json -R JigSawFr/PlayInsights
 | [Wikimedia pageviews](https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews) | Monthly views of each English Wikipedia page | CC0 |
 | [blawar/titledb](https://github.com/blawar/titledb) | The US eShop's release dates and names, and each game's description, categories and publisher (for `similar.json`) | as published there |
 | [SteamSpy](https://steamspy.com/api.php) | Steam reviews, owners and players, for the games also on Steam (Wikidata's Steam id, [P1733](https://www.wikidata.org/wiki/Property:P1733)) | as published there |
-| [Steam's store](https://store.steampowered.com/) (`IStoreBrowseService/GetItems`, `IStoreService/GetTagList`, `ISteamChartsService/GetMostPlayedGames`, no key) | Steam's games: names, reviews, releases, franchises, developers, publishers, tags, most played | [Steam Web API terms](https://steamcommunity.com/dev/apiterms); data from Valve, not endorsed by it |
+| [Steam's store](https://store.steampowered.com/) (`IStoreBrowseService/GetItems`, `IStoreService/GetTagList`, `ISteamChartsService/GetMostPlayedGames`, no key) | Steam's games: names, reviews, releases, franchises, developers, publishers, tags, most played; their prices and sales by country (`steam/prices/`) | [Steam Web API terms](https://steamcommunity.com/dev/apiterms); data from Valve, not endorsed by it |
 | [Nintendo eShop's prices](https://api.ec.nintendo.com/v1/price) | Each game's price and sale, by country (`switch/prices/`) | as published there |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
@@ -250,6 +259,7 @@ python3 tools/prices.py out/ [last/] # writes out/switch/prices/*.json, every co
 python3 tools/trends.py out/ last/   # last/switch/popular.json with today's trends, as out/switch/popular.json
 python3 tools/links.py out/ [last/]  # writes out/links.json
 python3 tools/steam.py out/ [last/]  # writes out/steam/*.json (some 15 minutes)
+python3 tools/steam_prices.py out/ last/  # last/steam/games.json's prices, as out/steam/prices/*.json (some 10 minutes)
 python3 -m unittest discover -s tests
 ```
 

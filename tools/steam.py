@@ -101,7 +101,7 @@ def read_items(apps, fetch, country="US", sleep=time.sleep):
     for i in range(0, len(apps), BATCH):
         try:
             body = fetch(request(apps[i:i + BATCH], country))
-        except (urllib.error.URLError, TimeoutError, ValueError) as e:
+        except (urllib.error.URLError, OSError, ValueError) as e:
             failed += 1
             print(f"steam: GetItems {i}: {e}", file=sys.stderr)
             continue

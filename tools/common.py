@@ -44,7 +44,7 @@ def fetch(url, tries=4, patient=True, timeout=120, data=None, headers=None):
                 print(f"{url.split('?')[0]}: rate-limited, again in {wait} s", file=sys.stderr)
                 time.sleep(wait)
                 continue
-        except (urllib.error.URLError, TimeoutError):
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
             if attempt == tries - 1:
                 raise
         time.sleep(2 ** attempt)
