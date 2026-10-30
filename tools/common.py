@@ -31,7 +31,8 @@ def fetch(url, tries=4, patient=True, timeout=120, data=None, headers=None):
             request = urllib.request.Request(url, data=data, headers={
                 "User-Agent": AGENT, "Accept": "application/json", **(headers or {})})
             with urllib.request.urlopen(request, timeout=timeout) as r:
-                return json.load(r)
+                # Wikidata's labels may hold control characters, which strict JSON refuses.
+                return json.loads(r.read(), strict=False)
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 return None

@@ -39,6 +39,7 @@ jsDelivr. Each platform has a folder of its own; the Switch's is `switch/`:
 | `gog/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/gog/prices/FR.json` |
 | `xbox/popular.json`, `xbox/games.json`, `xbox/gamepass.json`, `xbox/upcoming.json`, `xbox/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/xbox/popular.json`… |
 | `xbox/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/xbox/prices/FR.json` |
+| `retro/popular.json`, `retro/games.json`, `retro/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/retro/popular.json`… |
 | `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/links.json` |
 | `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/index.json` |
 
@@ -53,7 +54,7 @@ The `data` branch is one commit with no history, replaced at each run (`tools/pu
 
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
 meaning), the day it was `generated` and its `source`; a platform's files
-also have their `platform` (`switch`, `steam`, `gog`, `xbox`). In `switch/`, a game is a base game's
+also have their `platform` (`switch`, `steam`, `gog`, `xbox`, `retro`). In `switch/`, a game is a base game's
 title id (16 hex digits, upper case, ending in `000`).
 
 `links.json`, made every Monday:
@@ -221,6 +222,23 @@ and the Game Pass's (some 6,700), from the store's catalog
   lowest_day]` as `switch/prices/`, for the 13 countries. The store's short
   answer doesn't say when a sale ends: `until` is 0. A free game is left out.
 
+### Retro
+
+`retro/` holds the games of the consoles, handhelds and computers no store
+Atlas reads sells any more, by Wikidata item (`"Q900001"`), every Monday,
+from Wikidata alone (`tools/retro.py`): some 25,000 games of 40 platforms,
+from the Atari 2600 and the arcade to the Xbox 360, the Wii U and the
+PlayStation Vita, the Commodore 64, the Amiga and MS-DOS. A game also sold
+today (on Steam, say) is here too, by its Wikidata item: `links.json` gives
+its store ids.
+
+- `retro/popular.json`: `[score, trend, critics]` as `switch/popular.json`,
+  from the game's renown on Wikipedia alone (its sitelinks, and its English
+  page's views for the 400 best known); `critics` is 0.
+- `retro/games.json`: each game's `name`, `platforms` (`[[QID, name]]`) and
+  traits as `[QID, name]`: `series`, `developers`, `publishers`, `genres`.
+- `retro/similar.json`: the 12 most alike, by their traits.
+
 ## The archives
 
 The `data` branch keeps only the last files. Every Monday's build also keeps
@@ -289,6 +307,7 @@ Every source works without a key, but IGDB, which needs one:
 | Switch | IGDB | optional (more traits, popularity, hype, players' rating) | [Twitch's developer console](https://dev.twitch.tv/console/apps) | `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` |
 | GOG | GOG's catalog | none | — | — |
 | Xbox / Microsoft Store | the store's catalog, the Game Pass's lists | none | — | — |
+| Retro | Wikidata | none | — | — |
 | Steam | Steam's store | none (a key, `STEAM_API_KEY`, would only add Steam's full list of apps; not read yet) | [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey) | `STEAM_API_KEY` |
 
 Each key is read only when its secret is set; without it, the files are made
@@ -316,6 +335,7 @@ python3 tools/gog.py catalog out/ [last/]  # writes out/gog/*.json (some 5 minut
 python3 tools/gog.py prices out/ [last/]   # writes out/gog/prices/*.json (some 6 minutes)
 python3 tools/xbox.py catalog out/ [last/]  # writes out/xbox/*.json (under a minute)
 python3 tools/xbox.py prices out/ last/     # last/xbox/games.json's prices, as out/xbox/prices/*.json (some 4 minutes)
+python3 tools/retro.py out/ [last/]  # writes out/retro/*.json
 python3 tools/steam_prices.py out/ last/  # last/steam/games.json's prices, as out/steam/prices/*.json (some 10 minutes)
 python3 -m unittest discover -s tests
 ```
