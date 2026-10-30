@@ -195,6 +195,19 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .files td:nth-child(2) { color: var(--mist); min-width: 16ch; }
 .files time, .files td:nth-child(3) { white-space: nowrap; }
 time.late { color: #ffb347; }
+/* The data's status (status/): each source's and platform's state. */
+.status th[scope="row"] { font-weight: 500; white-space: nowrap; }
+.status th[scope="row"] code { color: var(--snow); }
+.status time { white-space: nowrap; }
+.state.ok { color: var(--snow); border-color: rgb(51 187 255 / 0.4); }
+.state.late { color: var(--abyss); background: #ffb347; border-color: transparent; font-weight: 500; }
+.state.missing { color: var(--abyss); background: #ff7a7a; border-color: transparent; font-weight: 500; }
+#run { margin-bottom: 40px; }
+#run .stats { grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); }
+@media (max-width: 520px) { #run .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+#run .stats dd { overflow-wrap: anywhere; hyphens: auto; }
+.retro { margin-top: 18px; }
+.retro summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; color: var(--snow); font-weight: 600; margin-bottom: 10px; }
 .late-tag { margin-left: 6px; font-family: var(--mono); font-size: 0.75rem; color: var(--abyss); background: #ffb347; border-radius: 99px; padding: 1px 8px; }
 
 /* The ways to read the files. */
