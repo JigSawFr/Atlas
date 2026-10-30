@@ -185,5 +185,9 @@
   "status_countries": "Landen",
   "status_retro": "De oude systemen ({n})",
   "status_note": "Gekoppeld: door links.json verbonden met dezelfde game op een ander platform. Met prijs: een prijs in minstens één land. Met reviews: reviews of een score. Het hele rapport:",
-  "files_status": "Hoe actueel elke bron en elk platform is"
+  "files_status": "Hoe actueel elke bron en elk platform is",
+  "x_history": "Prijsverloop",
+  "x_history_paid": "Betaalde prijs",
+  "x_history_lowest": "Laagste sinds {since}: {price}, op {date}",
+  "x_history_chart": "Prijs van {from} tot {to}"
 }
