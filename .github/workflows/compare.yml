@@ -1,0 +1,69 @@
+# Temporary (removed before merging): main's tools and this branch's, on the
+# same answers (recorded from main's run, replayed for this branch's).
+name: compare
+
+on:
+  push:
+    branches: [refactor/sources]
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: The data branch and main's tools
+        run: |
+          tools/data-branch.sh
+          git worktree add old origin/main
+      - name: Main's tools, every answer recorded
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.github/proof
+          ATLAS_RECORD: ${{ github.workspace }}/rec
+        run: |
+          set -x
+          cd old
+          python3 tools/links.py ../out-old ../data-branch || true
+          python3 tools/build.py ../out-old ../data-branch || true
+          python3 tools/steam.py ../out-old ../data-branch || true
+          python3 tools/gog.py catalog ../out-old ../data-branch || true
+          python3 tools/xbox.py catalog ../out-old ../data-branch || true
+          python3 tools/retro.py ../out-old ../data-branch || true
+          python3 tools/trends.py ../out-old ../data-branch || true
+          python3 tools/prices.py ../out-old ../data-branch || true
+          python3 tools/steam_prices.py ../out-old ../data-branch || true
+          python3 tools/gog.py prices ../out-old ../data-branch || true
+          python3 tools/xbox.py prices ../out-old ../data-branch || true
+          ls rec 2>/dev/null | wc -l; ls ../rec | wc -l
+      - name: This branch's tools on the same answers
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.github/proof
+          ATLAS_REPLAY: ${{ github.workspace }}/rec
+        run: |
+          set -x
+          for s in wikidata titledb; do python3 tools/collect.py $s weekly src data-branch || true; done
+          for s in steam-store steamspy gog msstore igdb wikipedia; do python3 tools/collect.py $s weekly src data-branch src || true; done
+          python3 tools/collect.py wikidata daily src data-branch || true
+          for s in wikipedia eshop steam-store gog msstore; do python3 tools/collect.py $s daily src data-branch src || true; done
+          python3 tools/links.py out-new data-branch src || true
+          python3 tools/build.py out-new data-branch src || true
+          python3 tools/steam.py out-new data-branch src || true
+          python3 tools/gog.py catalog out-new data-branch src || true
+          python3 tools/xbox.py catalog out-new data-branch src || true
+          python3 tools/retro.py out-new data-branch src || true
+          python3 tools/trends.py out-new data-branch src || true
+          python3 tools/prices.py out-new data-branch src || true
+          python3 tools/steam_prices.py out-new data-branch src || true
+          python3 tools/gog.py prices out-new data-branch src || true
+          python3 tools/xbox.py prices out-new data-branch src || true
+      - name: Compare
+        run: |
+          python3 .github/proof/compare.py out-old out-new | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Requests not recorded: $(wc -l < rec/misses.txt 2>/dev/null || echo 0)" | tee -a "$GITHUB_STEP_SUMMARY"
+          sort rec/misses.txt 2>/dev/null | cut -c1-120 | uniq -c | sort -rn | head -20 || true
+          du -sh src/sources/* | tee -a "$GITHUB_STEP_SUMMARY"
