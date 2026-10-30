@@ -271,6 +271,28 @@ Atlas's website, [atlas.boreale.dev](https://atlas.boreale.dev/), shows the proj
 
 ## The sources
 
+Each source is asked once a run, and what it answered is published as it
+came, only the fields Atlas uses, under `sources/<source>/` on the `data`
+branch: the platforms' files are then made from these, asking nothing more
+(`tools/collect.py`). A file larger than 15 MB is cut in parts
+(`sources/titledb/US/1.json`…), each with the same fields, its `part` and
+`parts`; read together they are the one file.
+
+| Folder | What it keeps | When |
+|---|---|---|
+| `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`; `switch-pages` (daily) | Monday, every day |
+| `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers; the others with ids and names) | every day |
+| `sources/eshop/prices/` | The eShop's answer by eShop id: status, regular price, discount, its last day, currency | every day |
+| `sources/steam-store/` | `apps.json` (GetItems by app id), `tags.json`, `most-played.json`; `prices/<country>.json` (GetItems' prices) | Monday, every day |
+| `sources/steamspy/` | `apps.json`: owners and players by app id, as many as 10 minutes allow | Monday |
+| `sources/gog/catalog/` | The catalog's products by product id, in its trending order, a country a file | Monday (US), every day |
+| `sources/msstore/` | `products.json`, `gamepass.json`; `prices/<country>.json` ([list price, MSRP] by product id) | Monday, every day |
+| `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records (with its keys only) | Monday |
+| `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (their pages' views a day, 8 languages) | Monday, every day |
+
+Each file says its source, its licence or terms, and the day it was
+collected (`generated`).
+
 | Source | What it gives | Licence |
 |---|---|---|
 | [Wikidata](https://www.wikidata.org/) | The stores' ids for `links.json` ([P1733](https://www.wikidata.org/wiki/Property:P1733) Steam, [P12332](https://www.wikidata.org/wiki/Property:P12332), [P5944](https://www.wikidata.org/wiki/Property:P5944), [P5971](https://www.wikidata.org/wiki/Property:P5971), [P5999](https://www.wikidata.org/wiki/Property:P5999) PlayStation, [P5885](https://www.wikidata.org/wiki/Property:P5885) Microsoft, [P2725](https://www.wikidata.org/wiki/Property:P2725) GOG, [P6278](https://www.wikidata.org/wiki/Property:P6278) Epic); Switch title ids ([P11072](https://www.wikidata.org/wiki/Property:P11072)), sitelinks, English pages, review scores ([P444](https://www.wikidata.org/wiki/Property:P444)) and their number of reviews ([P7887](https://www.wikidata.org/wiki/Property:P7887)) | CC0 |
@@ -285,11 +307,15 @@ Atlas's website, [atlas.boreale.dev](https://atlas.boreale.dev/), shows the proj
 
 ## When a source fails
 
-A file that comes out with fewer than 70 % of the games the last run's had (a
-source down or answering half, rather than the world changing) is not
-published: the last run's file stays on the `data` branch, the run says so
+A file that comes out with fewer than 70 % of the games (or, for a source's
+file, of the records) the last run's had (a source down or answering half,
+rather than the world changing) is not published: the last run's file stays on the `data` branch, the run says so
 with a warning, and the workflow's summary lists each file's games against
 the last run's.
+
+A source that fails leaves its last run's file, and the platforms' files are
+made from that; a daily file (prices, trends) is made only from what was
+collected that day, else left as it was.
 
 Whatever goes wrong in a run — the job failing, one of the daily steps
 failing on its own, a file kept by the guard — opens an issue labelled
@@ -326,23 +352,39 @@ to.
 
 ```sh
 python3 tools/migrate.py last/       # a data branch from before switch/: its Switch files moved there
-python3 tools/build.py out/ [last/]  # writes out/switch/*.json; last/: the last run's files, for Steam
-python3 tools/prices.py out/ [last/] # writes out/switch/prices/*.json, every country's (some 20 minutes)
-python3 tools/trends.py out/ last/   # last/switch/popular.json with today's trends, as out/switch/popular.json
-python3 tools/links.py out/ [last/]  # writes out/links.json
-python3 tools/steam.py out/ [last/]  # writes out/steam/*.json (some 15 minutes)
-python3 tools/gog.py catalog out/ [last/]  # writes out/gog/*.json (some 5 minutes)
-python3 tools/gog.py prices out/ [last/]   # writes out/gog/prices/*.json (some 6 minutes)
-python3 tools/xbox.py catalog out/ [last/]  # writes out/xbox/*.json (under a minute)
-python3 tools/xbox.py prices out/ last/     # last/xbox/games.json's prices, as out/xbox/prices/*.json (some 4 minutes)
-python3 tools/retro.py out/ [last/]  # writes out/retro/*.json
-python3 tools/steam_prices.py out/ last/  # last/steam/games.json's prices, as out/steam/prices/*.json (some 10 minutes)
+# Each source, asked once: writes out/sources/<source>/ (fresh/: this run's sources one needs)
+python3 tools/collect.py wikidata weekly out/ last/
+python3 tools/collect.py titledb weekly out/ last/          # about 90 MB a region, some 10 s
+python3 tools/collect.py steam-store weekly out/ last/ out/ # some 650 requests (some 8 minutes)
+python3 tools/collect.py steamspy weekly out/ last/ out/    # 10 minutes
+python3 tools/collect.py gog weekly out/ last/
+python3 tools/collect.py msstore weekly out/ last/ out/
+python3 tools/collect.py igdb weekly out/ last/ out/        # with IGDB_CLIENT_ID and IGDB_CLIENT_SECRET only
+python3 tools/collect.py wikipedia weekly out/ last/ out/   # after the stores: their best known games' pages
+python3 tools/collect.py wikidata daily out/ last/          # the pages of last/switch/popular.json's best known
+python3 tools/collect.py wikipedia daily out/ last/ out/
+python3 tools/collect.py eshop daily out/ last/ out/        # after titledb (some 20 minutes)
+python3 tools/collect.py steam-store daily out/ last/       # last/steam/games.json's prices (some 10 minutes)
+python3 tools/collect.py gog daily out/ last/               # every country's catalog (some 6 minutes)
+python3 tools/collect.py msstore daily out/ last/           # last/xbox/games.json's prices (some 4 minutes)
+# Each platform's files from the sources (out/ this run's, else last/'s), asking nothing:
+python3 tools/links.py out/ last/ out/          # out/links.json
+python3 tools/build.py out/ last/ out/          # out/switch/*.json
+python3 tools/steam.py out/ last/ out/          # out/steam/*.json
+python3 tools/gog.py catalog out/ last/ out/    # out/gog/*.json
+python3 tools/xbox.py catalog out/ last/ out/   # out/xbox/*.json
+python3 tools/retro.py out/ last/ out/          # out/retro/*.json
+python3 tools/trends.py out/ last/ out/         # last/switch/popular.json with today's trends
+python3 tools/prices.py out/ last/ out/         # out/switch/prices/*.json
+python3 tools/steam_prices.py out/ last/ out/   # out/steam/prices/*.json
+python3 tools/gog.py prices out/ last/ out/     # out/gog/prices/*.json
+python3 tools/xbox.py prices out/ last/ out/    # out/xbox/prices/*.json
 python3 -m unittest discover -s tests
 ```
 
 `tools/common.py` holds what every tool shares: the requests, Wikidata's query
-service, the guard and publishing a file, the lowest price kept from run to
+service, the guard and publishing a file (a platform's or a source's, cut in
+parts when too large), reading the sources, the lowest price kept from run to
 run.
 
-Python 3.10 or later, no package to install. `build.py` takes some 25 minutes:
-SteamSpy's 10, the pageviews, and titledb's list (about 90 MB).
+Python 3.10 or later, no package to install.
