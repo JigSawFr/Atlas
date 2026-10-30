@@ -216,7 +216,7 @@
     const head = el("header", {}, back,
       el("h2", { tabindex: "-1" }, g.name || id),
       el("p", { class: "ids" }, el("span", { class: "badge", text: S._names[platform] }), g.name ? el("code", { text: id }) : null,
-        g.qid ? el("a", { href: `https://www.wikidata.org/wiki/${g.qid}`, text: g.qid }) : null,
+        g.qid ? el("a", { href: `https://www.wikidata.org/wiki/${g.qid}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: g.qid }) : null,
         !g.name ? el("small", { text: t("x_no_name") }) : null));
     sheet.append(head);
 
@@ -284,7 +284,7 @@
           items.push(el("li", {}, el("span", { class: "badge", text: STORE_NAMES[p] || p }),
             inData ? el("a", { href: `#${p}/game/${encodeURIComponent(other)}` }, el("code", { text: other }))
               : el("code", { text: other }),
-            STORES[p] ? el("a", { class: "out", href: STORES[p](other), text: "↗" , "aria-label": `${STORE_NAMES[p]} ${other}` }) : null));
+            STORES[p] ? el("a", { class: "out", href: STORES[p](other), rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: "↗", "aria-label": `${STORE_NAMES[p]} ${other}` }) : null));
         }
       }
       if (items.length) sheet.append(section(t("x_other_platforms"), el("ul", { class: "links" }, ...items)));

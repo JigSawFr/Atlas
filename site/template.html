@@ -2,6 +2,7 @@
 <html lang="{{lang}}"{{first_visit}}>
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <title>{{title}}</title>
@@ -35,7 +36,7 @@
       <ul>
         <li><a href="{{root}}{{home}}"{{current_project}}>{{nav_project}}</a></li>
         <li><a href="{{root}}{{home}}explore/"{{current_explore}}>{{nav_explore}}</a></li>
-        <li><a href="https://github.com/JigSawFr/Atlas">GitHub</a></li>
+        <li><a href="https://github.com/JigSawFr/Atlas" rel="noreferrer">GitHub</a></li>
       </ul>
     </nav>
     {{languages}}
@@ -51,9 +52,9 @@
       <ul>
         <li><a href="{{root}}{{home}}">{{nav_project}}</a></li>
         <li><a href="{{root}}{{home}}explore/">{{nav_explore}}</a></li>
-        <li><a href="https://github.com/JigSawFr/Atlas">GitHub</a></li>
-        <li><a href="https://github.com/JigSawFr/Atlas/releases">{{footer_releases}}</a></li>
-        <li><a href="https://boreale.dev/{{home}}">Boréale</a></li>
+        <li><a href="https://github.com/JigSawFr/Atlas" rel="noreferrer">GitHub</a></li>
+        <li><a href="https://github.com/JigSawFr/Atlas/releases" rel="noreferrer">{{footer_releases}}</a></li>
+        <li><a href="https://boreale.dev/{{home}}" rel="noreferrer">Boréale</a></li>
         <li><a href="mailto:contact@boreale.dev">contact@boreale.dev</a></li>
       </ul>
     </nav>
