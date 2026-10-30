@@ -47,9 +47,13 @@ jobs:
         run: python3 tools/collect.py "${{ matrix.source }}" weekly out data-branch
       - name: Keep the files
         if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
           mkdir -p out
           touch "$ALERTS"
+          # A job that failed or ran out of time says which source it was.
+          [ "$JOB_STATUS" = success ] || echo "**sources (${{ matrix.source }})** ended in **$JOB_STATUS**; its files are the last run's." >> "$ALERTS"
           cp "$ALERTS" "out/.alerts-${{ matrix.source }}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
@@ -86,9 +90,13 @@ jobs:
         run: python3 tools/collect.py "${{ matrix.source }}" weekly out data-branch fresh
       - name: Keep the files
         if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
           mkdir -p out
           touch "$ALERTS"
+          # A job that failed or ran out of time says which source it was.
+          [ "$JOB_STATUS" = success ] || echo "**sources (${{ matrix.source }})** ended in **$JOB_STATUS**; its files are the last run's." >> "$ALERTS"
           cp "$ALERTS" "out/.alerts-${{ matrix.source }}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
@@ -117,9 +125,13 @@ jobs:
         run: python3 tools/collect.py wikipedia weekly out data-branch fresh
       - name: Keep the files
         if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
           mkdir -p out
           touch "$ALERTS"
+          # A job that failed or ran out of time says which source it was.
+          [ "$JOB_STATUS" = success ] || echo "**wikipedia** ended in **$JOB_STATUS**; its files are the last run's." >> "$ALERTS"
           cp "$ALERTS" out/.alerts-wikipedia
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()

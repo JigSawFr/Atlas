@@ -426,7 +426,8 @@ made from that; a daily file (prices, trends) is made only from what was
 collected that day, else left as it was.
 
 Whatever goes wrong in a run — the job failing, one of the daily steps
-failing on its own, a file kept by the guard — opens an issue labelled
+failing on its own, a source's job failing or running out of time (it says
+which), a file kept by the guard — opens an issue labelled
 `data-alert` (`tools/alert.sh`), or adds a comment to the one still open,
 so it does not go unseen.
 
