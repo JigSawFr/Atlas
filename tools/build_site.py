@@ -73,7 +73,7 @@ PLATFORMS = [(p[0], p[1]) for p in platforms.STORES + platforms.CONSOLES] + [(p[
 STORE_IDS = {p[0] for p in platforms.STORES + platforms.CONSOLES}   # a button each; the old machines in a list
 MACHINES = "|".join(re.escape(p[0]) for p in platforms.RETRO)
 # The pages, by their path under each language's folder.
-PAGES = {"": "home", "explore/": "explore"}
+PAGES = {"": "home", "explore/": "explore", "status/": "status"}
 # Boréale's sites, in the header's menu (switcher()): boreale.dev's
 # reference (boreale/tools/build_site.py), then the open data and protocols,
 # this one and Lantern.
@@ -90,6 +90,10 @@ HERE = "atlas"
 # ("nav" for the header's sites menu, "footer"). A link to this site carries none.
 UTM_SOURCE = "atlas"
 # A file made every day; the others every week (late past 2 and 9 days).
+# The sources collected every day (in part: steam-store's and msstore's prices,
+# wikidata's pages; tools/collect.py); the others every week. The status page
+# marks one late past 2 days, or 9.
+DAILY_SOURCES = {"eshop", "titledb", "gog", "wikipedia", "wikidata", "steam-store", "msstore"}
 DAILY = re.compile(r"(^|/)prices/|^platforms/(switch|steam)/popular\.json$|^sources/(eshop|titledb|gog|wikipedia)/|^sources/wikidata/[a-z0-9]+-pages\.json$")
 
 # Numbers and sizes as each language writes them: the thousands' and the
@@ -293,14 +297,116 @@ def file_rows(language: str, catalog: dict, index: dict) -> str:
     return "\n".join(rows)
 
 
+def percent(share, language: str) -> str:
+    n = round((share or 0) * 100)
+    return f"{n}\u202f%" if language in ("fr", "fr-CA") else (f"{n} %" if language in ("de", "ru") else f"{n}%")
+
+
+def age(made: str, report: str):
+    """Days between a day and the report's, None when either is missing."""
+    try:
+        return (date.fromisoformat(report) - date.fromisoformat(made)).days
+    except (TypeError, ValueError):
+        return None
+
+
+def state(made: str, report: str, days: int, empty: bool, catalog: dict) -> str:
+    """Up to date, late (older than its rhythm allows when the report was
+    made: the run left it behind), or no data."""
+    late = age(made, report)
+    if empty or late is None:
+        return f'<span class="state missing">{catalog["status_missing"]}</span>'
+    if late > days:
+        return f'<span class="state late">{catalog["status_late"]}</span>'
+    return f'<span class="state ok">{catalog["status_ok"]}</span>'
+
+
+def when(made: str, days: int, catalog: dict, language: str) -> str:
+    """A day, marked late by site.js when older than `days` today."""
+    if not made:
+        return "—"
+    return f'<time datetime="{made}" data-age="{days}" data-late="{catalog["files_late"]}">{day(made, language)}</time>'
+
+
+def status_body(language: str, catalog: dict, root: str, report: dict, index: dict) -> str:
+    """The data's status (status/), from report.json (tools/report.py) and
+    index.json: the run, each source's and platform's last update and state,
+    each platform's games linked, priced and reviewed. Without a report (a
+    build without data, a branch from before report.json), a note."""
+    if not report:
+        return (f'  <section id="status">\n    <p class="note empty">{catalog["status_none"]} '
+                f'<a href="{root}{folder(language)}#files">{catalog["status_files"]}</a></p>\n  </section>')
+    made = report.get("generated") or ""
+    files = (index or {}).get("files") or {}
+    run = catalog.get(f'status_run_{report.get("run")}', html.escape(str(report.get("run") or "—")))
+    stats = [(catalog["status_generated"], when(made, 2, catalog, language)), (catalog["status_run"], run)]
+    if files:
+        stats += [(catalog["status_files_count"], number(len(files), language)),
+                  (catalog["files_size"], size(sum(f.get("bytes", 0) for f in files.values()), language))]
+    out = ['  <section id="run">', '    <dl class="stats">']
+    out += [f"      <div><dt>{k}</dt><dd>{v}</dd></div>" for k, v in stats]
+    out += ['    </dl>', '  </section>', '']
+    head = (f'<th scope="col">{catalog["status_state"]}</th>')
+    rows = []
+    for name, s in sorted((report.get("sources") or {}).items()):
+        days = 2 if name in DAILY_SOURCES else 9
+        rhythm = catalog["files_daily"] if days == 2 else catalog["files_weekly"]
+        rows.append(f'          <tr><th scope="row"><code>{html.escape(name)}</code></th>'
+                    f'<td>{state(s.get("generated") or "", made, days, not s.get("records"), catalog)}</td><td>{rhythm}</td>'
+                    f'<td class="num">{number(s.get("records") or 0, language)}</td>'
+                    f'<td class="num">{size(s.get("bytes") or 0, language)}</td>'
+                    f'<td>{when(s.get("generated") or "", days, catalog, language)}</td></tr>')
+    out += [f'  <section id="sources">', '    <div class="section-head">',
+            f'      <h2>{catalog["status_sources_title"]}</h2>', f'      <p>{catalog["status_sources_lede"]}</p>', '    </div>',
+            f'    <div class="table" tabindex="0" role="region" aria-label="{catalog["status_sources_title"]}">',
+            '      <table class="status">',
+            f'        <thead><tr><th scope="col">{catalog["status_source"]}</th>{head}<th scope="col">{catalog["files_rhythm"]}</th>'
+            f'<th scope="col" class="num">{catalog["status_records"]}</th><th scope="col" class="num">{catalog["files_size"]}</th>'
+            f'<th scope="col">{catalog["files_updated"]}</th></tr></thead>',
+            '        <tbody>', *rows, '        </tbody>', '      </table>', '    </div>', '  </section>', '']
+    names = dict(PLATFORMS)
+    reported = report.get("platforms") or {}
+
+    def table(ids, label):
+        rows = []
+        for pid in ids:
+            p = reported[pid]
+            days = 2 if DAILY.search(f"platforms/{pid}/popular.json") else 9
+            rows.append(f'          <tr><th scope="row">{html.escape(names.get(pid, pid))}</th>'
+                        f'<td>{state(p.get("generated") or "", made, days, not p.get("games"), catalog)}</td>'
+                        f'<td class="num">{number(p.get("games") or 0, language)}</td>'
+                        + "".join(f'<td class="num">{percent(p.get(k), language)}</td>' for k in ("linked", "priced", "reviewed"))
+                        + f'<td class="num">{p.get("countries") or "—"}</td>'
+                        f'<td>{when(p.get("generated") or "", days, catalog, language)}</td></tr>')
+        return [f'    <div class="table" tabindex="0" role="region" aria-label="{label}">', '      <table class="status">',
+                f'        <thead><tr><th scope="col">{catalog["status_platform"]}</th>{head}'
+                f'<th scope="col" class="num">{catalog["status_games"]}</th><th scope="col" class="num">{catalog["status_linked"]}</th>'
+                f'<th scope="col" class="num">{catalog["status_priced"]}</th><th scope="col" class="num">{catalog["status_reviewed"]}</th>'
+                f'<th scope="col" class="num">{catalog["status_countries"]}</th><th scope="col">{catalog["files_updated"]}</th></tr></thead>',
+                '        <tbody>', *rows, '        </tbody>', '      </table>', '    </div>']
+
+    order = [k for k, _ in PLATFORMS]
+    known = sorted(reported, key=lambda k: (order.index(k) if k in order else len(order), k))
+    stores = [k for k in known if k not in names or k in STORE_IDS]
+    machines = [k for k in known if k in names and k not in STORE_IDS]
+    out += ['  <section id="platforms">', '    <div class="section-head">',
+            f'      <h2>{catalog["status_platforms_title"]}</h2>', f'      <p>{catalog["status_platforms_lede"]}</p>', '    </div>']
+    out += table(stores, catalog["status_platforms_title"])
+    if machines:
+        retro = catalog["status_retro"].replace("{n}", str(len(machines)))
+        out += [f'    <details class="retro"><summary>{retro}</summary>', *table(machines, retro), '    </details>']
+    out += [f'    <p class="note">{catalog["status_note"]} <a href="{root}data/report.json">report.json</a></p>', '  </section>']
+    return "\n".join(out)
+
+
 def hero(page: str, catalog: dict, root: str, language: str) -> str:
     if page == "home":
         return (f'<div class="wrap hero">\n    <span class="eyebrow">{catalog["hero_eyebrow"]}</span>\n'
                 f'    <h1>{catalog["hero_title"]}</h1>\n    <p class="lede">{catalog["hero_lede"]}</p>\n'
                 f'    <div class="actions"><a class="button primary" href="{root}{folder(language)}explore/">{catalog["cta_explore"]}</a>'
                 f'<a class="button ghost" href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">{catalog["cta_github"]}</a></div>\n  </div>')
-    return (f'<div class="wrap hero small">\n    <span class="eyebrow">{catalog["explore_eyebrow"]}</span>\n'
-            f'    <h1>{catalog["explore_title"]}</h1>\n    <p class="lede">{catalog["explore_lede"]}</p>\n  </div>')
+    return (f'<div class="wrap hero small">\n    <span class="eyebrow">{catalog[f"{page}_eyebrow"]}</span>\n'
+            f'    <h1>{catalog[f"{page}_title"]}</h1>\n    <p class="lede">{catalog[f"{page}_lede"]}</p>\n  </div>')
 
 
 def strings(catalog: dict, language: str, summary: dict) -> str:
@@ -312,7 +418,8 @@ def strings(catalog: dict, language: str, summary: dict) -> str:
     return json.dumps(body, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
 
-def page_html(template: str, language: str, catalog: dict, path: str, page: str, summary: dict, index: dict) -> str:
+def page_html(template: str, language: str, catalog: dict, path: str, page: str, summary: dict, index: dict,
+              report: dict = None) -> str:
     depth = path.count("/") + (1 if language != "en" else 0)
     root = "../" * depth
     body = (SITE / f"{page}.html").read_text(encoding="utf-8")
@@ -329,6 +436,8 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
         "switcher": switcher(language, catalog, root),
         "current_project": ' aria-current="page"' if page == "home" else "",
         "current_explore": ' aria-current="page"' if page == "explore" else "",
+        "current_status": ' aria-current="page"' if page == "status" else "",
+        "status_body": status_body(language, catalog, root, report, index) if page == "status" else "",
         "scripts": f'<script src="{root}assets/explore.js" defer></script>' if page == "explore" else "",
         "audience": f'<script src="{root}assets/umami.js" defer data-website-id="{UMAMI_WEBSITE}" '
                     f'data-domains="{UMAMI_DOMAIN}"></script>',
@@ -357,13 +466,14 @@ def main() -> None:
         shutil.rmtree(out)
     out.mkdir(parents=True)
     shutil.copytree(SITE / "assets", out / "assets")
-    summary, index = {}, {}
+    summary, index, report = {}, {}, {}
     if data:
         # The sources and the prices' history are not the explorer's: left on the data branch, the site smaller.
         shutil.copytree(data, out / "data", ignore=lambda d, names: [n for n in names if n.startswith(".git")
                                                                    or (Path(d) == data and n in ("sources", "history"))])
         summary = site_data.build(str(data), str(out))
         index = site_data.read(str(data / "index.json")) or {}
+        report = site_data.read(str(data / "report.json")) or {}
     catalogs = {c: json.loads((SITE / "i18n" / f"{c}.json").read_text(encoding="utf-8")) for c, _, _, _ in LANGUAGES}
     template = (SITE / "template.html").read_text(encoding="utf-8")
     urls = []
@@ -371,7 +481,7 @@ def main() -> None:
         for path, page in PAGES.items():
             target = out / folder(language) / path / "index.html"
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(page_html(template, language, catalogs[language], path, page, summary, index),
+            target.write_text(page_html(template, language, catalogs[language], path, page, summary, index, report),
                               encoding="utf-8")
             urls.append(SITE_URL + folder(language) + path)
     (out / "sitemap.xml").write_text(

@@ -129,11 +129,46 @@ class Build(unittest.TestCase):
             with open(os.path.join(out, "CNAME"), encoding="utf-8") as f:
                 self.assertEqual(f.read().strip(), "atlas.boreale.dev")
 
+    def test_status_page(self):
+        # The data's status (status/): each source's and platform's state against the report's day.
+        with tempfile.TemporaryDirectory() as tmp:
+            data = os.path.join(tmp, "data")
+            sample(data)
+            put(data, "report.json", {"schema": 1, "generated": "2026-11-02", "run": "build", "sources": {
+                "eshop": {"files": 13, "records": 2000, "bytes": 9000, "generated": "2026-11-02"},
+                "titledb": {"files": 3, "records": 900, "bytes": 5000, "generated": "2026-10-28"},
+                "steamspy": {"files": 1, "records": 500, "bytes": 3000, "generated": "2026-10-28"},
+                "igdb": {"files": 0, "records": 0, "bytes": 0, "generated": ""}},
+                "platforms": {"switch": {"games": 2, "linked": 0.5, "priced": 1, "reviewed": 0.5, "countries": 1,
+                                         "generated": "2026-11-02"},
+                              "nes": {"games": 7, "linked": 0.25, "priced": 0, "reviewed": 0, "countries": 0,
+                                      "generated": "2026-11-02"}}})
+            out = os.path.join(tmp, "site")
+            subprocess.run([sys.executable, os.path.join(ROOT, "tools/build_site.py"), out, data], check=True,
+                           capture_output=True)
+            subprocess.run([sys.executable, os.path.join(ROOT, "tools/check_site.py"), out], check=True,
+                           capture_output=True)
+            with open(os.path.join(out, "status/index.html"), encoding="utf-8") as f:
+                page = f.read()
+            row = lambda name: page.split(f"<code>{name}</code>", 1)[1].split("</tr>", 1)[0]  # noqa: E731
+            self.assertIn('class="state ok"', row("eshop"))
+            self.assertIn('class="state late"', row("titledb"))       # daily, 5 days behind the report
+            self.assertIn('class="state ok"', row("steamspy"))        # weekly, 5 days is in time
+            self.assertIn('class="state missing"', row("igdb"))
+            self.assertIn("weekly build", page)
+            self.assertIn("<td class=\"num\">50%</td>", page)
+            self.assertIn("The old machines (1)", page)
+            self.assertIn('href="../data/report.json"', page)
+            with open(os.path.join(out, "fr/status/index.html"), encoding="utf-8") as f:
+                self.assertIn("50\u202f%", f.read())
+
     def test_build_without_data(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = os.path.join(tmp, "site")
             subprocess.run([sys.executable, os.path.join(ROOT, "tools/build_site.py"), out], check=True, capture_output=True)
             subprocess.run([sys.executable, os.path.join(ROOT, "tools/check_site.py"), out], check=True, capture_output=True)
+            with open(os.path.join(out, "status/index.html"), encoding="utf-8") as f:
+                self.assertIn("No report yet", f.read())
 
 
 if __name__ == "__main__":
