@@ -175,5 +175,52 @@ class SameFiles(unittest.TestCase):
         self.assertEqual(build.steam_figures(lambda n: src.get(n, {}), apps, before), asked)
 
 
+class SteamCountries(unittest.TestCase):
+    """daily.yml asks Steam's prices a country a job (steam-store:FR)."""
+
+    def test_parts(self):
+        self.assertEqual(collect.parts("gog"), ("gog", {}))
+        self.assertEqual(collect.parts("steam-store"), ("steam-store", {}))
+        self.assertEqual(collect.parts("steam-store:FR,DE"), ("steam-store", {"countries": ["FR", "DE"]}))
+        for wrong in ("steam-store:XX", "gog:FR", "nothing"):
+            with self.assertRaises(SystemExit):
+                collect.parts(wrong)
+
+    def test_only_the_countries_named(self):
+        asked = []
+
+        def read_items(country, games, fetch):
+            asked.append(country)
+            return {"900001": {"appid": 900001, "success": 1, "name": "Lantern Tale",
+                               "best_purchase_option": {"final_price_in_cents": 999}}}
+        with tempfile.TemporaryDirectory() as out, tempfile.TemporaryDirectory() as last, \
+                mock.patch.object(steam_prices, "read_items", read_items):
+            os.makedirs(os.path.join(last, "platforms", "steam"))
+            with open(os.path.join(last, "platforms", "steam", "games.json"), "w") as f:
+                json.dump({"schema": common.SCHEMA, "games": {"900001": {}}}, f)
+            collect.collect_steam_store("daily", out, last, [], datetime.date(2026, 10, 30), [], countries=["NL", "JP"])
+            written = sorted(os.listdir(os.path.join(out, common.SOURCES, "steam-store", "prices")))
+        self.assertEqual(asked, ["NL", "JP"])
+        self.assertEqual(written, ["JP.json", "NL.json"])
+
+    def test_daily_asks_every_country(self):
+        import re
+        with open(os.path.join(os.path.dirname(__file__), "..", ".github", "workflows", "daily.yml"), encoding="utf-8") as f:
+            jobs = re.findall(r"first: steam-store:(\S+)", f.read())
+        self.assertEqual(sorted(jobs), sorted(steam_prices.COUNTRIES))
+
+    def test_a_country_not_collected_keeps_its_file(self):
+        """steam_prices.consolidate writes only the countries collected today:
+        the others' files are not in out/, the data branch keeps the last ones."""
+        today = "2026-10-30"
+        with tempfile.TemporaryDirectory() as out, tempfile.TemporaryDirectory() as last:
+            files = {"steam-store/prices/FR.json": {"generated": today, "games": {"900001": {
+                "success": 1, "best_purchase_option": {"final_price_in_cents": 999}}}},
+                     "steam-store/prices/DE.json": {"generated": "2026-10-29", "games": {}}}
+            steam_prices.consolidate(lambda name: files.get(name, {}), out, last, today)
+            written = sorted(os.listdir(os.path.join(out, "platforms", "steam", "prices")))
+        self.assertEqual(written, ["FR.json"])
+
+
 if __name__ == "__main__":
     unittest.main()
