@@ -20,6 +20,9 @@ SPARQL = "https://query.wikidata.org/sparql"
 MAX_WAIT = 1800        # seconds a rate-limited service is waited for, at most
 GUARD_KEEP = 0.7       # a file with fewer games than this share of the last run's is not published
 GUARD_FLOOR = 50       # games the last run's file had at least, for that to count
+# The data files' schema (README): a new field keeps it, a field changing
+# meaning moves it up. A file of another schema is read as no file at all.
+SCHEMA = 1
 
 
 def fetch(url, tries=4, patient=True, timeout=120, data=None, headers=None):
@@ -139,6 +142,6 @@ def previous_file(previous_dir, name):
     try:
         with open(os.path.join(previous_dir, name), encoding="utf-8") as f:
             body = json.load(f)
-        return body if body.get("schema") == 1 else {}
+        return body if body.get("schema") == SCHEMA else {}
     except (OSError, ValueError, AttributeError, TypeError):
         return {}

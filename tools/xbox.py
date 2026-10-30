@@ -222,7 +222,7 @@ def catalog(out_dir, previous_dir, fetch, today):
     traits = {pid: {k: g[k] for k in ("developers", "publishers", "genres") if k in g} for pid, g in games.items()}
 
     def payload(source, entries, **extra):
-        return {"schema": 1, "platform": XBOX, "generated": today.isoformat(), **extra, "source": source,
+        return {"platform": XBOX, "generated": today.isoformat(), **extra, "schema": common.SCHEMA, "source": source,
                 "games": entries}
     common.publish(out_dir, f"{XBOX}/games.json", payload(
         "Microsoft Store's catalog (displaycatalog), Game Pass lists, Wikidata (P5885)", dict(sorted(games.items()))),
@@ -254,7 +254,7 @@ def prices(out_dir, previous_dir, fetch, today):
         name = f"{XBOX}/prices/{country}.json"
         last = common.previous_file(previous_dir, name)
         common.publish(out_dir, name, {
-            "schema": 1, "platform": XBOX, "generated": today.isoformat(), "country": country, "currency": currency,
+            "schema": common.SCHEMA, "platform": XBOX, "generated": today.isoformat(), "country": country, "currency": currency,
             "since": last.get("since") or last.get("generated") or today.isoformat(),
             "source": "Microsoft Store's catalog (displaycatalog)",
             "games": common.with_lowest(dict(sorted(rows.items())), last.get("games") or {}, today.isoformat())},
