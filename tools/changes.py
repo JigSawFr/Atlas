@@ -25,13 +25,27 @@ TREND_MOVE = 100      # points a trend moved by, at least, to be said
 LITE_FROM = 1_000_000  # bytes of a games.json above which a light one is made too
 
 
+def ours(body):
+    """body when it is a file of our schema, else {} (one of another schema reads as none)."""
+    return body if isinstance(body, dict) and body.get("schema") == common.SCHEMA else {}
+
+
 def read(path):
     try:
         with open(path, encoding="utf-8") as f:
-            body = json.load(f)
-        return body if isinstance(body, dict) else {}
+            return ours(json.load(f))
     except (OSError, ValueError):
         return {}
+
+
+def other_schema(path):
+    """True when `path` holds a file of another schema: never written over."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            body = json.load(f)
+    except (OSError, ValueError):
+        return False
+    return isinstance(body, dict) and "schema" in body and body["schema"] != common.SCHEMA
 
 
 def last(directory, path):
@@ -40,8 +54,7 @@ def last(directory, path):
     if got.returncode:
         return {}
     try:
-        body = json.loads(got.stdout)
-        return body if isinstance(body, dict) else {}
+        return ours(json.loads(got.stdout))
     except ValueError:
         return {}
 
@@ -58,7 +71,8 @@ def prices_of(directory, pid):
 
 def changes(directory, today, previous=None):
     """{platform: {kind: [...]}}, and the day's prices that changed for history."""
-    previous = previous or (lambda path: last(directory, path))
+    asked = previous or (lambda path: last(directory, path))
+    previous = lambda path: ours(asked(path))   # noqa: E731
     day = int(today.strftime("%Y%m%d"))
     out = {}
     for pid in platform_ids(directory):
@@ -91,7 +105,8 @@ def changes(directory, today, previous=None):
 
 def history(directory, today, previous=None):
     """history/<platform>/YYYY-MM.json with today's prices, for the games whose price changed."""
-    previous = previous or (lambda path: last(directory, path))
+    asked = previous or (lambda path: last(directory, path))
+    previous = lambda path: ours(asked(path))   # noqa: E731
     day = int(today.strftime("%Y%m%d"))
     written = []
     for pid in platform_ids(directory):
@@ -100,7 +115,10 @@ def history(directory, today, previous=None):
             continue
         name = f"history/{pid}/{today.strftime('%Y-%m')}.json"
         path = os.path.join(directory, name)
-        body = read(path) or {"schema": 1, "platform": pid, "month": today.strftime("%Y-%m"),
+        if other_schema(path):
+            print(f"changes: {name} is of another schema, left as it is", file=sys.stderr)
+            continue
+        body = read(path) or {"schema": common.SCHEMA, "platform": pid, "month": today.strftime("%Y-%m"),
                               "source": f"platforms/{pid}/prices/", "games": {}}
         games = body["games"]
         changed = False
@@ -133,12 +151,15 @@ def lite(directory):
         if not os.path.exists(path) or os.path.getsize(path) <= LITE_FROM:
             continue
         body = read(path)
+        target = os.path.join(directory, "platforms", pid, "games.lite.json")
+        if not body or other_schema(target):
+            continue
         light = {}
         for g, e in (body.get("games") or {}).items():
             if isinstance(e, dict):
                 light[g] = {k: e[k] for k in ("name", "qid", "release", "reviews", "rating") if k in e}
-        common._dump(os.path.join(directory, "platforms", pid, "games.lite.json"), {
-            "schema": 1, "platform": pid, "generated": body.get("generated"),
+        common._dump(target, {
+            "schema": common.SCHEMA, "platform": pid, "generated": body.get("generated"),
             "source": f"platforms/{pid}/games.json (name, Wikidata item, release, reviews or rating)", "games": light})
         written.append(pid)
     return written
@@ -149,7 +170,7 @@ def main():
     today = datetime.date.today()
     found = changes(directory, today)
     common._dump(os.path.join(directory, "changes.json"), {
-        "schema": 1, "generated": today.isoformat(), "source": "Atlas (the run's files against the last run's)",
+        "schema": common.SCHEMA, "generated": today.isoformat(), "source": "Atlas (the run's files against the last run's)",
         "platforms": found})
     print(f"changes: {sum(len(v) for v in found.values())} kinds of change; history: {len(history(directory, today))} "
           f"files; lite: {', '.join(lite(directory)) or 'none'}", file=sys.stderr)

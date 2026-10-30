@@ -311,6 +311,33 @@ say) is here too, by its Wikidata item: `links.json` gives its store ids.
   traits as `[QID, name]`: `series`, `developers`, `publishers`, `genres`.
 - `similar.json`: the 12 most alike among the machine's games, by their traits.
 
+## What changed, and the prices' history
+
+Every run, once its files are made (`tools/changes.py`):
+
+- `changes.json`: by platform, the games new since the last run (`new`),
+  the ones out today (`out_today`), the trends that moved by 100 points or
+  more (`trends`: `[id, before, now]`), and by country the sales that
+  started and ended and the new lowest prices (`sales`), 200 of each at
+  most:
+
+  ```json
+  {"schema": 1, "generated": "2026-11-02", "source": "Atlas (the run's files against the last run's)",
+   "platforms": {"switch": {"new": ["0100000000030000"], "trends": [["0100000000010000", 10, 210]],
+                            "sales": {"FR": {"started": ["0100000000010000"], "ended": [], "lowest": []}}}}}
+  ```
+
+- `history/<platform>/YYYY-MM.json`: each game's price by country, on the
+  days it changed only, `[YYYYMMDD, regular, sale]` (sale 0: none), a file
+  a month, kept from day to day. It stays on the data branch (and in the
+  weekly archives); the website does not copy it.
+- `platforms/<id>/games.lite.json`, beside a `games.json` over 1 MB: each
+  game's `name`, `qid`, `release` and `reviews` or `rating` alone, for a
+  reader that needs no more.
+
+The last run's files of another schema count as none (nothing is said new
+against them), and a month's history of another schema is left as it is.
+
 ## The archives
 
 The `data` branch keeps only the last files. Every Monday's build also keeps

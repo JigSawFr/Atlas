@@ -93,7 +93,7 @@ KINDS = {
                                                                                        "pattern": "^[0-9a-f]{16}$"}}}}}},
     "changes": {"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "What the run changed",
                 "type": "object", "required": ["schema", "generated", "platforms"],
-                "properties": {"schema": {"const": 1}, "generated": DATE, "source": {"type": "string"},
+                "properties": {"schema": {"const": common.SCHEMA}, "generated": DATE, "source": {"type": "string"},
                                "platforms": {"type": "object", "additionalProperties": {
                                    "type": "object", "properties": {
                                        "new": {"type": "array", "items": {"type": "string"}},
