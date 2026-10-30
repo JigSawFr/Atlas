@@ -159,6 +159,16 @@ class Referrer(unittest.TestCase):
               '<a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a>')
         self.assertEqual(self.problems(ok), ([], True))
         problems, meta = self.problems('<a href="https://store.example.com/app/1">store</a>'
-                                       '<a href="https://boreale.dev/" rel="noreferrer">Boréale</a>')
+                                       '<a href="https://boreale.dev/?utm_source=atlas&amp;utm_medium=footer" rel="noreferrer">Boréale</a>')
         self.assertFalse(meta)
         self.assertEqual(len(problems), 2)
+
+    def test_utm(self):
+        own = ' referrerpolicy="strict-origin"'
+        ok = (f'<a href="https://boreale.dev/fr/?utm_source=atlas&amp;utm_medium=footer"{own}>Boréale</a>'
+              f'<a href="https://atlas.boreale.dev/fr/"{own}>Atlas</a>')
+        self.assertEqual(self.problems(ok)[0], [])
+        problems, _ = self.problems(f'<a href="https://boreale.dev/"{own}>Boréale</a>'
+                                    f'<a href="https://atlas.boreale.dev/?utm_source=github"{own}>Atlas</a>'
+                                    '<a href="https://store.example.com/?utm_source=atlas" rel="noreferrer">store</a>')
+        self.assertEqual(len(problems), 3)
