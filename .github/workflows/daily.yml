@@ -28,7 +28,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  ALERTS: /tmp/playinsights-alerts.md   # runner.temp is not allowed at this level
+  ALERTS: /tmp/atlas-alerts.md   # runner.temp is not allowed at this level
 
 jobs:
   switch:

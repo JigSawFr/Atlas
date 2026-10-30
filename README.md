@@ -1,15 +1,20 @@
-# PlayInsights
+# Atlas
 
-Open data about Nintendo Switch games, by title id, rebuilt every week from
-sources that need no account: which games are well known, which are read
-about more lately, what critics gave them, which come out soon, what each
-game is (its series, developers, publishers, genres, modes), how it does on
-Steam, and which games are most like it. With IGDB's keys (see below), it
-also takes each game's themes, keywords, perspectives, popularity and hype
-from IGDB.
-[PlayShelf](https://github.com/JigSawFr/PlayShelf) reads it for its Home
-tab's **Popular**, **Trending** and **Coming soon** rows; anything else may
-too.
+Open data about video games on every platform it can read without an
+account, rebuilt every week, with prices every day: which games are well
+known, which are read about more lately, what critics and players gave them,
+which come out soon, what each game is (its series, developers, publishers,
+genres), which games are most like it, and what it costs in 13 countries.
+Each platform has a folder: the Nintendo Switch (`switch/`, by title id),
+Steam (`steam/`), GOG (`gog/`) and the Xbox and Microsoft Store (`xbox/`);
+`links.json` ties a game's ids on every platform together. With IGDB's keys
+(see "Keys"), the Switch's files also take IGDB's themes, keywords,
+perspectives, popularity and hype.
+[PlayShelf](https://github.com/JigSawFr/PlayShelf) reads the Switch's for its
+Home tab; anything else may too.
+
+Atlas was called PlayInsights until 2026-10-30; the data's formats and paths
+didn't change with the name.
 
 ## The files
 
@@ -19,23 +24,23 @@ jsDelivr. Each platform has a folder of its own; the Switch's is `switch/`:
 
 | File | Address |
 |---|---|
-| `switch/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/popular.json` |
-| `switch/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/upcoming.json` |
-| `switch/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/games.json` |
-| `switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/similar.json` |
-| `switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/editions.json` |
-| `switch/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/switch/prices/FR.json` |
-| `steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/popular.json` |
-| `steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/games.json` |
-| `steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/upcoming.json` |
-| `steam/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/similar.json` |
-| `steam/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/steam/prices/FR.json` |
-| `gog/popular.json`, `gog/games.json`, `gog/upcoming.json`, `gog/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/gog/popular.json`… |
-| `gog/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/gog/prices/FR.json` |
-| `xbox/popular.json`, `xbox/games.json`, `xbox/gamepass.json`, `xbox/upcoming.json`, `xbox/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/xbox/popular.json`… |
-| `xbox/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/xbox/prices/FR.json` |
-| `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/links.json` |
-| `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/PlayInsights@data/index.json` |
+| `switch/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/popular.json` |
+| `switch/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/upcoming.json` |
+| `switch/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/games.json` |
+| `switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/similar.json` |
+| `switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/editions.json` |
+| `switch/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/switch/prices/FR.json` |
+| `steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/steam/popular.json` |
+| `steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/steam/games.json` |
+| `steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/steam/upcoming.json` |
+| `steam/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/steam/similar.json` |
+| `steam/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/steam/prices/FR.json` |
+| `gog/popular.json`, `gog/games.json`, `gog/upcoming.json`, `gog/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/gog/popular.json`… |
+| `gog/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/gog/prices/FR.json` |
+| `xbox/popular.json`, `xbox/games.json`, `xbox/gamepass.json`, `xbox/upcoming.json`, `xbox/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/xbox/popular.json`… |
+| `xbox/prices/<country>.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/xbox/prices/FR.json` |
+| `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/links.json` |
+| `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/index.json` |
 
 Until 2026-10-30 the Switch's files were at the branch's root (`popular.json`,
 `prices/FR.json`…); the first run after it moved them into `switch/`
@@ -223,7 +228,7 @@ them as a [release](../../releases), `data-YYYY-MM-DD`, tagged on the commit
 that made them: each file the branch had that day, attached on its own
 (`switch/prices/FR.json` as `switch-prices-FR.json`, a release's files having
 no folders),
-all of them in one zip with their folders (`playinsights-data-YYYY-MM-DD.zip`,
+all of them in one zip with their folders (`atlas-data-YYYY-MM-DD.zip`,
 about 3 MB), and their `SHA256SUMS.txt`. Some 17 MB a week, kept for good, as the data's
 history: the prices of a Monday, the trends of a week.
 
@@ -231,15 +236,15 @@ The last week's files have addresses of their own, which follow each new
 release:
 
 ```
-https://github.com/JigSawFr/PlayInsights/releases/latest/download/switch-popular.json
-https://github.com/JigSawFr/PlayInsights/releases/download/data-2026-11-02/switch-prices-FR.json
-https://github.com/JigSawFr/PlayInsights/releases/download/data-2026-11-02/playinsights-data-2026-11-02.zip
+https://github.com/JigSawFr/Atlas/releases/latest/download/switch-popular.json
+https://github.com/JigSawFr/Atlas/releases/download/data-2026-11-02/switch-prices-FR.json
+https://github.com/JigSawFr/Atlas/releases/download/data-2026-11-02/atlas-data-2026-11-02.zip
 ```
 
 Each file, and the zip, is attested:
 
 ```sh
-gh attestation verify switch-popular.json -R JigSawFr/PlayInsights
+gh attestation verify switch-popular.json -R JigSawFr/Atlas
 ```
 
 ## The sources

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds PlayInsights' data files, by Nintendo Switch title id, from open
+"""Builds Atlas' data files, by Nintendo Switch title id, from open
 sources that need no key:
 
 - switch/popular.json: how well known each game is (a score from 0 to 100),
