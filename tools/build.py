@@ -177,25 +177,42 @@ def best_articles(known):
     return [a for _, a in sorted(((links, a) for links, a in known.values() if a), reverse=True)[:VIEWED]]
 
 
-def fetch_views(articles, starts, end):
+def wait_of(error, least=30, most=120):
+    """The seconds to wait after a page not read: as long as Wikimedia asks
+    (Retry-After, within `least` and `most`), else `least`."""
+    headers = getattr(error, "headers", None) or {}
+    try:
+        wait = int(headers.get("Retry-After") or least)
+    except (TypeError, ValueError):
+        wait = least
+    return max(least, min(most, wait))
+
+
+def fetch_views(articles, starts, end, sleep=None):
     """{article: [views a month]} of `articles`, asked in turn; a page
-    refused or not reached is left out (common.NOT_READ), and after three,
-    no more (the ones read so far kept)."""
+    refused for too many requests (429) is asked again once, after as long
+    as Wikimedia says (wait_of); a page refused or not reached is left out
+    (common.NOT_READ), and after three, no more (the ones read so far kept)."""
+    sleep = sleep or time.sleep
     read, refused = {}, 0
     for article in articles:
         if article in read:
             continue
-        try:
-            read[article] = views(article, starts, end)
-        except common.NOT_READ as e:
-            refused += 1
-            print(f"views: {article}: {common.why(e)}", file=sys.stderr)
-            if refused >= 3:
-                print(f"views: {refused} pages not read, stopped after {len(read)}", file=sys.stderr)
+        for again in (False, True):
+            try:
+                read[article] = views(article, starts, end)
                 break
-            time.sleep(30)
-            continue
-        time.sleep(PAUSE)
+            except common.NOT_READ as e:
+                print(f"views: {article}: {common.why(e)}", file=sys.stderr)
+                if not again and getattr(e, "code", None) == 429:
+                    sleep(wait_of(e))
+                    continue
+                refused += 1
+                break
+        if refused >= 3:
+            print(f"views: {refused} pages not read, stopped after {len(read)}", file=sys.stderr)
+            break
+        sleep(PAUSE if article in read else wait_of(None))
     return read
 
 

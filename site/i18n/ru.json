@@ -36,6 +36,8 @@
   "platform_gog_text": "Весь каталог GOG с ценами и отзывами.",
   "platform_xbox_text": "Цены Microsoft Store и то, что есть в Game Pass.",
   "platform_3ds_text": "Игры 3DS всех регионов с их title id по данным Nlib API и Wikidata (без цен: eShop закрылся в 2023 году).",
+  "platform_ps4_text": "Игры PS4 по данным Wikidata: даты выхода, характеристики и id PlayStation Store (без цен: условия Sony запрещают собирать данные магазина).",
+  "platform_ps5_text": "Игры PS5 по данным Wikidata: даты выхода, характеристики и id PlayStation Store (без цен: условия Sony запрещают собирать данные магазина).",
   "platform_retro_text": "Игры, которые уже не продаёт ни один магазин, по Wikidata.",
   "files_eyebrow": "Файлы",
   "files_title": "Что публикуется и когда",

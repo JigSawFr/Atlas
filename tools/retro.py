@@ -37,19 +37,33 @@ PREFIX schema: <http://schema.org/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX bd: <http://www.bigdata.com/rdf#>
 """
-GAMES = PREFIXES + """SELECT ?tid ?platform ?platformName ?links ?article ?name ?nameMul WHERE {
+GAMES_QUERY = PREFIXES + """SELECT ?tid ?platform ?platformName ?links ?article ?name ?nameMul WHERE {
   VALUES ?platform { %s }
   ?tid wdt:P400 ?platform; wdt:P31 wd:Q7889; wikibase:sitelinks ?links.
   OPTIONAL { ?article schema:about ?tid; schema:isPartOf <https://en.wikipedia.org/>. }
   OPTIONAL { ?tid rdfs:label ?name. FILTER(LANG(?name) = "en") }
   OPTIONAL { ?tid rdfs:label ?nameMul. FILTER(LANG(?nameMul) = "mul") }
   OPTIONAL { ?platform rdfs:label ?platformName. FILTER(LANG(?platformName) = "mul") }
-}""" % " ".join(f"wd:{p}" for p in PLATFORMS)
-TRAITS = PREFIXES + """SELECT ?tid ?value ?valueLabel WHERE {
+}"""
+TRAITS_QUERY = PREFIXES + """SELECT ?tid ?value ?valueLabel WHERE {
   VALUES ?platform { %s }
   ?tid wdt:P400 ?platform; wdt:P31 wd:Q7889; wdt:{prop} ?value.
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
-}""".replace("%s", " ".join(f"wd:{p}" for p in PLATFORMS))
+}"""
+
+
+def values(items):
+    """A SPARQL VALUES list of Wikidata items."""
+    return " ".join(f"wd:{p}" for p in items)
+
+
+def games_query(items):
+    """The games of the machines `items` (QIDs): GAMES' rows."""
+    return GAMES_QUERY % values(items)
+
+
+GAMES = games_query(PLATFORMS)
+TRAITS = TRAITS_QUERY.replace("%s", values(PLATFORMS))
 KINDS = ("series", "developers", "publishers", "genres")
 QID = re.compile(r"^Q[0-9]+$")
 

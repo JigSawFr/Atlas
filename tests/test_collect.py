@@ -142,6 +142,25 @@ class SameFiles(unittest.TestCase):
             pages = build.fetch_views(build.best_articles(known), starts, end)
         self.assertEqual(build.views_from(known, json.loads(json.dumps(pages))), asked)
 
+    def test_monthly_views_retry_after(self):
+        # A page refused for too many requests is asked again once, after Wikimedia's Retry-After.
+        starts, end = build.months(datetime.date(2026, 10, 30))
+        asked, waits = [], []
+
+        def views(article, starts_, end_):
+            asked.append(article)
+            if article == "Busy" and asked.count("Busy") == 1:
+                raise urllib.error.HTTPError(article, 429, "no", {"Retry-After": "75"}, None)
+            if article == "Gone":
+                raise urllib.error.HTTPError(article, 429, "no", {"Retry-After": "9999"}, None)
+            return [1, 2, 3]
+        with mock.patch.object(build, "views", views):
+            pages = build.fetch_views(["Busy", "Gone", "Calm"], starts, end, sleep=waits.append)
+        self.assertEqual(sorted(pages), ["Busy", "Calm"])
+        self.assertEqual(asked, ["Busy", "Busy", "Gone", "Gone", "Calm"])
+        self.assertEqual(waits[0], 75)
+        self.assertIn(120, waits)   # at most two minutes
+
     def test_daily_views(self):
         by_game = {A: [("en", "Lantern Tale"), ("fr", "Lantern Tale")], B: [("en", "Quiet Pond")], C: [("ja", "Echo")]}
         start, end = trends.window(datetime.date(2026, 10, 30))

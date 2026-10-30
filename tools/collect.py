@@ -10,7 +10,9 @@ is kept and said (common.publish_source).
   - weekly: switch (P11072, sitelinks, English page, critics), switch-<kind>
     (series, developers, publishers, genres, modes), switch-steam (P1733),
     switch-igdb (P5794), steam (P1733), gog (P2725), xbox (P5885), links
-    (every store's ids), retro (P400) and retro-<kind>;
+    (every store's ids), retro (P400) and retro-<kind>, playstation (the
+    PS4's and PS5's games, P400), playstation-<kind> (their series,
+    developers, publishers, genres, modes) and playstation-dates (P577);
   - daily: switch-pages (the best known Switch games' pages in LANGS).
 - titledb (daily): blawar/titledb's US, GB and JP lists, by titledb's key.
 - eshop (daily): prices/<country>.json, the eShop's answer by eShop id.
@@ -44,6 +46,7 @@ import features
 import gog
 import igdb
 import links
+import playstation
 import prices
 import retro
 import steam
@@ -74,6 +77,10 @@ def wikidata_weekly():
     for kind in retro.KINDS:
         out.append((f"retro-{kind}", lambda kind=kind: retro.query(
             retro.TRAITS.replace("{prop}", features.KINDS[kind][0]))))
+    out.append(("playstation", lambda: common.sparql(playstation.GAMES)))
+    for kind in playstation.KINDS:
+        out.append((f"playstation-{kind}", lambda kind=kind: common.sparql(playstation.query(kind))))
+    out.append(("playstation-dates", lambda: common.sparql(playstation.DATES)))
     return out
 
 
@@ -326,7 +333,7 @@ def monthly_wanted(fresh, previous_dir):
     src = lambda name: common.source(f"{common.SOURCES}/{name}", *fresh, previous_dir)   # noqa: E731
     wanted = []
     for known in (build.views_known(src), steam.views_known(src), gog.views_known(src), xbox.views_known(src),
-                  retro_.views_known(src)):
+                  retro_.views_known(src), playstation.views_known(src)):
         for article in build.best_articles(known):
             if article not in wanted:
                 wanted.append(article)

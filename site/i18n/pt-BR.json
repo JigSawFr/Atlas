@@ -36,6 +36,8 @@
   "platform_gog_text": "Todo o catálogo GOG, com preços e análises.",
   "platform_xbox_text": "Os preços da Microsoft Store e o que está no Game Pass.",
   "platform_3ds_text": "Os jogos de 3DS de todas as regiões, com seus title ids, segundo a Nlib API e a Wikidata (sem preços: a eShop fechou em 2023).",
+  "platform_ps4_text": "Os jogos de PS4 segundo a Wikidata: datas de lançamento, características e ids da PlayStation Store (sem preços: os termos da Sony proíbem coletar os dados da loja).",
+  "platform_ps5_text": "Os jogos de PS5 segundo a Wikidata: datas de lançamento, características e ids da PlayStation Store (sem preços: os termos da Sony proíbem coletar os dados da loja).",
   "platform_retro_text": "Os jogos que nenhuma loja vende, a partir do Wikidata.",
   "files_eyebrow": "Os arquivos",
   "files_title": "O que é publicado, e quando",

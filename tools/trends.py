@@ -187,12 +187,7 @@ def fetch_daily(by_game, start, end, fetch, sleep=time.sleep):
 
 def retry_after(error):
     """The seconds Wikimedia asks to wait (Retry-After), within WAIT_MIN and WAIT_MAX."""
-    headers = getattr(error, "headers", None) or {}
-    try:
-        wait = int(headers.get("Retry-After") or WAIT_MIN)
-    except (TypeError, ValueError):
-        wait = WAIT_MIN
-    return max(WAIT_MIN, min(WAIT_MAX, wait))
+    return build.wait_of(error, WAIT_MIN, WAIT_MAX)
 
 
 def from_pages(by_game, pages):

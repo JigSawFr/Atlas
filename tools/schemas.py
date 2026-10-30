@@ -53,6 +53,8 @@ KINDS = {
             "rating": {"type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2},
             "igdb_rating": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
             "gamepass": {"type": "array", "items": {"enum": ["console", "pc"]}},
+            "ps": {"type": "array", "items": {"type": "string", "pattern": r"^[0-9]+$"}},
+            "ps_product": {"type": "array", "items": {"type": "string"}},
             "platforms": {"type": "array", "items": TRAIT},
             "series": TRAITS, "developers": TRAITS, "publishers": TRAITS, "genres": TRAITS, "modes": TRAITS,
             "tags": TRAITS, "themes": TRAITS, "keywords": TRAITS, "perspectives": TRAITS,
