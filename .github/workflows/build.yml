@@ -50,21 +50,23 @@ jobs:
         run: |
           cp out/*.json data-branch/
           tools/publish.sh data-branch "data: $(date -u +%Y-%m-%d)"
-      # The week's files kept as a release, its archive attested
-      # (`gh attestation verify <archive> -R JigSawFr/PlayInsights`).
+      # The week's files kept as a release, each and their zip attested
+      # (`gh attestation verify popular.json -R JigSawFr/PlayInsights`).
       - name: Archive
         id: archive
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: tools/archive.sh data-branch "$(date -u +%Y-%m-%d)" archive
-      - name: Attest the archive
+      - name: Attest the files
         id: attest
         if: steps.archive.outcome == 'success'
         continue-on-error: true
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: archive/*.tar.gz
+          subject-path: |
+            archive/*.json
+            archive/*.zip
       # Anything wrong (the job, a step that may fail, a file the guard
       # kept): an issue labelled data-alert, or a comment on the open one.
       - name: Alert

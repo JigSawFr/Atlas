@@ -105,14 +105,26 @@ Each game the country's eShop sells is `[regular, sale, until, lowest, lowest_da
 ## The archives
 
 The `data` branch keeps only the last files. Every Monday's build also keeps
-them as a [release](../../releases), `data-YYYY-MM-DD`: one archive of every
-file the branch had that day (`playinsights-data-YYYY-MM-DD.tar.gz`, about
-3 MB) and its `SHA256SUMS.txt`, tagged on the commit that made them. They are
-kept for good, as the data's history: the prices of a Monday, the trends of a
-week. The archive is attested:
+them as a [release](../../releases), `data-YYYY-MM-DD`, tagged on the commit
+that made them: each file the branch had that day, attached on its own
+(`prices/FR.json` as `prices-FR.json`, a release's files having no folders),
+all of them in one zip with their folders (`playinsights-data-YYYY-MM-DD.zip`,
+about 3 MB), and their `SHA256SUMS.txt`. Some 17 MB a week, kept for good, as the data's
+history: the prices of a Monday, the trends of a week.
+
+The last week's files have addresses of their own, which follow each new
+release:
+
+```
+https://github.com/JigSawFr/PlayInsights/releases/latest/download/popular.json
+https://github.com/JigSawFr/PlayInsights/releases/download/data-2026-11-02/prices-FR.json
+https://github.com/JigSawFr/PlayInsights/releases/download/data-2026-11-02/playinsights-data-2026-11-02.zip
+```
+
+Each file, and the zip, is attested:
 
 ```sh
-gh attestation verify playinsights-data-2026-11-02.tar.gz -R JigSawFr/PlayInsights
+gh attestation verify popular.json -R JigSawFr/PlayInsights
 ```
 
 ## The sources
