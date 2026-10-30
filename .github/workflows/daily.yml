@@ -1,13 +1,13 @@
 # What changes every day, in two steps:
 # - each source asked once, side by side (tools/collect.py: sources/<source>/):
-#   - pages: the best known Switch games' pages on the Wikipedias of
-#     PlayShelf's languages (Wikidata), then their views a day (Wikimedia);
+#   - pages: the best known Switch and Steam games' pages on the Wikipedias
+#     of PlayShelf's languages (Wikidata), then their views a day (Wikimedia);
 #   - eshop: titledb's lists (the eShop's ids), then the eShop's prices in a
 #     few countries;
 #   - steam-store, gog, msstore: each store's prices in the same countries
 #     (Steam's a country a job: the slowest store, each country has its own
 #     time, and a country not done today keeps its last file);
-# - the platforms' files made from them, asking nothing: platforms/switch/popular.json's
+# - the platforms' files made from them, asking nothing: platforms/switch/ and steam/popular.json's
 #   trends (tools/trends.py), platforms/switch/prices/ (tools/prices.py), platforms/steam/prices/
 #   (tools/steam_prices.py), platforms/gog/prices/ (tools/gog.py prices), platforms/xbox/prices/
 #   (tools/xbox.py prices); then everything committed to the `data` branch,

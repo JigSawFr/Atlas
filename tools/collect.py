@@ -81,17 +81,17 @@ def collect_wikidata(what, out_dir, previous_dir, fresh, today, report):
     if what == "weekly":
         asked = wikidata_weekly()
     else:
-        popular = common.previous_file(previous_dir, f"platforms/{build.SWITCH}/popular.json").get("games") or {}
-        top = [tid for tid, _ in sorted(popular.items(), key=lambda kv: -kv[1][0])[:trends.TOP]]
-
-        def pages():
+        # Each platform's best known games' pages (tools/trends.py's PLATFORMS).
+        def pages(platform, prop):
+            best = trends.top(common.previous_file(previous_dir, f"platforms/{platform}/popular.json"))
             rows = []
-            for i in range(0, len(top), trends.BATCH):
+            for i in range(0, len(best), trends.BATCH):
                 if i:
                     time.sleep(5)
-                rows += common.sparql(trends.pages_query(top[i:i + trends.BATCH]))
+                rows += common.sparql(trends.pages_query(best[i:i + trends.BATCH], prop))
             return rows
-        asked = [("switch-pages", pages)]
+        asked = [(f"{platform}-pages", lambda platform=platform, prop=prop: pages(platform, prop))
+                 for platform, prop, _ in trends.PLATFORMS]
     for i, (name, ask) in enumerate(asked):
         if i:
             time.sleep(5)   # Wikidata's service may allow one query a minute: spaced
@@ -342,8 +342,11 @@ def collect_wikipedia(what, out_dir, previous_dir, fresh, today, report):
             "wikipedia", today, "Wikimedia pageviews (en.wikipedia, monthly)", licence,
             months=[s.strftime("%Y-%m") for s in starts], pages=read), previous_dir, report)
         return
-    rows = common.bindings(common.source(f"{common.SOURCES}/wikidata/switch-pages.json", *fresh).get("rows") or [])
-    by_game = trends.pages(rows, build.base_id)
+    by_game = {}
+    for platform, _, base_id in trends.PLATFORMS:
+        rows = common.bindings(common.source(f"{common.SOURCES}/wikidata/{platform}-pages.json", *fresh).get("rows") or [])
+        for game, langs in trends.pages(rows, base_id).items():
+            by_game[f"{platform}:{game}"] = langs   # a page read once for both platforms' games
     start, end = trends.window(today)
     read = trends.fetch_daily(by_game, start, end, lambda url: common.fetch(url, tries=2, patient=False, timeout=30))
     common.publish_source(out_dir, f"{common.SOURCES}/wikipedia/daily.json", payload(
