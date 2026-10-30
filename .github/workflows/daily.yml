@@ -97,9 +97,13 @@ jobs:
         run: python3 tools/collect.py "${{ matrix.then }}" daily out data-branch out
       - name: Keep the files
         if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
           mkdir -p out
           touch "$ALERTS"
+          # A job that failed or ran out of time says which source it was.
+          [ "$JOB_STATUS" = success ] || echo "**sources (${{ matrix.name }})** ended in **$JOB_STATUS**; its files are the last run's." >> "$ALERTS"
           cp "$ALERTS" "out/.alerts-${{ matrix.name }}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()

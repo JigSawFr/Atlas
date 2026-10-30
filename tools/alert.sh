@@ -1,8 +1,10 @@
 #!/bin/bash
 # Says on GitHub when a run went wrong, so it is not missed: an issue
 # labelled data-alert (its owner is mailed), or a comment on the one still
-# open. Wrong is the job failing, one of its steps that may fail without
-# failing it (OUTCOMES: "name=outcome …", as the workflow gives them), or a
+# open. Wrong is the job failing, one of its steps or the jobs it needs
+# going wrong without failing it (OUTCOMES: "name=outcome …", as the
+# workflow gives them: failure, or cancelled, most often a job that ran out
+# of time), or a
 # file the guard kept from the last run (ALERTS: the lines tools/build.py's
 # publish() wrote). Nothing wrong: nothing said.
 #
@@ -14,7 +16,11 @@ lines=()
 [ "${JOB_STATUS:-success}" = success ] || lines+=("- The job ended in **${JOB_STATUS}**.")
 for pair in ${OUTCOMES:-}; do
   step=${pair%%=*}; outcome=${pair#*=}
-  [ "$outcome" = failure ] && lines+=("- **${step}** failed; the run went on without it (its files are the last run's).")
+  case $outcome in
+    failure) lines+=("- **${step}** failed; the run went on without it (its files are the last run's).") ;;
+    # A job cancelled is most often one that ran out of time (timeout-minutes).
+    cancelled) lines+=("- **${step}** was cancelled or ran out of time; the run went on without it (its files are the last run's).") ;;
+  esac
 done
 if [ -n "${ALERTS:-}" ] && [ -s "$ALERTS" ]; then
   while IFS= read -r line; do lines+=("- $line"); done < "$ALERTS"
