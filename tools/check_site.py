@@ -4,7 +4,9 @@
     python3 tools/check_site.py <site-dir>
 
 - what every one of Boréale's sites passes (library/boreale-site,
-  boreale_site.check): no {{key}} left, links and #anchors that lead
+  boreale_site.check): the page chrome (one header with the menu of Boréale's
+  sites, the nav, the pill before GitHub, the footer, chrome.css and
+  chrome.js), no {{key}} left, links and #anchors that lead
   somewhere, no referrer and the UTM tags of links to our other sites (the
   explorer's store links too, built in site/assets/explore.js, carry
   rel="noreferrer"), nothing the Content-Security-Policy blocks, Umami's
@@ -43,7 +45,7 @@ def main() -> None:
         sys.exit(__doc__)
     site = Path(sys.argv[1])
     errors = boreale.check_catalogs(ROOT / "site" / "i18n")
-    found, pages = check.pages(site, boreale.Site("atlas", os.environ.get("SITE_URL")), skip=("assets", "data", "x"))
+    found, pages = check.pages(site, boreale.Site("atlas", os.environ.get("SITE_URL")), skip=("assets", "data", "x"), chrome=True)
     errors += found
 
     try:
