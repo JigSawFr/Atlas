@@ -1,67 +1,128 @@
-/* Atlas's site (site/README.md): the night, an aurora once at the
-   top, Boréale's look (branding/README.md); its base taken from boreale.dev's
-   site.css. One dark look: the brand stands on the night. The brand's
-   colours and fonts, the language menu and the menu of Boréale's sites are
-   boreale-site's (boreale.css, loaded first). */
+/* Atlas's site (site/README.md): Boréale's night, an aurora once at the top
+   of the home page (site.js), as PlayGuard's, PlayShelf's, Lantern's and
+   boreale.dev. One dark look: the brand stands on the night
+   (boreale/branding/README.md). The brand's colours and fonts, the language
+   menu and the menu of Boréale's sites are boreale-site's (boreale.css,
+   loaded first). */
+
+:root {
+  /* Beside Boréale's colours (boreale.css): a lighter dusk and the links'
+     blue, for their contrast on the night (PlayGuard's). */
+  --dusk: #8593ae;
+  --link: #6fd0ff;
+}
+
 * { box-sizing: border-box; }
-html { background: var(--abyss); }
+/* iOS enlarges the text when the phone turns to landscape, unless told not to. */
+html { background: var(--abyss); scroll-behavior: smooth; scroll-padding-top: 24px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--abyss); color: var(--snow);
-  font-family: var(--body); font-size: 1.0625rem; line-height: 1.6;
-  -webkit-font-smoothing: antialiased; text-size-adjust: 100%;
+  font: 16.5px/1.6 var(--body);
+  -webkit-font-smoothing: antialiased; overflow-x: clip;
 }
 /* A long word (German's, Russian's) hyphenated where the browser can, else
    broken rather than wider than a phone. */
-h1, h2, h3 { font-family: var(--display); line-height: 1.12; margin: 0; text-wrap: balance; hyphens: auto; overflow-wrap: break-word; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; margin: 0; text-wrap: balance; hyphens: auto; overflow-wrap: break-word; }
 p { margin: 0; }
-a { color: var(--ice); text-underline-offset: 3px; }
-a:hover { color: var(--aurora); }
+a { color: var(--link); text-underline-offset: 3px; }
 :focus-visible { outline: 2px solid var(--aurora); outline-offset: 3px; border-radius: 6px; }
 img { max-width: 100%; }
 .skip { position: absolute; left: -9999px; }
 .skip:focus { left: 16px; top: 16px; z-index: 10; background: var(--night); padding: 8px 12px; border-radius: 8px; }
+code, pre { font-family: var(--mono); }
+code { font-size: 0.875em; }
 
+/* 1180px of content between the gutters, as PlayGuard's: the header, the
+   hero and every page's text start at the same edge. */
 .wrap {
-  max-width: 1160px; margin: 0 auto;
-  padding-left: max(20px, env(safe-area-inset-left, 0px));
-  padding-right: max(20px, env(safe-area-inset-right, 0px));
+  max-width: 1212px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
-/* The sky: the canvas (site.js) behind the header and the hero; at rest, or
-   without script, the same aurora as a gradient. */
+/* The sky: the canvas (site.js) behind the home page's header and hero;
+   without script, or with less motion asked, the same aurora as a gradient.
+   The other pages have a quieter one behind their header. */
 .sky { position: relative; isolation: isolate; overflow: hidden; }
 .sky::before {
   content: ""; position: absolute; inset: 0; z-index: -2;
   background:
-    radial-gradient(120% 60% at 30% -10%, rgba(0, 255, 204, 0.22), transparent 60%),
-    radial-gradient(90% 50% at 75% -5%, rgba(138, 92, 255, 0.22), transparent 60%),
-    radial-gradient(80% 40% at 55% 10%, rgba(51, 187, 255, 0.16), transparent 70%),
+    radial-gradient(70% 140% at 15% -60%, rgb(0 255 204 / 0.16), transparent 70%),
+    radial-gradient(60% 140% at 85% -60%, rgb(138 92 255 / 0.18), transparent 70%),
+    var(--abyss);
+}
+.sky:not(.sky-home) { border-bottom: 1px solid var(--night-line); }
+.sky-home::before {
+  background:
+    radial-gradient(120% 60% at 30% -10%, rgb(0 255 204 / 0.2), transparent 60%),
+    radial-gradient(90% 50% at 75% -5%, rgb(138 92 255 / 0.22), transparent 60%),
+    radial-gradient(80% 40% at 55% 10%, rgb(51 187 255 / 0.14), transparent 70%),
     var(--abyss);
 }
 .sky canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; display: block; }
-.sky::after {
-  content: ""; position: absolute; inset: auto 0 0 0; height: 45%; z-index: -1;
+.sky-home::after {
+  content: ""; position: absolute; inset: auto 0 0 0; height: 40%; z-index: -1;
   background: linear-gradient(to top, var(--abyss), transparent);
 }
 
-.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-block: 20px; }
-.brand { display: flex; align-items: center; gap: 10px; color: var(--snow); text-decoration: none; font-family: var(--display); font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; }
-.brand img { width: 34px; height: 34px; }
-.top nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 6px; }
-.top nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; color: var(--mist); text-decoration: none; font-size: 0.9375rem; border-radius: 10px; }
-.top nav a:hover { color: var(--snow); background: rgba(232, 238, 247, 0.06); }
-.top nav { margin-left: auto; }
+/* The header, as PlayGuard's: the name and its menu of Boréale's sites, the
+   page's links and "Explore" lit by the aurora, GitHub, then the languages. */
+.top { display: flex; align-items: center; gap: 20px; padding-block: 14px; }
+.nav { display: flex; gap: 4px; flex: 1; }
+.nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; color: var(--mist); text-decoration: none; font-weight: 500; font-size: 15px; white-space: nowrap; }
+.nav a[aria-current] { color: var(--snow); }
+.nav .nav-try { color: var(--abyss); background: var(--aurora-grad); font-weight: 600; }
+.nav .nav-try[aria-current] { color: var(--abyss); }
+.settings { gap: 8px; }
+.brand { display: flex; align-items: center; gap: 10px; min-height: 44px; color: var(--snow); text-decoration: none; font: 700 20px var(--display); letter-spacing: -0.02em; }
+.brand img, .switch img { width: 34px; height: 34px; }
 
-/* On a phone: the header on one row, GitHub is in the hero and the footer. */
-@media (max-width: 640px) {
-  .top { gap: 8px; }
-  .top nav a { padding: 0 10px; }
-  .top nav li:has(a[href^="https://github.com"]) { display: none; }
+/* Eyebrows: a section's subject over its title, in the aurora's colour. */
+.eyebrow { margin: 0 0 10px; font: 400 13px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--aurora); overflow-wrap: anywhere; }
+
+/* Buttons. */
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+.button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; padding: 0 20px;
+  border-radius: 12px; border: 1px solid var(--night-line); background: rgb(11 20 36 / 0.4);
+  color: var(--snow); text-decoration: none; font-weight: 600; font-size: 1rem;
+}
+.button.primary { background: var(--snow); border-color: var(--snow); color: var(--abyss); }
+/* Hover only where there is a pointer: a finger's tap would leave it on. */
+@media (hover: hover) {
+  a:hover { color: var(--aurora); }
+  .nav a:hover { color: var(--snow); background: rgb(232 238 247 / 0.06); }
+  .nav .nav-try:hover { color: var(--abyss); background: var(--aurora); }
+  .button:hover { border-color: var(--mist); color: var(--snow); }
+  .button.primary:hover { background: var(--aurora); border-color: var(--aurora); color: var(--abyss); }
 }
 
-.hero { padding-block: clamp(56px, 11vw, 128px) clamp(40px, 7vw, 80px); display: grid; gap: 22px; }
-.hero h1 { font-weight: 600; font-size: clamp(2.5rem, 7.5vw, 5rem); letter-spacing: -0.035em; max-width: 13ch; }
+/* The header on two rows until its links, menus and name fit on one: the
+   links on a row of their own, "Explore" first, a row to scroll whose edge
+   fades while there is more (site.js); GitHub is in the hero and the footer. */
+@media (max-width: 1080px) {
+  .top { flex-wrap: wrap; gap: 10px 16px; }
+  .nav { order: 3; flex-basis: 100%; overflow-x: auto; gap: 4px; scrollbar-width: none; margin: -6px 0 -4px; }
+  .nav.more { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+              mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
+  .nav a { padding: 0 10px; }
+  .nav .nav-try { order: -1; padding: 0 14px; margin-right: 6px; }
+  .nav .nav-gh { display: none; }
+  .settings { margin-left: auto; gap: 6px; }
+  .lang-name { display: none; }
+  .lang-code { display: inline; }
+}
+@media (max-width: 860px) {
+  .brand { font-size: 18px; gap: 8px; }
+  .brand img, .switch img { width: 28px; height: 28px; }
+}
+
+/* The other pages' heading, under their header. */
+.hero { padding-block: clamp(32px, 6vw, 64px) clamp(24px, 4vw, 40px); display: grid; gap: 14px; }
+.hero h1 { font-size: clamp(2rem, 5.5vw, 3.25rem); letter-spacing: -0.035em; line-height: 1.1; max-width: 18ch; }
 .hero h1 em { font-style: normal; background: var(--aurora-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .eyebrow { margin: 0; }
+.hero .lede { color: var(--mist); font-size: clamp(1.0625rem, 1.6vw, 1.15rem); max-width: 60ch; }
 /* Chinese, Japanese and Korean: their letters are a square em, not a ch
    wide. Line breaks as each script wants them (PlayGuard's rules): Japanese
    between phrases, never inside a word (headings and short lines; the
@@ -69,61 +130,267 @@ img { max-width: 100%; }
    say, Chinese without a punctuation mark opening a line, its titles kept
    whole between their spaces, punctuation and <wbr> (the catalogs'), broken
    elsewhere only when a run is wider than its line. */
-:lang(ja) .hero h1, :lang(ko) .hero h1, :lang(zh) .hero h1 { max-width: 11em; }
-:lang(ja) :is(h1, h2, h3, .eyebrow, .lede, .section-head p, .button, .kind, .state, .platform p, .way p, .links a) { word-break: auto-phrase; }
+:lang(ja) .hero h1, :lang(ko) .hero h1, :lang(zh) .hero h1 { max-width: 13em; }
+:lang(ja) :is(h1, h2, h3, .eyebrow, .lede, .sub, .section-head p, .section-lede, .button, .state, .card p, .band p, .map-label, .links a) { word-break: auto-phrase; }
 :lang(ko) body { word-break: keep-all; }
 :is(:lang(zh-Hans), :lang(zh-Hant)) body { line-break: strict; }
 :is(:lang(zh-Hans), :lang(zh-Hant)) :is(h1, h2, h3) { word-break: keep-all; overflow-wrap: anywhere; }
-.hero .lede { color: var(--mist); font-size: clamp(1.0625rem, 2.2vw, 1.25rem); max-width: 52ch; }
-.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
-.button {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 20px;
-  border-radius: 12px; font-weight: 600; text-decoration: none; font-size: 1rem;
+/* Japanese: a long katakana word (プラットフォーム) breaks rather than widen a small phone. */
+:lang(ja) :is(h1, h2, h3, .eyebrow, .lede, .section-head p, .section-lede, .card p, .map-label) { overflow-wrap: anywhere; }
+
+/* ---- The home page: the hero beside a drawing of what the files hold,
+   then its sections in PlayGuard's rhythm and cards. */
+.hero-home {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(28px, 5vw, 64px); align-items: center;
+  padding-block: clamp(32px, 6vw, 80px) clamp(40px, 6vw, 72px);
 }
-.button.primary { background: var(--snow); color: var(--abyss); }
-.button.primary:hover { background: var(--aurora); color: var(--abyss); }
-.button.ghost { border: 1px solid var(--night-line); color: var(--snow); }
-.button.ghost:hover { border-color: var(--mist); color: var(--snow); }
+.hero-home h1 { font-size: clamp(2.1rem, 4.4vw, 3.4rem); line-height: 1.08; max-width: none; margin: 0 0 16px; }
+.hero-home .sub { font: 500 14px/1.6 var(--mono); color: var(--snow); margin: 0 0 14px; max-width: 60ch; text-wrap: balance; }
+.hero-home .sub span { white-space: nowrap; }
+.hero-home .lede { max-width: 56ch; }
+/* Over the title: what Atlas is, to how fresh its data is. */
+.pill { margin: 0 0 18px; }
+.pill a {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 4px 12px;
+  border: 1px solid rgb(0 255 204 / 0.35); border-radius: 999px; background: rgb(0 255 204 / 0.08);
+  color: var(--aurora); font: 500 13px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; text-decoration: none;
+}
+@media (hover: hover) { .pill a:hover { border-color: var(--aurora); color: var(--aurora); } }
 
+/* What the files hold, drawn: a game and its renown, its ids on four
+   stores tied by links.json along a wire of aurora, and this week's
+   trending games, on tiles of the night; a glow under it, as PlayGuard's
+   console. Pictures only (role="img", its label says what it shows). */
+.map {
+  position: relative; isolation: isolate; display: grid; gap: 10px; padding: 16px; border-radius: 22px;
+  background: linear-gradient(160deg, #15264a 0%, #0f1b35 55%, #0b1529 100%);
+  box-shadow: inset 0 1px 0 rgb(232 238 247 / 0.12), 0 0 0 1px var(--night-line),
+              0 50px 90px -40px rgb(0 0 0 / 0.9), 0 0 140px -40px rgb(51 187 255 / 0.4);
+}
+.map::after {
+  content: ""; position: absolute; z-index: -1; left: 10%; right: 10%; bottom: -12%; height: 30%;
+  background: radial-gradient(closest-side, rgb(51 187 255 / 0.36), rgb(138 92 255 / 0.16) 60%, transparent); filter: blur(28px);
+}
+.map-bar { display: flex; align-items: center; gap: 10px; padding: 2px 4px 4px; }
+.map-bar img { width: 24px; height: 24px; }
+.map-title { font: 600 15px var(--mono); color: var(--snow); }
+.map-tag { margin-left: auto; padding: 2px 10px; border-radius: 999px; font: 500 12px var(--mono); color: var(--aurora); border: 1px solid rgb(0 255 204 / 0.35); background: rgb(0 255 204 / 0.08); }
+.map-tile {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 14px 16px;
+  border-radius: 14px; background: rgb(11 20 36 / 0.65); border: 1px solid rgb(34 50 79 / 0.9);
+}
+.map-label { color: var(--mist); font-size: 13.5px; line-height: 1.35; }
+.map-label code { margin-left: 4px; color: var(--snow); font-size: 12.5px; }
+.map-text { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.map-text strong { font: 600 19px/1.2 var(--display); letter-spacing: -0.02em; color: var(--snow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The games' covers, made up: shapes and colours only. */
+.art { flex: none; width: 52px; height: 52px; border-radius: 12px; box-shadow: inset 0 0 0 1px rgb(232 238 247 / 0.15); }
+.art-ember {
+  background: radial-gradient(circle at 68% 32%, #ffd27a 0 11%, transparent 12%),
+              radial-gradient(130% 80% at 30% 115%, #2a1238 0 42%, transparent 43%),
+              radial-gradient(120% 70% at 85% 120%, #4a1d3f 0 50%, transparent 51%),
+              linear-gradient(170deg, #ff7a45, #b23a5c 55%, #3b1a52);
+}
+.art-tide { background: radial-gradient(90% 50% at 50% 100%, #0f4c6e 0 55%, transparent 56%), radial-gradient(circle at 30% 30%, #e8f6ff 0 9%, transparent 10%), linear-gradient(180deg, #4fb7e8, #1d6fa3); }
+.art-neon { background: linear-gradient(115deg, transparent 0 42%, #ff4fd8 43% 47%, transparent 48%), linear-gradient(65deg, transparent 0 55%, #33bbff 56% 59%, transparent 60%), linear-gradient(180deg, #2a1452, #120a2a); }
+.art-moss { background: radial-gradient(70% 60% at 30% 100%, #3f8f4a 0 60%, transparent 61%), radial-gradient(60% 50% at 80% 100%, #2c6b3a 0 60%, transparent 61%), linear-gradient(180deg, #c9b98a, #7d6f4c); }
+.map-game { flex-direction: row; align-items: center; gap: 14px; }
+.map-score { display: grid; justify-items: end; gap: 2px; flex: none; }
+.map-score b { font: 600 22px/1.1 var(--display); color: var(--snow); }
+.meter { display: block; width: 84px; height: 6px; border-radius: 3px; background: rgb(232 238 247 / 0.08); overflow: hidden; }
+.meter span { display: block; width: 92%; height: 100%; border-radius: inherit; background: var(--aurora-grad); }
+/* The ids, one store a row, each tied to the game's Wikidata item by a
+   branch of the wire. */
+.map-tree { position: relative; display: grid; gap: 6px; padding-left: 22px; }
+.map-tree::before {
+  content: ""; position: absolute; left: 6px; top: -6px; bottom: 21px; width: 2px; border-radius: 2px; overflow: hidden;
+  background: linear-gradient(to bottom, rgb(0 255 204 / 0.7), rgb(138 92 255 / 0.5));
+}
+.map-store { position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 6px 10px 6px 6px; border-radius: 12px; background: rgb(14 26 51 / 0.85); border: 1px solid var(--night-line); }
+.map-store::before { content: ""; position: absolute; left: -16px; top: 50%; width: 15px; height: 2px; background: rgb(0 255 204 / 0.55); }
+.map-icon { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--night); box-shadow: inset 0 0 0 1px rgb(232 238 247 / 0.12); color: var(--snow); }
+.map-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.map-name { flex: 1; font: 600 14.5px var(--display); color: var(--snow); }
+.map-store code { font-size: 12.5px; color: var(--link); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* This week's trending games: their rise in the aurora's colour. */
+.map-trending { gap: 6px; }
+.map-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.map-row .art { width: 30px; height: 30px; border-radius: 8px; }
+.map-game-name { flex: 1; min-width: 0; font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up { font: 500 13px var(--mono); color: var(--aurora); white-space: nowrap; }
+.up::before { content: "▲ "; font-size: 10px; }
+@media (prefers-reduced-motion: no-preference) {
+  .map-tree::after {
+    content: ""; position: absolute; left: 4px; top: -6px; width: 6px; height: 14px; border-radius: 3px;
+    background: linear-gradient(to bottom, transparent, var(--snow)); box-shadow: 0 0 10px var(--aurora);
+    animation: down 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+  .meter span { animation: fill 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) both 0.3s; }
+}
+@keyframes down { from { transform: translateY(0); opacity: 1; } 85% { opacity: 1; } to { transform: translateY(150px); opacity: 0; } }
+@keyframes fill { from { width: 0; } }
+
+/* The sections: 88px apart on a large screen, as PlayGuard's. */
 main section { padding-block: clamp(32px, 5vw, 56px); }
-main section.closing { padding-top: 0; }
-.section-head { display: grid; gap: 10px; margin-bottom: 32px; max-width: 60ch; }
-.eyebrow { font-family: var(--mono); font-size: 0.8125rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--aurora); }
-.section-head h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 600; letter-spacing: -0.025em; }
-.section-head p { color: var(--mist); }
+.home main section.section { padding-block: clamp(48px, 7vw, 88px) 0; }
+.home main > .section:first-child { padding-top: clamp(24px, 4vw, 40px); }
+.section > h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); letter-spacing: -0.025em; margin: 0 0 28px; }
+.section > h2:has(+ .section-lede) { margin-bottom: 12px; }
+.section-lede { color: var(--mist); max-width: 64ch; margin-bottom: 28px; }
 
+/* The cards: an icon on its tile, a title, a text. */
+.cards { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.card {
+  position: relative; display: grid; gap: 10px; align-content: start; min-width: 0;
+  background: var(--night); border: 1px solid var(--night-line); border-radius: var(--radius); padding: 22px;
+  transition: transform 0.3s, border-color 0.3s;
+}
+.card h3 { font-size: 18px; letter-spacing: -0.01em; }
+.card p { color: var(--mist); font-size: 15.5px; }
+.card .icon {
+  display: block; box-sizing: border-box; width: 44px; height: 44px; padding: 10px; border-radius: 12px; color: var(--aurora);
+  fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  background: linear-gradient(135deg, rgb(0 255 204 / 0.16), rgb(138 92 255 / 0.14)); box-shadow: inset 0 0 0 1px rgb(0 255 204 / 0.22);
+}
+/* Under the pointer, the card's edge lights up in the aurora where the pointer is (site.js). */
+.card::before {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgb(0 255 204 / 0.85), rgb(138 92 255 / 0.4) 45%, transparent 75%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+@media (hover: hover) {
+  .card:hover { transform: translateY(-3px); }
+  .card:hover::before { opacity: 1; }
+}
 
-.sky::before { opacity: 1; }
-.hero.small { padding-block: clamp(32px, 6vw, 64px) clamp(16px, 3vw, 28px); gap: 14px; }
-.hero.small h1 { font-size: clamp(2rem, 5.5vw, 3.25rem); max-width: 18ch; }
-.top nav a[aria-current] { color: var(--snow); box-shadow: inset 0 -2px 0 var(--aurora); border-radius: 10px 10px 0 0; }
-.note { color: var(--dusk); font-size: 0.9375rem; margin-top: 14px; max-width: 72ch; }
-code, pre { font-family: var(--mono); }
-code { font-size: 0.875em; }
-
-/* The platforms, as cards. */
-.platforms { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
-.platform { display: grid; gap: 12px; align-content: start; padding: 22px; background: var(--night); border: 1px solid var(--night-line); border-radius: 20px; }
+/* The platforms: a card each, the live ones with their figures and a way
+   into the explorer, those to come dashed. */
+.platforms { grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
 .platform.soon { background: transparent; border-style: dashed; }
 .platform .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.platform h3 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
-.platform p { color: var(--mist); font-size: 0.9375rem; }
+.platform h3 { font-size: 1.25rem; }
+.platform p { font-size: 0.9375rem; }
 .platform .facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-family: var(--mono); font-size: 0.8125rem; color: var(--snow); }
-.platform .more { display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; }
+.platform .more { display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; justify-self: start; }
+.platform .more::after { content: " →"; white-space: pre; color: var(--aurora); }
 .state { font-family: var(--mono); font-size: 0.75rem; border-radius: 99px; padding: 3px 10px; border: 1px solid var(--night-line); color: var(--mist); white-space: nowrap; }
 .state.live { background: var(--aurora); border-color: transparent; color: var(--abyss); font-weight: 500; }
 
+/* The ways to read the files. */
+.ways { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+.way pre { margin-top: 4px; }
+pre { margin: 0; padding: 12px 14px; overflow-x: auto; background: #081020; border: 1px solid var(--night-line); border-radius: 12px; font-size: 0.8125rem; line-height: 1.5; color: #d6deeb; }
+.note { color: var(--dusk); font-size: 0.9375rem; margin-top: 14px; max-width: 72ch; }
+.note a { display: inline-flex; align-items: center; min-height: 24px; }
+
+/* The sources and the keys: one row each in a box of the night. */
+.sources, .keys { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border: 1px solid var(--night-line); border-radius: var(--radius); background: rgb(14 26 51 / 0.55); }
+.sources li, .keys li { display: grid; grid-template-columns: minmax(9rem, 12rem) minmax(0, 1fr) auto; gap: 4px 16px; align-items: baseline; padding: 14px 18px; border-bottom: 1px solid var(--night-line); }
+.sources li:last-child, .keys li:last-child { border-bottom: 0; }
+.sources a { font-weight: 600; display: inline-flex; align-items: center; min-height: 24px; }
+.sources span, .keys span { color: var(--mist); }
+.sources small { font-family: var(--mono); font-size: 0.75rem; color: var(--dusk); text-align: right; }
+.keys li { grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
+.keys code { color: var(--snow); }
+.keys .k { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+@media (max-width: 640px) {
+  .sources li, .keys li { grid-template-columns: minmax(0, 1fr); }
+  .sources small { text-align: left; }
+}
+
+/* Bands: a call between the sections, on the aurora's light. */
+.band {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px 32px;
+  margin-top: clamp(48px, 7vw, 88px); padding: clamp(22px, 4vw, 40px) !important;
+  border: 1px solid var(--night-line); border-radius: var(--radius);
+  background: radial-gradient(80% 140% at 0% 0%, rgb(0 255 204 / 0.14), transparent 60%),
+              radial-gradient(70% 140% at 100% 100%, rgb(138 92 255 / 0.18), transparent 60%), var(--night);
+}
+.band > div:first-child { max-width: 62ch; }
+.band h2 { margin: 0 0 10px; font-size: clamp(1.5rem, 3.4vw, 2.1rem); letter-spacing: -0.025em; }
+.band p { color: var(--mist); }
+.band-actions { display: flex; flex-direction: column; gap: 10px; flex: none; }
+
+/* The night goes on under the hero: veils of aurora down the page and faint
+   stars (PlayGuard's showcase). */
+.home main { position: relative; isolation: isolate; }
+.home main::before, .home main::after { content: ""; position: absolute; inset: 0 calc(50% - 50vw); z-index: -1; pointer-events: none; }
+.home main::before {
+  background:
+    radial-gradient(45% 22% at -5% 22%, rgb(0 255 204 / 0.07), transparent 70%),
+    radial-gradient(45% 22% at 105% 45%, rgb(138 92 255 / 0.09), transparent 70%),
+    radial-gradient(50% 20% at -5% 72%, rgb(51 187 255 / 0.07), transparent 70%),
+    radial-gradient(45% 18% at 105% 92%, rgb(0 255 204 / 0.06), transparent 70%);
+}
+.home main::after {
+  opacity: 0.55;
+  background-image:
+    radial-gradient(1px 1px at 24px 36px, #e8eef7, transparent), radial-gradient(1px 1px at 132px 92px, #e8eef7, transparent),
+    radial-gradient(1.4px 1.4px at 210px 18px, #e8eef7, transparent), radial-gradient(1px 1px at 300px 160px, #e8eef7, transparent),
+    radial-gradient(1px 1px at 70px 210px, #a9b6cc, transparent), radial-gradient(1.2px 1.2px at 380px 260px, #a9b6cc, transparent);
+  background-size: 420px 300px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 75%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 75%, transparent);
+}
+
+/* The sections rise into view once (site.js; not with less motion asked). */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal .card { opacity: 0; transform: translateY(14px); transition: opacity 0.6s ease calc(var(--i, 0) * 70ms), transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i, 0) * 70ms), border-color 0.3s; }
+  .reveal.in .card { opacity: 1; transform: none; }
+  /* From one page of the site to the next: a short cross-fade, the header
+     staying where it is (where the browser can). */
+  @view-transition { navigation: auto; }
+  .top { view-transition-name: top; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.25s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .card, .card::before { transition: none; }
+}
+
+/* A phone, a small tablet: the hero's text, its buttons a finger's width,
+   then the drawing; one column. */
+@media (max-width: 860px) {
+  .hero-home { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-top: 24px; padding-bottom: 40px; }
+  .hero-home .actions { margin-top: 20px; }
+  .hero-home .actions .button { flex: 1 1 100%; }
+  .band { flex-direction: column; align-items: stretch; padding: 24px 20px !important; }
+  .cards { gap: 12px; }
+  .ways .card, .platform { padding: 18px; }
+  .ways .card .icon { width: 40px; height: 40px; padding: 9px; }
+}
+@media (max-width: 420px) {
+  .map { padding: 12px; border-radius: 18px; gap: 8px; }
+  .map-tile { padding: 12px; }
+  .art { width: 44px; height: 44px; }
+  .map-text strong { font-size: 17px; }
+  .meter { width: 64px; }
+  .map-store { gap: 8px; }
+  .map-store code { font-size: 11.5px; }
+}
+
+/* The other pages' blocks. */
+.section-head { display: grid; gap: 10px; margin-bottom: 32px; max-width: 60ch; }
+.section-head .eyebrow { margin: 0; }
+.section-head h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); letter-spacing: -0.025em; }
+.section-head p { color: var(--mist); }
+
 /* Tables: scrolled sideways inside their box on a phone, never the page. */
-.table { overflow-x: auto; border: 1px solid var(--night-line); border-radius: var(--radius); background: rgb(14 26 51 / 0.5); }
+.table { overflow-x: auto; border: 1px solid var(--night-line); border-radius: var(--radius); background: rgb(14 26 51 / 0.55); }
 table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
 th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--night-line); vertical-align: top; }
 tbody tr:last-child > * { border-bottom: 0; }
-thead th { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mist); font-weight: 500; }
+thead th { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mist); font-weight: 500; hyphens: auto; }
 td.num, th.num { text-align: right; white-space: nowrap; }
 .files td:first-child code { white-space: nowrap; color: var(--snow); }
 .files td:nth-child(2) { color: var(--mist); min-width: 16ch; }
 .files time, .files td:nth-child(3) { white-space: nowrap; }
 time.late { color: #ffb347; }
+.late-tag { margin-left: 6px; font-family: var(--mono); font-size: 0.75rem; color: var(--abyss); background: #ffb347; border-radius: 99px; padding: 1px 8px; }
+
 /* The data's status (status/): each source's and platform's state. */
 .status th[scope="row"] { font-weight: 500; white-space: nowrap; }
 .status th[scope="row"] code { color: var(--snow); }
@@ -137,34 +404,9 @@ time.late { color: #ffb347; }
 #run .stats dd { overflow-wrap: anywhere; hyphens: auto; }
 .retro { margin-top: 18px; }
 .retro summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; color: var(--snow); font-weight: 600; margin-bottom: 10px; }
-.late-tag { margin-left: 6px; font-family: var(--mono); font-size: 0.75rem; color: var(--abyss); background: #ffb347; border-radius: 99px; padding: 1px 8px; }
-
-/* The ways to read the files. */
-.ways { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
-.way { display: grid; gap: 10px; align-content: start; padding: 22px; background: var(--night); border: 1px solid var(--night-line); border-radius: 20px; min-width: 0; }
-.way h3 { font-size: 1.125rem; font-weight: 600; }
-.way p { color: var(--mist); font-size: 0.9375rem; }
-pre { margin: 0; padding: 12px 14px; overflow-x: auto; background: var(--abyss); border: 1px solid var(--night-line); border-radius: 12px; font-size: 0.8125rem; line-height: 1.5; color: var(--snow); }
-
-.sources, .keys { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border: 1px solid var(--night-line); border-radius: var(--radius); }
-.sources li, .keys li { display: grid; grid-template-columns: minmax(9rem, 12rem) minmax(0, 1fr) auto; gap: 4px 16px; align-items: baseline; padding: 12px 16px; border-bottom: 1px solid var(--night-line); }
-.sources li:last-child, .keys li:last-child { border-bottom: 0; }
-.sources a { font-weight: 600; }
-.sources span, .keys span { color: var(--mist); }
-.sources small { font-family: var(--mono); font-size: 0.75rem; color: var(--dusk); text-align: right; }
-.keys li { grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
-.keys code { color: var(--snow); }
-@media (max-width: 640px) {
-  .sources li, .keys li { grid-template-columns: minmax(0, 1fr); }
-  .sources small { text-align: left; }
-}
-.cta { display: grid; gap: 12px; justify-items: start; padding: clamp(22px, 4vw, 36px); border: 1px solid var(--night-line); border-radius: 20px;
-  background: radial-gradient(80% 120% at 0% 0%, rgb(0 255 204 / 0.08), transparent 60%), radial-gradient(80% 120% at 100% 100%, rgb(138 92 255 / 0.1), transparent 60%), var(--night); }
-.cta h2 { font-size: clamp(1.5rem, 3.5vw, 2rem); font-weight: 600; letter-spacing: -0.02em; }
-.cta p { color: var(--mist); max-width: 60ch; }
 
 /* The explorer. */
-.explorer { padding-top: 0; display: grid; gap: 18px; }
+.explorer { padding-top: clamp(24px, 4vw, 40px); display: grid; gap: 18px; }
 .controls { display: grid; gap: 12px; }
 .group { display: flex; flex-wrap: wrap; gap: 6px; }
 .group button {
@@ -209,9 +451,9 @@ pre { margin: 0; padding: 12px 14px; overflow-x: auto; background: var(--abyss);
 .sheet { display: grid; gap: 22px; padding: clamp(18px, 4vw, 32px); background: var(--night); border: 1px solid var(--night-line); border-radius: 20px; }
 .sheet[hidden] { display: none; }
 .sheet header { display: grid; gap: 10px; }
-.sheet h2 { font-size: clamp(1.5rem, 4vw, 2.25rem); font-weight: 600; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.sheet h2 { font-size: clamp(1.5rem, 4vw, 2.25rem); letter-spacing: -0.02em; overflow-wrap: anywhere; }
 .sheet h2:focus { outline: none; }
-.sheet h3 { font-size: 1.0625rem; font-weight: 600; margin-bottom: 10px; }
+.sheet h3 { font-size: 1.0625rem; margin-bottom: 10px; }
 .back { display: inline-flex; align-items: center; min-height: 32px; font-size: 0.9375rem; justify-self: start; }
 .ids { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; color: var(--mist); }
 .ids code { color: var(--snow); }
@@ -235,24 +477,24 @@ pre { margin: 0; padding: 12px 14px; overflow-x: auto; background: var(--abyss);
 .sheet .links li { display: inline-flex; align-items: center; gap: 8px; padding: 4px 6px 4px 10px; border-radius: 12px; border: 1px solid var(--night-line); background: var(--abyss); }
 .sheet .links a { display: inline-flex; align-items: center; min-height: 32px; min-width: 24px; justify-content: center; }
 
+/* The footer, under a horizon of aurora. */
+footer.site { position: relative; padding-block: 40px; margin-top: clamp(48px, 7vw, 88px); color: var(--dusk); font-size: 0.875rem; }
+footer.site::before {
+  content: ""; position: absolute; left: 50%; top: 0; width: min(1180px, 100%); height: 140px; transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(50% 100% at 50% 0%, rgb(0 255 204 / 0.12), rgb(51 187 255 / 0.05) 45%, transparent 75%);
+}
+footer.site::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--aurora-grad); opacity: 0.6;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+}
 footer.site .by { display: inline-flex; align-items: center; gap: 8px; }
-
-footer.site { position: relative; padding-block: 32px 40px; color: var(--dusk); font-size: 0.875rem; }
 footer.site .links ul { list-style: none; margin: 0 0 20px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 20px; }
 footer.site .links a { display: inline-flex; align-items: center; min-height: 32px; }
 footer.site .row { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
 footer.site a { color: var(--mist); }
 
-
 /* Grid items keep to their column: a wide table scrolls in its box. */
-main, .explorer, .explorer > *, .sheet > *, .ways > *, .platforms > * { min-width: 0; }
+main, .explorer, .explorer > *, .sheet > *, .cards > * { min-width: 0; }
 .explorer, .sheet { grid-template-columns: minmax(0, 1fr); }
 main .sheet section { padding: 0; }
-.keys .k { display: flex; flex-wrap: wrap; gap: 4px 10px; }
-/* Japanese: a long katakana word (プラットフォーム) breaks rather than widen a small phone. */
-:lang(ja) :is(h1, h2, h3, .eyebrow, .lede, .section-head p, .platform p) { overflow-wrap: anywhere; }
-.eyebrow { overflow-wrap: anywhere; }
-
-/* The name in the header, smaller on a phone (boreale.css's switcher). */
-.switch img { width: 34px; height: 34px; }
-@media (max-width: 640px) { .switch { font-size: 1.125rem; gap: 8px; } }

@@ -32,16 +32,17 @@
 </head>
 <body class="{{page}}" data-root="{{root}}" data-lang="{{lang}}">
 <a class="skip" href="#main">{{skip}}</a>
-<div class="sky">
+<div class="sky{{sky_class}}">
+  {{sky_canvas}}
   <header class="wrap top">
     {{switcher}}
-    <nav aria-label="{{nav_label}}">
-      <ul>
-        <li><a href="{{root}}{{home}}"{{current_project}}>{{nav_project}}</a></li>
-        <li><a href="{{root}}{{home}}explore/"{{current_explore}}>{{nav_explore}}</a></li>
-        <li><a href="{{root}}{{home}}status/"{{current_status}}>{{nav_status}}</a></li>
-        <li><a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a></li>
-      </ul>
+    <nav class="nav" aria-label="{{nav_label}}">
+      <a href="{{root}}{{home}}#platforms">{{platforms_eyebrow}}</a>
+      <a href="{{root}}{{home}}#files">{{files_eyebrow}}</a>
+      <a href="{{root}}{{home}}#use">{{use_eyebrow}}</a>
+      <a href="{{root}}{{home}}status/"{{current_status}}>{{nav_status}}</a>
+      <a href="{{root}}{{home}}explore/" class="nav-try"{{current_explore}}>{{nav_try}}</a>
+      <a href="https://github.com/JigSawFr/Atlas" class="nav-gh" referrerpolicy="strict-origin">GitHub</a>
     </nav>
     {{languages}}
   </header>
