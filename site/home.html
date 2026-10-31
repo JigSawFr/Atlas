@@ -1,16 +1,20 @@
   <section id="platforms" class="section">
-    <p class="eyebrow">{{platforms_eyebrow}}</p>
-    <h2>{{platforms_title}}</h2>
-    <p class="section-lede">{{platforms_lede}}</p>
+    <div class="section-head">
+      <p class="eyebrow">{{platforms_eyebrow}}</p>
+      <h2>{{platforms_title}}</h2>
+      <p>{{platforms_lede}}</p>
+    </div>
     <ul class="cards platforms">
 {{platform_cards}}
     </ul>
   </section>
 
   <section id="files" class="section">
-    <p class="eyebrow">{{files_eyebrow}}</p>
-    <h2>{{files_title}}</h2>
-    <p class="section-lede">{{files_lede}}</p>
+    <div class="section-head">
+      <p class="eyebrow">{{files_eyebrow}}</p>
+      <h2>{{files_title}}</h2>
+      <p>{{files_lede}}</p>
+    </div>
     <div class="table" tabindex="0" role="region" aria-label="{{files_title}}">
       <table class="files">
         <thead><tr><th scope="col">{{files_file}}</th><th scope="col">{{files_what}}</th><th scope="col">{{files_rhythm}}</th><th scope="col">{{files_size}}</th><th scope="col">{{files_updated}}</th></tr></thead>
@@ -23,9 +27,11 @@
   </section>
 
   <section id="use" class="section">
-    <p class="eyebrow">{{use_eyebrow}}</p>
-    <h2>{{use_title}}</h2>
-    <p class="section-lede">{{use_lede}}</p>
+    <div class="section-head">
+      <p class="eyebrow">{{use_eyebrow}}</p>
+      <h2>{{use_title}}</h2>
+      <p>{{use_lede}}</p>
+    </div>
     <ul class="cards ways">
       <li class="card way"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
         <h3>{{use_cdn_title}}</h3>
@@ -53,9 +59,11 @@ gh attestation verify switch-popular.json -R JigSawFr/Atlas</code></pre>
   </section>
 
   <section id="sources" class="section">
-    <p class="eyebrow">{{sources_eyebrow}}</p>
-    <h2>{{sources_title}}</h2>
-    <p class="section-lede">{{sources_lede}}</p>
+    <div class="section-head">
+      <p class="eyebrow">{{sources_eyebrow}}</p>
+      <h2>{{sources_title}}</h2>
+      <p>{{sources_lede}}</p>
+    </div>
     <ul class="sources">
       <li><a href="https://www.wikidata.org/" rel="noreferrer">Wikidata</a><span>{{source_wikidata}}</span><small>CC0</small></li>
       <li><a href="https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews" rel="noreferrer">Wikimedia</a><span>{{source_pageviews}}</span><small>CC0</small></li>
@@ -67,16 +75,18 @@ gh attestation verify switch-popular.json -R JigSawFr/Atlas</code></pre>
   </section>
 
   <section id="keys" class="section">
-    <p class="eyebrow">{{keys_eyebrow}}</p>
-    <h2>{{keys_title}}</h2>
-    <p class="section-lede">{{keys_lede}}</p>
+    <div class="section-head">
+      <p class="eyebrow">{{keys_eyebrow}}</p>
+      <h2>{{keys_title}}</h2>
+      <p>{{keys_lede}}</p>
+    </div>
     <ul class="keys">
       <li><span class="k"><code>IGDB_CLIENT_ID</code><code>IGDB_CLIENT_SECRET</code></span><span>{{keys_igdb}}</span></li>
       <li><span class="k"><code>STEAM_API_KEY</code></span><span>{{keys_steam}}</span></li>
     </ul>
   </section>
 
-  <section class="band closing">
+  <section class="band">
     <div>
       <h2>{{closing_title}}</h2>
       <p>{{closing_text}}</p>

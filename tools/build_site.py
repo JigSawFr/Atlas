@@ -44,6 +44,7 @@ from boreale_site import LANGUAGES, OG_LOCALES, fill, folder  # noqa: E402
 
 ATLAS = boreale.Site("atlas", os.environ.get("SITE_URL"))
 SITE_URL = ATLAS.url
+GITHUB = "https://github.com/JigSawFr/Atlas"
 # The platforms, in their order: those the data has are live, the others coming.
 PLATFORMS = [(p[0], p[1]) for p in platforms.STORES + platforms.CONSOLES] + [(p[0], p[1]) for p in platforms.RETRO]
 STORE_IDS = {p[0] for p in platforms.STORES + platforms.CONSOLES}   # a button each; the old machines in a list
@@ -179,7 +180,7 @@ def status_body(language: str, catalog: dict, root: str, report: dict, index: di
     each platform's games linked and reviewed. Without a report (a
     build without data, a branch from before report.json), a note."""
     if not report:
-        return (f'  <section id="status">\n    <p class="note empty">{catalog["status_none"]} '
+        return (f'  <section id="status" class="section">\n    <p class="note empty">{catalog["status_none"]} '
                 f'<a href="{root}{folder(language)}#files">{catalog["status_files"]}</a></p>\n  </section>')
     made = report.get("generated") or ""
     files = (index or {}).get("files") or {}
@@ -188,7 +189,7 @@ def status_body(language: str, catalog: dict, root: str, report: dict, index: di
     if files:
         stats += [(catalog["status_files_count"], number(len(files), language)),
                   (catalog["files_size"], size(sum(f.get("bytes", 0) for f in files.values()), language))]
-    out = ['  <section id="run">', '    <dl class="stats">']
+    out = ['  <section id="run" class="section">', '    <dl class="stats">']
     out += [f"      <div><dt>{k}</dt><dd>{v}</dd></div>" for k, v in stats]
     out += ['    </dl>', '  </section>', '']
     head = (f'<th scope="col">{catalog["status_state"]}</th>')
@@ -201,7 +202,7 @@ def status_body(language: str, catalog: dict, root: str, report: dict, index: di
                     f'<td class="num">{number(s.get("records") or 0, language)}</td>'
                     f'<td class="num">{size(s.get("bytes") or 0, language)}</td>'
                     f'<td>{when(s.get("generated") or "", days, catalog, language)}</td></tr>')
-    out += [f'  <section id="sources">', '    <div class="section-head">',
+    out += [f'  <section id="sources" class="section">', '    <div class="section-head">',
             f'      <h2>{catalog["status_sources_title"]}</h2>', f'      <p>{catalog["status_sources_lede"]}</p>', '    </div>',
             f'    <div class="table" tabindex="0" role="region" aria-label="{catalog["status_sources_title"]}">',
             '      <table class="status">',
@@ -233,7 +234,7 @@ def status_body(language: str, catalog: dict, root: str, report: dict, index: di
     known = sorted(reported, key=lambda k: (order.index(k) if k in order else len(order), k))
     stores = [k for k in known if k not in names or k in STORE_IDS]
     machines = [k for k in known if k in names and k not in STORE_IDS]
-    out += ['  <section id="platforms">', '    <div class="section-head">',
+    out += ['  <section id="platforms" class="section">', '    <div class="section-head">',
             f'      <h2>{catalog["status_platforms_title"]}</h2>', f'      <p>{catalog["status_platforms_lede"]}</p>', '    </div>']
     out += table(stores, catalog["status_platforms_title"])
     if machines:
@@ -246,8 +247,28 @@ def status_body(language: str, catalog: dict, root: str, report: dict, index: di
 def hero(page: str, catalog: dict, root: str, language: str) -> str:
     if page == "home":   # site/hero.html, filled with the page's values (page_html())
         return (SITE / "hero.html").read_text(encoding="utf-8")
-    return (f'<div class="wrap hero small">\n    <span class="eyebrow">{catalog[f"{page}_eyebrow"]}</span>\n'
-            f'    <h1>{catalog[f"{page}_title"]}</h1>\n    <p class="lede">{catalog[f"{page}_lede"]}</p>\n  </div>')
+    return (f'<section class="hero small">\n    <span class="eyebrow">{catalog[f"{page}_eyebrow"]}</span>\n'
+            f'    <h1>{catalog[f"{page}_title"]}</h1>\n    <p class="lede">{catalog[f"{page}_lede"]}</p>\n  </section>')
+
+
+def header(language: str, catalog: dict, root: str, path: str, page: str) -> str:
+    """The header: the project's links, "Explore" as its call to action, GitHub."""
+    home = root + folder(language)
+    return ATLAS.header(language, catalog, root, path,
+                        links=[("platforms_eyebrow", f"{home}#platforms"), ("files_eyebrow", f"{home}#files"),
+                               ("use_eyebrow", f"{home}#use"), ("nav_status", f"{home}status/")],
+                        cta=("nav_try", f"{home}explore/"), github=GITHUB,
+                        current={"explore": "nav_try", "status": "nav_status"}.get(page))
+
+
+def footer(language: str, catalog: dict, root: str) -> str:
+    home = root + folder(language)
+    return ATLAS.footer(language, catalog, root,
+                        columns=[(catalog["nav_project"], [(catalog["nav_explore"], f"{home}explore/"),
+                                                           (catalog["nav_status"], f"{home}status/"),
+                                                           ("GitHub", GITHUB), (catalog["footer_releases"], f"{GITHUB}/releases"),
+                                                           (catalog["footer_issues"], f"{GITHUB}/issues")])],
+                        about=[catalog["footer_about"]], fine=catalog["footer_trademarks"])
 
 
 def strings(catalog: dict, language: str, summary: dict) -> str:
@@ -272,17 +293,16 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
         "og_locale": OG_LOCALES[language],
         "first_visit": ' data-first-visit=""' if language == "en-US" and path == "" else "",
         "indexing": ATLAS.indexing(language, path),
-        "languages": ATLAS.languages(language, catalog, root, path),
-        "switcher": ATLAS.switcher(language, catalog, root),
-        # The aurora, drawn by site.js, behind the home page's header and hero; a quieter sky elsewhere.
-        "sky_class": " sky-home" if page == "home" else "",
-        "sky_canvas": '<canvas id="sky" aria-hidden="true"></canvas>' if page == "home" else "",
+        # The page's chrome (boreale-site's chrome.css and chrome.js): the skip link, the sky
+        # (the aurora on the home page, a quieter one elsewhere), the header and the footer.
+        "skip": ATLAS.skip(catalog),
+        "sky": ATLAS.sky(home=page == "home"),
+        "header": header(language, catalog, root, path, page),
+        "footer": footer(language, catalog, root),
         # The hero's line under the title, each of its parts kept whole.
         "hero_sub_parts": " · ".join(f"<span>{part}</span>" for part in catalog["hero_sub"].split(" · ")),
         # The hero's drawing: its trending games' rise, as the language writes a share.
         **{f"mock_trend_{i}": "+" + percent(share, language) for i, share in enumerate((1.42, 0.87, 0.54), 1)},
-        "current_explore": ' aria-current="page"' if page == "explore" else "",
-        "current_status": ' aria-current="page"' if page == "status" else "",
         "status_body": status_body(language, catalog, root, report, index) if page == "status" else "",
         "scripts": f'<script src="{root}assets/explore.js" defer></script>' if page == "explore" else "",
         "audience": ATLAS.audience(root),

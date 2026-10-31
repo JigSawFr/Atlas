@@ -13,6 +13,7 @@
 <link rel="preload" href="{{root}}assets/fonts/sora.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="{{root}}assets/fonts/figtree.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{{root}}assets/boreale.css">
+<link rel="stylesheet" href="{{root}}assets/chrome.css">
 <link rel="stylesheet" href="{{root}}assets/site.css">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Atlas">
@@ -26,49 +27,20 @@
 <meta name="twitter:card" content="summary_large_image">
 <script src="{{root}}assets/lang.js"></script>
 <script src="{{root}}assets/boreale.js" defer></script>
+<script src="{{root}}assets/chrome.js" defer></script>
 <script src="{{root}}assets/site.js" defer></script>
 {{scripts}}
 {{audience}}
 </head>
-<body class="{{page}}" data-root="{{root}}" data-lang="{{lang}}">
-<a class="skip" href="#main">{{skip}}</a>
-<div class="sky{{sky_class}}">
-  {{sky_canvas}}
-  <header class="wrap top">
-    {{switcher}}
-    <nav class="nav" aria-label="{{nav_label}}">
-      <a href="{{root}}{{home}}#platforms">{{platforms_eyebrow}}</a>
-      <a href="{{root}}{{home}}#files">{{files_eyebrow}}</a>
-      <a href="{{root}}{{home}}#use">{{use_eyebrow}}</a>
-      <a href="{{root}}{{home}}status/"{{current_status}}>{{nav_status}}</a>
-      <a href="{{root}}{{home}}explore/" class="nav-try"{{current_explore}}>{{nav_try}}</a>
-      <a href="https://github.com/JigSawFr/Atlas" class="nav-gh" referrerpolicy="strict-origin">GitHub</a>
-    </nav>
-    {{languages}}
-  </header>
+<body class="reset-margins" data-root="{{root}}" data-lang="{{lang}}">
+{{skip}}
+{{sky}}
+  {{header}}
   {{hero}}
 </div>
-<main id="main" class="wrap">
+<main id="main">
 {{body}}
 </main>
-<footer class="site">
-  <div class="wrap">
-    <nav class="links" aria-label="{{footer_label}}">
-      <ul>
-        <li><a href="{{root}}{{home}}">{{nav_project}}</a></li>
-        <li><a href="{{root}}{{home}}explore/">{{nav_explore}}</a></li>
-        <li><a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a></li>
-        <li><a href="https://github.com/JigSawFr/Atlas/releases" referrerpolicy="strict-origin">{{footer_releases}}</a></li>
-        <li><a href="https://github.com/JigSawFr/Atlas/issues" referrerpolicy="strict-origin">{{footer_issues}}</a></li>
-        <li><a href="https://boreale.dev/{{home}}?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Boréale</a></li>
-        <li><a href="https://boreale.dev/{{home}}legal/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">{{footer_legal}}</a></li>
-      </ul>
-    </nav>
-    <div class="row">
-      <p class="by"><img src="{{root}}assets/marks/boreale.svg" alt="" width="22" height="22">{{footer_made}}</p>
-      <p>{{footer_trademarks}}</p>
-    </div>
-  </div>
-</footer>
+{{footer}}
 </body>
 </html>
