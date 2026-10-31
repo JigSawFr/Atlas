@@ -7,7 +7,7 @@
 
 /* The page's own settings of chrome.css: 16px buttons, the Explore pill's
    margin on a phone. */
-:root { --button-size: 1rem; --cta-gap: 6px; }
+:root { --button-size: 1rem; --cta-gap: 6px; --cards-min: 300px; }
 /* A long word (German's, Russian's) hyphenated where the browser can, else
    broken rather than wider than a phone. */
 h1, h2, h3 { hyphens: auto; overflow-wrap: break-word; }
@@ -119,12 +119,9 @@ code { font-size: 0.875em; }
 .sky-home ~ main > .section:first-child { padding-top: clamp(24px, 4vw, 40px); }
 :where(.sky:not(.sky-home) ~ main) > .section { padding-block: clamp(32px, 5vw, 56px); }
 
-/* The cards (chrome.css's): the ways keep their icon above the text on a
-   phone too, their code under it. */
+/* The cards (chrome.css's): the ways are `.stack`, their icon above the text,
+   their code under it; the columns start at 300px (`--cards-min`, on :root). */
 .cards > * { min-width: 0; }
-.cards .way { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-.cards .way > .icon { grid-row: auto; }
-.cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
 
 /* The platforms: a card each, the live ones with their figures and a way
    into the explorer, those to come dashed. */
