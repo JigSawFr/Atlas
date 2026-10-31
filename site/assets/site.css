@@ -5,17 +5,18 @@
    and fonts, the language menu and the menu of Boréale's sites too
    (boreale.css). */
 
-/* Paragraphs and headings carry no margin of their own (chrome.css sets those
-   of its parts); a long word (German's, Russian's) hyphenated where the
-   browser can, else broken rather than wider than a phone. */
-h1, h2, h3 { margin: 0; hyphens: auto; overflow-wrap: break-word; }
-p { margin: 0; }
+/* The page's own settings of chrome.css: 16px buttons, the Explore pill's
+   margin on a phone. */
+:root { --button-size: 1rem; --cta-gap: 6px; }
+/* A long word (German's, Russian's) hyphenated where the browser can, else
+   broken rather than wider than a phone. */
+h1, h2, h3 { hyphens: auto; overflow-wrap: break-word; }
 code, pre { font-family: var(--mono); }
 code { font-size: 0.875em; }
 .brand img, .switch img { width: 34px; height: 34px; }
 
-/* The other pages' heading, under their header, between the page's sides. */
-.hero { display: grid; gap: 14px; padding: clamp(32px, 6vw, 64px) var(--edge-r) clamp(24px, 4vw, 40px) var(--edge-l); }
+/* The other pages' heading, under their header (chrome.css gives it the header's sides). */
+.hero { display: grid; gap: 14px; padding-block: clamp(32px, 6vw, 64px) clamp(24px, 4vw, 40px); }
 .hero h1 { font-size: clamp(2rem, 5.5vw, 3.25rem); letter-spacing: -0.035em; line-height: 1.1; max-width: 18ch; }
 .hero h1 em { font-style: normal; background: var(--aurora-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hero .eyebrow { margin: 0; }
@@ -38,8 +39,6 @@ code { font-size: 0.875em; }
 .hero-home h1 { font-size: clamp(2.1rem, 4.4vw, 3.4rem); line-height: 1.08; max-width: none; margin: 0 0 16px; }
 .hero-home .sub { font: 500 14px/1.6 var(--mono); color: var(--snow); margin: 0 0 14px; max-width: 60ch; text-wrap: balance; }
 .hero-home .sub span { white-space: nowrap; }
-/* Over the title, chrome.css's pill: what Atlas is, to how fresh its data is, in capitals. */
-.hero-home .pill-eyebrow > * { letter-spacing: 0.04em; text-transform: uppercase; }
 
 /* What the files hold, drawn: a game and its renown, its ids on four
    stores tied by links.json along a wire of aurora, and this week's
@@ -120,11 +119,11 @@ code { font-size: 0.875em; }
 .sky-home ~ main > .section:first-child { padding-top: clamp(24px, 4vw, 40px); }
 :where(.sky:not(.sky-home) ~ main) > .section { padding-block: clamp(32px, 5vw, 56px); }
 
-/* The cards (chrome.css's) are laid out here as this page wants them: their
-   icon above the text on a phone too. */
+/* The cards (chrome.css's): the ways keep their icon above the text on a
+   phone too, their code under it. */
 .cards > * { min-width: 0; }
-.platform, .way { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-.cards .card .icon { grid-row: auto; }
+.cards .way { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.cards .way > .icon { grid-row: auto; }
 .cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
 
 /* The platforms: a card each, the live ones with their figures and a way
@@ -161,10 +160,6 @@ pre { margin: 0; padding: 12px 14px; overflow-x: auto; background: #081020; bord
   .sources li, .keys li { grid-template-columns: minmax(0, 1fr); }
   .sources small { text-align: left; }
 }
-
-/* The closing band's buttons, one above the other (chrome.css's band). */
-.band-actions { display: flex; flex-direction: column; gap: 10px; flex: none; }
-@media (max-width: 600px) { .band-actions { align-self: stretch; } }
 
 /* A phone, a small tablet: the hero's text, its buttons a finger's width,
    then the drawing; one column. */
