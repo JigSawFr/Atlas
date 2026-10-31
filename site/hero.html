@@ -1,0 +1,43 @@
+<section class="wrap hero hero-home">
+    <div class="hero-text">
+      <p class="pill"><a href="{{root}}{{home}}status/">{{hero_eyebrow}}</a></p>
+      <h1>{{hero_title}}</h1>
+      <p class="sub">{{hero_sub_parts}}</p>
+      <p class="lede">{{hero_lede}}</p>
+      <div class="actions">
+        <a class="button primary" href="{{root}}{{home}}explore/">{{cta_explore}}</a>
+        <a class="button" href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">{{cta_github}}</a>
+      </div>
+    </div>
+    <!-- What the files hold, drawn rather than captured (site.css's .map):
+         one game tied across four stores by links.json, and this week's
+         trending games. Made-up games and ids; the labels are the catalog's;
+         the wire moves only where motion is welcome. -->
+    <div class="map" role="img" aria-label="{{mock_label}}">
+      <div class="map-bar">
+        <img src="{{root}}assets/marks/atlas.svg" alt="" width="24" height="24">
+        <span class="map-title">links.json</span>
+        <span class="map-tag">schema 1</span>
+      </div>
+      <div class="map-tile map-game">
+        <span class="art art-ember"></span>
+        <span class="map-text"><strong>Emberwild Saga</strong><span class="map-label">{{mock_genre}}</span></span>
+        <span class="map-score"><span class="map-label">{{x_score}}</span><b>92</b><span class="meter"><span></span></span></span>
+      </div>
+      <div class="map-tile map-links">
+        <span class="map-label">{{mock_linked}} <code>Q48151623</code></span>
+        <span class="map-tree">
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><rect x="6.5" y="4.5" width="11" height="15" rx="1.5"/><path d="M6.5 7.5H4.8A2.3 2.3 0 0 0 2.5 9.8v4.4a2.3 2.3 0 0 0 2.3 2.3h1.7M17.5 7.5h1.7a2.3 2.3 0 0 1 2.3 2.3v4.4a2.3 2.3 0 0 1-2.3 2.3h-1.7"/></svg></span><span class="map-name">Switch</span><code>0100F2A01C6E4000</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/></svg></span><span class="map-name">Steam</span><code>2384170</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3a9 9 0 0 1 9 9"/></svg></span><span class="map-name">GOG</span><code>1735029481</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><path d="M7.5 7h9a4.5 4.5 0 0 1 4.4 3.6l.9 4.6a2.6 2.6 0 0 1-4.6 2.1L15.5 15h-7l-1.7 2.3a2.6 2.6 0 0 1-4.6-2.1l.9-4.6A4.5 4.5 0 0 1 7.5 7z"/><path d="M8 9.5v3M6.5 11h3M15.5 10.5h.01M17.5 12h.01"/></svg></span><span class="map-name">Xbox</span><code>9P4KQZ7RV1XD</code></span>
+        </span>
+      </div>
+      <div class="map-tile map-trending">
+        <span class="map-label">{{mock_trending}}</span>
+        <span class="map-row"><span class="art art-tide"></span><span class="map-game-name">Tidebound</span><span class="up">{{mock_trend_1}}</span></span>
+        <span class="map-row"><span class="art art-neon"></span><span class="map-game-name">Neon Drift Rally</span><span class="up">{{mock_trend_2}}</span></span>
+        <span class="map-row"><span class="art art-moss"></span><span class="map-game-name">Moss &amp; Mortar</span><span class="up">{{mock_trend_3}}</span></span>
+      </div>
+    </div>
+  </section>

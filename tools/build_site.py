@@ -103,7 +103,7 @@ def platform_cards(language: str, catalog: dict, root: str, summary: dict) -> st
         else:
             more = ""
             state = f'<span class="state">{catalog["platform_soon"]}</span>'
-        cards.append(f'      <li class="platform{" soon" if not live else ""}"><div class="head"><h3>{name}</h3>{state}</div>'
+        cards.append(f'      <li class="card platform{" soon" if not live else ""}"><div class="head"><h3>{name}</h3>{state}</div>'
                      f'<p>{catalog[f"platform_{key}_text"]}</p>{facts}{more}</li>')
     return "\n".join(cards)
 
@@ -244,11 +244,8 @@ def status_body(language: str, catalog: dict, root: str, report: dict, index: di
 
 
 def hero(page: str, catalog: dict, root: str, language: str) -> str:
-    if page == "home":
-        return (f'<div class="wrap hero">\n    <span class="eyebrow">{catalog["hero_eyebrow"]}</span>\n'
-                f'    <h1>{catalog["hero_title"]}</h1>\n    <p class="lede">{catalog["hero_lede"]}</p>\n'
-                f'    <div class="actions"><a class="button primary" href="{root}{folder(language)}explore/">{catalog["cta_explore"]}</a>'
-                f'<a class="button ghost" href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">{catalog["cta_github"]}</a></div>\n  </div>')
+    if page == "home":   # site/hero.html, filled with the page's values (page_html())
+        return (SITE / "hero.html").read_text(encoding="utf-8")
     return (f'<div class="wrap hero small">\n    <span class="eyebrow">{catalog[f"{page}_eyebrow"]}</span>\n'
             f'    <h1>{catalog[f"{page}_title"]}</h1>\n    <p class="lede">{catalog[f"{page}_lede"]}</p>\n  </div>')
 
@@ -277,7 +274,13 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
         "indexing": ATLAS.indexing(language, path),
         "languages": ATLAS.languages(language, catalog, root, path),
         "switcher": ATLAS.switcher(language, catalog, root),
-        "current_project": ' aria-current="page"' if page == "home" else "",
+        # The aurora, drawn by site.js, behind the home page's header and hero; a quieter sky elsewhere.
+        "sky_class": " sky-home" if page == "home" else "",
+        "sky_canvas": '<canvas id="sky" aria-hidden="true"></canvas>' if page == "home" else "",
+        # The hero's line under the title, each of its parts kept whole.
+        "hero_sub_parts": " · ".join(f"<span>{part}</span>" for part in catalog["hero_sub"].split(" · ")),
+        # The hero's drawing: its trending games' rise, as the language writes a share.
+        **{f"mock_trend_{i}": "+" + percent(share, language) for i, share in enumerate((1.42, 0.87, 0.54), 1)},
         "current_explore": ' aria-current="page"' if page == "explore" else "",
         "current_status": ' aria-current="page"' if page == "status" else "",
         "status_body": status_body(language, catalog, root, report, index) if page == "status" else "",
