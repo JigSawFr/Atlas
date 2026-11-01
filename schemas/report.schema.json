@@ -1,0 +1,70 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "How the data is",
+ "type": "object",
+ "required": [
+  "schema",
+  "generated",
+  "sources",
+  "platforms"
+ ],
+ "properties": {
+  "schema": {
+   "const": 2
+  },
+  "generated": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+  },
+  "run": {
+   "enum": [
+    "build",
+    "daily"
+   ]
+  },
+  "source": {
+   "type": "string"
+  },
+  "sources": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "files",
+     "records",
+     "generated"
+    ]
+   }
+  },
+  "platforms": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "games",
+     "linked",
+     "reviewed"
+    ],
+    "properties": {
+     "linked": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+     },
+     "reviewed": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+     }
+    }
+   }
+  },
+  "steps": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "number"
+   }
+  }
+ },
+ "$id": "https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/schemas/report.schema.json"
+}

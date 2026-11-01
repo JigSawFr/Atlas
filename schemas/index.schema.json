@@ -1,0 +1,46 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Every file",
+ "type": "object",
+ "required": [
+  "schema",
+  "files"
+ ],
+ "properties": {
+  "schema": {
+   "const": 1
+  },
+  "files": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "bytes",
+     "sha256"
+    ],
+    "properties": {
+     "generated": {
+      "type": "string"
+     },
+     "bytes": {
+      "type": "integer"
+     },
+     "source": {
+      "type": "string"
+     },
+     "license": {
+      "type": "string"
+     },
+     "attribution": {
+      "type": "string"
+     },
+     "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$"
+     }
+    }
+   }
+  }
+ },
+ "$id": "https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/schemas/index.schema.json"
+}

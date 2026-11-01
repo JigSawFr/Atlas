@@ -1,0 +1,47 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "The Game Pass's games: {id: [console, pc]}",
+ "type": "object",
+ "required": [
+  "schema",
+  "generated",
+  "games"
+ ],
+ "properties": {
+  "schema": {
+   "const": 1
+  },
+  "generated": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+  },
+  "source": {
+   "type": "string"
+  },
+  "platform": {
+   "type": "string"
+  },
+  "license": {
+   "type": "string"
+  },
+  "part": {
+   "type": "integer"
+  },
+  "parts": {
+   "type": "integer"
+  },
+  "games": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "array",
+    "items": {
+     "enum": [
+      "console",
+      "pc"
+     ]
+    }
+   }
+  }
+ },
+ "$id": "https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/schemas/platforms/xbox/gamepass.schema.json"
+}
