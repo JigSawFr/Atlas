@@ -331,6 +331,7 @@ def main() -> None:
         shutil.rmtree(out)
     out.mkdir(parents=True)
     shutil.copytree(SITE / "assets", out / "assets")
+    shutil.copy(SITE / "assets" / "favicon.ico", out / "favicon.ico")  # asked for at the root by old browsers
     boreale.copy_assets(out)
     summary, index, report = {}, {}, {}
     if data:

@@ -1,3 +1,5 @@
+<img src=".github/readme/banner.png" alt="Atlas" width="100%">
+
 # Atlas
 
 Open data about video games on every platform it can read without an
