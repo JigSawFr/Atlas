@@ -1,0 +1,60 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "What the run changed",
+ "type": "object",
+ "required": [
+  "schema",
+  "generated",
+  "platforms"
+ ],
+ "properties": {
+  "schema": {
+   "const": 1
+  },
+  "generated": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+  },
+  "source": {
+   "type": "string"
+  },
+  "platforms": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "properties": {
+     "new": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "out_today": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "trends": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "prefixItems": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      }
+     }
+    }
+   }
+  }
+ },
+ "$id": "https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/schemas/changes.schema.json"
+}

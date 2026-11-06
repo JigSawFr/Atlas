@@ -1,0 +1,366 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A platform's games: name, Wikidata item, release, reviews, traits",
+ "type": "object",
+ "required": [
+  "schema",
+  "generated",
+  "games"
+ ],
+ "properties": {
+  "schema": {
+   "const": 1
+  },
+  "generated": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+  },
+  "source": {
+   "type": "string"
+  },
+  "platform": {
+   "type": "string"
+  },
+  "license": {
+   "type": "string"
+  },
+  "part": {
+   "type": "integer"
+  },
+  "parts": {
+   "type": "integer"
+  },
+  "tags": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "string"
+   }
+  },
+  "games": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "qid": {
+      "type": "string",
+      "pattern": "^Q\\d+$"
+     },
+     "release": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99991231
+     },
+     "slug": {
+      "type": "string"
+     },
+     "pack": {
+      "type": "boolean"
+     },
+     "coming_soon": {
+      "type": "boolean"
+     },
+     "reviews": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "rating": {
+      "type": "array",
+      "items": {
+       "type": "integer"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "igdb_rating": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "gamepass": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "console",
+        "pc"
+       ]
+      }
+     },
+     "ps": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "pattern": "^[0-9]+$"
+      }
+     },
+     "ps_product": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "platforms": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "prefixItems": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "string"
+        }
+       ],
+       "minItems": 2,
+       "maxItems": 2
+      }
+     },
+     "series": {
+      "type": "array",
+      "items": {
+       "anyOf": [
+        {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "string"
+          }
+         ],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      }
+     },
+     "developers": {
+      "type": "array",
+      "items": {
+       "anyOf": [
+        {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "string"
+          }
+         ],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      }
+     },
+     "publishers": {
+      "type": "array",
+      "items": {
+       "anyOf": [
+        {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "string"
+          }
+         ],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      }
+     },
+     "genres": {
+      "type": "array",
+      "items": {
+       "anyOf": [
+        {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "string"
+          }
+         ],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      }
+     },
+     "modes": {
+      "type": "array",
+      "items": {
+       "anyOf": [
+        {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "string"
+          }
+         ],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      }
+     },
+     "tags": {
+      "type": "array",
+      "items": {
+       "anyOf": [
+        {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "string"
+          }
+         ],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      }
+     },
+     "themes": {
+      "type": "array",
+      "items": {
+       "anyOf": [
+        {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "string"
+          }
+         ],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      }
+     },
+     "keywords": {
+      "type": "array",
+      "items": {
+       "anyOf": [
+        {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "string"
+          }
+         ],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      }
+     },
+     "perspectives": {
+      "type": "array",
+      "items": {
+       "anyOf": [
+        {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "string"
+          }
+         ],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      }
+     },
+     "steam": {
+      "type": "object",
+      "required": [
+       "app"
+      ],
+      "properties": {
+       "app": {
+        "type": "integer"
+       },
+       "positive": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "negative": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "owners": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "ccu": {
+        "type": "integer",
+        "minimum": 0
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "$id": "https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/schemas/platforms/psp/games.schema.json"
+}
