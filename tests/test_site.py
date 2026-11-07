@@ -96,6 +96,17 @@ class SiteData(unittest.TestCase):
         self.assertNotIn("unified", self.sheet("steam", "900020"))      # one platform, no unified sheet
         self.assertEqual(self.read("x/u/meta.json")["games"], 1)
 
+    def test_the_stores_sources_give_the_sheet_its_technical_part(self):
+        put(self.data, "sources/steam-store/apps.json", {"schema": 1, "games": {
+            "900010": {"appid": 900010, "platforms": {"windows": True, "steam_deck_compat_category": 2}, "languages": [[0, 1], [2, 0]]},
+            "900020": {"appid": 900020, "name": "says nothing"}}})
+        site_data.build(self.data, self.out)
+        self.assertEqual(self.sheet("steam", "900010")["tech"], {"os": ["windows"], "deck": 2, "langs": ["en", "fr"], "voices": ["en"]})
+        self.assertNotIn("tech", self.sheet("steam", "900020"))
+        self.assertNotIn("tech", self.sheet("switch", "0100A1B2C3D4E000"))
+        steam = [e for e in self.unified("Q900001")["platforms"] if e["p"] == "steam"][0]
+        self.assertEqual(steam["tech"]["deck"], 2)                      # the sheet of all its platforms keeps each one's
+
     def test_unify_spellings_and_order(self):
         steam = ("1", {"name": "Amber", "traits": {"developers": ["INNERSLOTH"], "genres": ["action", "puzzle"]}})
         switch = ("2", {"name": "Amber", "traits": {"developers": ["Innersloth", "Tiny Owl"], "genres": ["puzzle"]},

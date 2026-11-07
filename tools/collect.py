@@ -133,7 +133,29 @@ def collect_titledb(what, out_dir, previous_dir, fresh, today, report):
 
 STEAM_ITEM = {"basic_info": ("franchises", "developers", "publishers"),
               "reviews": ("summary_filtered",), "release": ("steam_release_date", "original_steam_release_date",
-                                                            "is_coming_soon")}
+                                                            "is_coming_soon"),
+              # Where it runs (Windows, Mac, Linux) and how the Steam Deck takes it (0 unknown, 1 unsupported,
+              # 2 playable, 3 verified); what it offers (player and feature categories, controller support).
+              "platforms": ("windows", "mac", "steamos_linux", "steam_deck_compat_category"),
+              "categories": ("supported_player_categoryids", "feature_categoryids", "controller_categoryids"),
+              # Its pictures: the store's file names (the header and the small capsule), see steam_pictures.
+              "assets": ("header", "small_capsule")}
+SHOTS = 6      # screenshots kept for a game
+
+
+def steam_pictures(item):
+    """The names of a game's first screenshots (ss_<hash>.jpg), and its languages as [Steam's language
+    number, 1 when its voices are in it]; the paths and the cache stamps the store puts around are dropped."""
+    out = {}
+    shots = (item.get("screenshots") or {}).get("all_ages_screenshots") or []
+    names = [s["filename"].split("?")[0].rsplit("/", 1)[-1] for s in shots if isinstance(s, dict) and s.get("filename")]
+    if names:
+        out["screenshots"] = names[:SHOTS]
+    langs = [[l["elanguage"], 1 if l.get("full_audio") else 0] for l in item.get("supported_languages") or []
+             if isinstance(l, dict) and l.get("supported") and isinstance(l.get("elanguage"), int)]
+    if langs:
+        out["languages"] = langs
+    return out
 
 
 def steam_item(item):
@@ -143,6 +165,7 @@ def steam_item(item):
         part = item.get(k)
         if isinstance(part, dict):
             out[k] = {f: part[f] for f in fields if f in part}
+    out.update(steam_pictures(item))
     return out
 
 
@@ -188,27 +211,102 @@ def collect_steamspy(what, out_dir, previous_dir, fresh, today, report):
 
 
 GOG_FIELDS = ("id", "title", "slug", "releaseDate", "productType", "reviewsCount", "reviewsRating",
-              "developers", "publishers", "genres", "tags")
+              "developers", "publishers", "genres", "tags", "operatingSystems")
+GOG_IMAGES = "https://images.gog-statics.com/"
+
+
+def gog_image(url):
+    """An image of GOG's as its name (<hash>.png, or <hash> for a screenshot, whose size is asked in
+    the address by a formatter), None when it is not one."""
+    if not isinstance(url, str) or not url.startswith(GOG_IMAGES):
+        return None
+    return url[len(GOG_IMAGES):].replace("_{formatter}.jpg", "") or None
+
+
+def gog_product(p):
+    """What Atlas keeps of the catalog's product: GOG_FIELDS, its features (the slugs), its age ratings
+    ([system, age]) and its pictures (cover, poster and the first SHOTS screenshots, by name)."""
+    out = {f: p[f] for f in GOG_FIELDS if f in p}
+    features = [f["slug"] for f in p.get("features") or [] if isinstance(f, dict) and f.get("slug")]
+    if features:
+        out["features"] = features
+    ratings = [[r["name"], str(r["ageRating"])] for r in p.get("ratings") or []
+               if isinstance(r, dict) and r.get("name") and r.get("ageRating")]
+    if ratings:
+        out["ratings"] = ratings
+    pictures = {"cover": gog_image(p.get("coverHorizontal")), "poster": gog_image(p.get("coverVertical"))}
+    pictures = {k: v for k, v in pictures.items() if v}
+    shots = [n for n in (gog_image(u) for u in (p.get("screenshots") or [])[:SHOTS]) if n]
+    if shots:
+        pictures["screenshots"] = shots
+    if pictures:
+        out["pictures"] = pictures
+    return out
 
 
 def collect_gog(what, out_dir, previous_dir, fresh, today, report):
     fetch = lambda url: common.fetch(url, tries=3, patient=False, timeout=60)   # noqa: E731
     found = gog.read_catalog(fetch)
-    games = {str(p["id"]): {f: p[f] for f in GOG_FIELDS if f in p} for p, _ in found}
+    games = {str(p["id"]): gog_product(p) for p, _ in found}
     common.publish_source(out_dir, f"{common.SOURCES}/gog/catalog/US.json", payload(
         "gog", today, "GOG's catalog (catalog.gog.com), in its trending order", "GOG's terms of use",
         country="US", games=games), previous_dir, report)
 
 
+MS_IMAGES = "//store-images.s-microsoft.com/image/"
+# The capabilities worth keeping, by the store's names (the others are about the store's own services).
+MS_ATTRIBUTES = ("SinglePlayer", "XblLocalCoop", "XblOnlineCoop", "XblLocalMultiPlayer", "XblOnlineMultiPlayer",
+                 "XblCrossPlatformMultiPlayer", "XblCrossPlatformCoop", "SharedSplitScreen", "XblAchievements",
+                 "XblCloudSaves", "XPA", "Capability4k", "CapabilityHDR", "60fps", "CapabilityVRR", "PcGamePad",
+                 "ConsoleKeyboardMouse", "ConsoleGen9Optimized", "CapabilityXboxEnhanced", "SpatialSound", "DolbyAtmos")
+MS_ART = ("BoxArt", "Poster", "SuperHeroArt")     # one each, then the screenshots
+
+
+def ms_images(images):
+    """[[purpose, name]] of a product's pictures: its box art, poster and hero art, and its first SHOTS
+    screenshots; the name is the address without the store's host."""
+    out, seen = [], set()
+    for i in images or []:
+        purpose, uri = (i or {}).get("ImagePurpose"), (i or {}).get("Uri")
+        if not isinstance(uri, str) or not uri.startswith(MS_IMAGES):
+            continue
+        name = uri[len(MS_IMAGES):]
+        if purpose in MS_ART and purpose not in seen:
+            seen.add(purpose)
+            out.append([purpose, name])
+        elif purpose == "Screenshot" and sum(1 for o in out if o[0] == "Screenshot") < SHOTS:
+            out.append([purpose, name])
+    return out
+
+
 def ms_product(p):
-    """What Atlas keeps of the store's product (xbox.entry's fields)."""
+    """What Atlas keeps of the store's product (xbox.entry's fields), and what its sheet shows: age ratings,
+    capabilities (with the most players of the co-op and multiplayer ones), the platforms it is for and its pictures."""
     local = (p.get("LocalizedProperties") or [{}])[0]
     market = (p.get("MarketProperties") or [{}])[0]
-    return {"ProductId": p.get("ProductId"), "ProductKind": p.get("ProductKind"),
-            "LocalizedProperties": [{k: local[k] for k in ("ProductTitle", "DeveloperName", "PublisherName")
-                                     if k in local}],
-            "MarketProperties": [{k: market[k] for k in ("OriginalReleaseDate", "UsageData") if k in market}],
-            "Properties": {"Categories": (p.get("Properties") or {}).get("Categories") or []}}
+    props = p.get("Properties") or {}
+    out = {"ProductId": p.get("ProductId"), "ProductKind": p.get("ProductKind"),
+           "LocalizedProperties": [{k: local[k] for k in ("ProductTitle", "DeveloperName", "PublisherName")
+                                    if k in local}],
+           "MarketProperties": [{k: market[k] for k in ("OriginalReleaseDate", "UsageData") if k in market}],
+           "Properties": {"Categories": props.get("Categories") or []}}
+    ratings = [{"RatingSystem": r["RatingSystem"], "RatingId": r["RatingId"]} for r in market.get("ContentRatings") or []
+               if isinstance(r, dict) and r.get("RatingSystem") and r.get("RatingId")]
+    if ratings:
+        out["MarketProperties"][0]["ContentRatings"] = ratings
+    attributes = [{k: a[k] for k in ("Name", "Maximum") if a.get(k) is not None} for a in props.get("Attributes") or []
+                  if isinstance(a, dict) and a.get("Name") in MS_ATTRIBUTES]
+    if attributes:
+        out["Properties"]["Attributes"] = attributes
+    platforms = sorted({d["PlatformName"] for s in p.get("DisplaySkuAvailabilities") or []
+                        for k in ((s.get("Sku") or {}).get("Properties") or {}).get("Packages") or []
+                        for d in k.get("PlatformDependencies") or [] if isinstance(d, dict) and d.get("PlatformName")})
+    if platforms:
+        out["Properties"]["Platforms"] = platforms
+    images = ms_images(local.get("Images"))
+    if images:
+        out["LocalizedProperties"][0]["Images"] = images
+    return out
 
 
 def collect_msstore(what, out_dir, previous_dir, fresh, today, report):

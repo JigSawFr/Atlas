@@ -195,6 +195,55 @@
     return el("section", {}, el("h3", { text: title }), ...content);
   }
 
+  // The technical details of a game (tools/tech.py): where it runs, how the Steam Deck takes it, who can
+  // play together, what it offers, its languages and its age ratings; each store's, put together.
+  const OS_NAMES = { windows: "Windows", mac: "macOS", linux: "Linux", xbox: "Xbox" };
+  const FEATURES = ["achievements", "cloud", "controller", "controller_partial", "crossplay", "play_anywhere", "4k", "hdr", "60fps", "vrr", "keyboard_mouse"];
+  const AGES = ["PEGI", "ESRB", "USK", "CERO"];
+  let languageNames = null;
+  const languageName = (code) => {
+    try {
+      languageNames = languageNames || new Intl.DisplayNames([LANG], { type: "language" });
+      return languageNames.of(code) || code;
+    } catch (e) { return code; }
+  };
+
+  function techBlock(es) {
+    const techs = es.map((e) => e.tech).filter(Boolean);
+    if (!techs.length) return null;
+    const union = (key) => [...new Set(techs.flatMap((x) => x[key] || []))];
+    const dl = el("dl", { class: "traits" });
+    const row = (label, ...content) => dl.append(el("div", {}, el("dt", { text: label }), el("dd", {}, ...content)));
+    const chips = (items) => items.map((x) => el("span", { class: "chip", text: x }));
+
+    const os = union("os");
+    if (os.length) row(t("x_runs_on"), ...chips(os.map((o) => OS_NAMES[o] || o)));
+    const deck = techs.map((x) => x.deck).find(Boolean);
+    if (deck) row("Steam Deck", ...chips([t(`x_deck_${deck}`)]));
+    const most = (key) => Math.max(0, ...techs.map((x) => (x.players && x.players[key]) || 0));
+    const players = [most("local") ? t("x_players_local", { n: most("local") }) : "", most("online") ? t("x_players_online", { n: most("online") }) : ""].filter(Boolean);
+    if (players.length) row(t("x_players"), ...chips(players));
+    const found = new Set(union("feat"));
+    if (found.has("controller")) found.delete("controller_partial");
+    const feat = FEATURES.filter((f) => found.has(f));
+    if (feat.length) row(t("x_features"), ...chips(feat.map((f) => t(`x_f_${f}`))));
+    const ages = [];
+    for (const system of AGES) {
+      const one = techs.flatMap((x) => x.age || []).find((a) => a[0] === system);
+      if (one) ages.push(`${one[0]} ${one[1]}`);
+    }
+    if (ages.length) row(t("x_age"), ...chips(ages));
+    const list = (label, codes) => {
+      if (!codes.length) return;
+      const items = chips(codes.map((c) => languageName(c)));
+      const shown = items.slice(0, 6), rest = items.slice(6);
+      row(label, ...shown, rest.length ? el("details", { class: "more-chips" }, el("summary", { class: "chip", text: `+${num(rest.length)}` }), ...rest) : null);
+    };
+    list(t("x_languages"), union("langs"));
+    list(t("x_voices"), union("voices"));
+    return dl.childElementCount ? section(t("x_tech"), dl) : null;
+  }
+
   // A sheet is drawn from one model, whether it is of a game on one platform or on several:
   //   { name, id, qid, platforms: [{ p, id, release, upcoming, popular, reviews, rating, igdb_rating, steam,
   //     gamepass, editions, edition_of }], traits, similar: [[kind, ref, name, score]], links }
@@ -249,6 +298,8 @@
       }
       sheet.append(dl);
     }
+    const technical = techBlock(es);
+    if (technical) sheet.append(technical);
 
     if (es.length > 1) {
       sheet.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => el("li", {},
@@ -341,7 +392,7 @@
       return;
     }
     const entry = { p: platform, id };
-    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "steam", "gamepass", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
+    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
     renderSheet({ name: g.name, id, qid: g.qid, platforms: [entry], traits: g.traits,
       similar: (g.similar || []).map(([o, name, s]) => [platform, o, name, s]), links: g.links }, backTo(platform));
   }

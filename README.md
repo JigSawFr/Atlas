@@ -411,10 +411,10 @@ branch: the platforms' files are then made from these, asking nothing more
 |---|---|---|
 | `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `others-igdb` (every console's games' IGDB slugs), `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`, `playstation`, `playstation-<kind>`, `playstation-dates`, `3ds` (the 3DS games' Japanese labels, English aliases, dates, GameTDB codes); `switch-pages`, `steam-pages` (daily) | Monday, every day |
 | `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers; the others with ids and names) | Monday |
-| `sources/steam-store/` | `apps.json` (GetItems by app id), `tags.json`, `most-played.json` | Monday |
+| `sources/steam-store/` | `apps.json` (GetItems by app id: its names, reviews, release, franchise, developers, publishers, tags, and for the sheets the platforms it runs on, the Steam Deck's verdict, the player and feature categories, the names of its header, small capsule and first 6 screenshots, and its languages with the voiced ones), `tags.json`, `most-played.json` | Monday |
 | `sources/steamspy/` | `apps.json`: owners and players by app id, as many as 10 minutes allow | Monday |
-| `sources/gog/catalog/` | `US.json`: the catalog's products by product id, in its trending order | Monday |
-| `sources/msstore/` | `products.json`, `gamepass.json` | Monday |
+| `sources/gog/catalog/` | `US.json`: the catalog's products by product id, in its trending order, with their systems, features, age ratings and the names of their cover, poster and first 6 screenshots | Monday |
+| `sources/msstore/` | `products.json` (with each product's age ratings, capabilities, platforms and the names of its box art, poster, hero art and first 6 screenshots), `gamepass.json` | Monday |
 | `sources/nlib-ctr/` | `categories.json` (the 3DS's title ids by category), `titles.json` (each base game's name, region, publisher, product code, first day; kept from run to run) | Monday |
 | `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records of the Switch's games; `others.json`, of every console's (with its keys only) | Monday |
 | `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (the Switch's and Steam's best known games' pages' views a day, 8 languages) | Monday, every day |

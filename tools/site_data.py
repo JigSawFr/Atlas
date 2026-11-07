@@ -26,6 +26,7 @@ from bisect import bisect_left
 
 from common import SCHEMA
 from taxonomy import KINDS, clean_title, find, fold, tidy_label
+import tech
 
 LIST = 200              # games a list holds
 PAGE = 5000             # games a page of the browse index holds
@@ -203,7 +204,7 @@ def unify(entries: dict, similar_of: dict) -> dict:
     for p in order:
         gid, sheet = entries[p]
         entry = {"p": p, "id": gid}
-        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "steam", "gamepass", "editions", "edition_of"):
+        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "steam", "gamepass", "tech", "editions", "edition_of"):
             if k in sheet:
                 entry[k] = sheet[k]
         out["platforms"].append(entry)
@@ -317,6 +318,7 @@ def build(data_dir: str, out_dir: str) -> dict:
                "games": sum(len(p["games"]) for p in pages), "facets": facets})
 
         sheets = {}
+        stores = tech.read(data_dir, platform)       # what the stores' own sources say: runs on, languages, ages, pictures
         every = set(scores) | set(games) | set(upcoming) | set(similar)
         of_edition = {}
         for e, g in editions.items():
@@ -337,6 +339,8 @@ def build(data_dir: str, out_dir: str) -> dict:
                         sheet[k] = game[k]
                 if isinstance(game.get("steam"), dict):
                     sheet["steam"] = game["steam"]
+            if gid in stores:
+                sheet["tech"] = stores[gid]
             if gid in upcoming:
                 sheet["upcoming"] = upcoming[gid][0]
             if gid in similar:
