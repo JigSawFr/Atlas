@@ -97,12 +97,16 @@
   }
 
   // The address, read and written.
+  let from = "";               // the platform last shown, which a sheet of all a game's platforms goes back to ("" before any)
   function route() {
     const raw = location.hash.slice(1), q = raw.indexOf("?");
     const parts = decodeURIComponent(q < 0 ? raw : raw.slice(0, q)).split("/");
+    const query = new URLSearchParams(q < 0 ? "" : raw.slice(q + 1));
+    if (parts[0] === "game" && parts[1]) return { platform: from || PLATFORMS[0], view: "ugame", arg: parts.slice(1).join("/"), query };
     const platform = PLATFORMS.includes(parts[0]) ? parts[0] : PLATFORMS[0];
+    from = platform;
     const view = ["browse", "popular", "trending", "upcoming", "search", "game"].includes(parts[1]) ? parts[1] : "popular";
-    return { platform, view, arg: parts.slice(2).join("/"), query: new URLSearchParams(q < 0 ? "" : raw.slice(q + 1)) };
+    return { platform, view, arg: parts.slice(2).join("/"), query };
   }
   const go = (hash) => { if (location.hash !== hash) location.hash = hash; else show(); };
 
@@ -191,74 +195,93 @@
     return el("section", {}, el("h3", { text: title }), ...content);
   }
 
-  async function game(platform, id) {
-    leaveBrowse();
-    results.hidden = true;
-    pressed("x-views", "view", "");
-    setStatus(t("x_loading"));
-    const lists = await get(`x/${platform}/lists.json`);
-    const part = await get(`x/${platform}/g/${shard(id, lists.shards)}.json`);
-    const g = part[id];
+  // A sheet is drawn from one model, whether it is of a game on one platform or on several:
+  //   { name, id, qid, platforms: [{ p, id, release, upcoming, popular, reviews, rating, igdb_rating, steam,
+  //     gamepass, editions, edition_of }], traits, similar: [[kind, ref, name, score]], links }
+  // (a similar game's kind is "u" for a game with a sheet of all its platforms, else its platform).
+  const gameHref = (kind, ref) => (kind === "u" ? `#game/${encodeURIComponent(ref)}` : `#${kind}/game/${encodeURIComponent(ref)}`);
+  const storeName = (p) => (p === "steam" ? "Steam" : STORE_NAMES[p] || S._names[p] || p);
+
+  function renderSheet(m, backHref) {
     sheet.replaceChildren();
     sheet.hidden = false;
-    const back = el("a", { class: "back", href: lastBrowse.startsWith(`#${platform}/browse`) ? lastBrowse : `#${platform}/popular` }, `← ${t("x_back")}`);
-    if (!g) {
-      sheet.append(back, el("p", { text: t("x_not_found") }));
-      setStatus("");
-      return;
-    }
+    const es = m.platforms;
+    const back = el("a", { class: "back", href: backHref }, `← ${t("x_back")}`);
     const head = el("header", {}, back,
-      el("h2", { tabindex: "-1" }, g.name || id),
-      el("p", { class: "ids" }, el("span", { class: "badge", text: S._names[platform] }), g.name ? el("code", { text: id }) : null,
-        g.qid ? el("a", { href: `https://www.wikidata.org/wiki/${g.qid}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: g.qid }) : null,
-        !g.name ? el("small", { text: t("x_no_name") }) : null));
+      el("h2", { tabindex: "-1" }, m.name || m.id || ""),
+      el("p", { class: "ids" }, ...es.map((e) => el("span", { class: "badge", text: S._names[e.p] || e.p })),
+        m.name && m.id ? el("code", { text: m.id }) : null,
+        m.qid ? el("a", { href: `https://www.wikidata.org/wiki/${m.qid}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: m.qid }) : null,
+        !m.name ? el("small", { text: t("x_no_name") }) : null));
     sheet.append(head);
 
     const stats = el("dl", { class: "stats" });
     const stat = (label, value) => { if (value !== null && value !== undefined && value !== "") stats.append(el("div", {}, el("dt", { text: label }), el("dd", {}, value))); };
-    if (g.popular) {
-      stat(t("x_score"), score(g.popular[0]));
-      if (g.popular[1]) stat(t("x_trend"), trend(g.popular[1]));
-      if (g.popular[2]) stat(t("x_critics"), `${g.popular[2]} / 100`);
+    const best = es.filter((e) => e.popular).sort((x, y) => y.popular[0] - x.popular[0])[0];
+    if (best) {
+      stat(t("x_score"), score(best.popular[0]));
+      if (best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
     }
-    if (g.reviews) stat("Steam", t("x_reviews", { n: num(g.reviews[0]), p: g.reviews[1] }));
-    if (g.igdb_rating && g.igdb_rating[1] >= 20) stat(t("x_players_rating"), `${g.igdb_rating[0]} / 100`);
-    if (g.release) stat(t("x_release"), ymd(g.release));
-    if (g.upcoming) stat(t("x_release"), t("x_coming", { date: ymd(g.upcoming) }));
+    const critics = Math.max(0, ...es.map((e) => (e.popular ? e.popular[2] : 0)));
+    if (critics) stat(t("x_critics"), `${critics} / 100`);
+    for (const e of es) {
+      if (e.reviews) stat(storeName(e.p), t("x_reviews", { n: num(e.reviews[0]), p: e.reviews[1] }));
+      if (e.rating) stat(storeName(e.p), t("x_reviews", { n: num(e.rating[0]), p: e.rating[1] }));
+    }
+    const players = es.filter((e) => e.igdb_rating && e.igdb_rating[1] >= 20).sort((x, y) => y.igdb_rating[1] - x.igdb_rating[1])[0];
+    if (players) stat(t("x_players_rating"), `${players.igdb_rating[0]} / 100`);
+    const out = es.map((e) => e.release).filter(Boolean);
+    const soon = es.map((e) => e.upcoming).filter(Boolean);
+    if (out.length) stat(t("x_release"), ymd(Math.min(...out)));
+    else if (soon.length) stat(t("x_release"), t("x_coming", { date: ymd(Math.min(...soon)) }));
     if (stats.childElementCount) sheet.append(stats);
-    if (g.steam && (g.steam.owners || g.steam.ccu)) {
-      sheet.append(el("p", { class: "dim", text: t("x_steam_figures", { owners: num(g.steam.owners || 0), ccu: num(g.steam.ccu || 0) }) }));
+    for (const e of es) {
+      if (e.steam && (e.steam.owners || e.steam.ccu)) {
+        sheet.append(el("p", { class: "dim", text: t("x_steam_figures", { owners: num(e.steam.owners || 0), ccu: num(e.steam.ccu || 0) }) }));
+        break;
+      }
     }
 
-    if (g.traits) {
+    if (m.traits) {
       const dl = el("dl", { class: "traits" });
-      for (const [kind, names] of Object.entries(g.traits)) {
+      for (const [kind, names] of Object.entries(m.traits)) {
         dl.append(el("div", {}, el("dt", {}, icon(`i-k-${kind}`), t(`x_${kind}`)), el("dd", {}, ...names.map((n) => chip(kind, n)))));
       }
       sheet.append(dl);
     }
 
-    if (g.similar && g.similar.length) {
-      sheet.append(section(t("x_similar"), el("ol", { class: "similar" }, ...g.similar.map(([o, name, s]) =>
-        el("li", {}, el("a", { href: `#${platform}/game/${encodeURIComponent(o)}` }, nameOf(o, name, platform)), el("span", { class: "dim", text: `${s}` }))))));
+    if (es.length > 1) {
+      sheet.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => el("li", {},
+        el("span", { class: "badge", text: S._names[e.p] || e.p }),
+        e.popular ? score(e.popular[0]) : null,
+        e.release ? el("span", { class: "date", text: ymd(e.release) }) : (e.upcoming ? el("span", { class: "date", text: t("x_coming", { date: ymd(e.upcoming) }) }) : null),
+        e.reviews || e.rating ? el("span", { class: "dim", text: t("x_reviews", { n: num((e.reviews || e.rating)[0]), p: (e.reviews || e.rating)[1] }) }) : null,
+        e.gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null,
+        el("a", { class: "out", href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone`, text: "→", "aria-label": `${S._names[e.p] || e.p}: ${e.id}` }))))));
     }
-    if (g.edition_of) {
-      const [o, name] = g.edition_of;
-      sheet.append(section(t("x_edition_of"), el("p", {}, el("a", { href: `#${platform}/game/${encodeURIComponent(o)}` }, nameOf(o, name, platform)))));
+
+    if (m.similar && m.similar.length) {
+      sheet.append(section(t("x_similar"), el("ol", { class: "similar" }, ...m.similar.map(([kind, ref, name, s]) =>
+        el("li", {}, el("a", { href: gameHref(kind, ref) }, nameOf(ref, name)), el("span", { class: "dim", text: `${s}` }))))));
     }
-    if (g.editions) {
-      sheet.append(section(t("x_editions"), el("ul", { class: "similar" }, ...g.editions.map(([o, name]) =>
-        el("li", {}, el("a", { href: `#${platform}/game/${encodeURIComponent(o)}` }, nameOf(o, name, platform)))))));
+    for (const e of es) {
+      if (e.edition_of) {
+        const [o, name] = e.edition_of;
+        sheet.append(section(t("x_edition_of"), el("p", {}, el("a", { href: gameHref(e.p, o) }, nameOf(o, name)))));
+      }
+      if (e.editions) {
+        sheet.append(section(t("x_editions"), el("ul", { class: "similar" }, ...e.editions.map(([o, name]) =>
+          el("li", {}, el("a", { href: gameHref(e.p, o) }, nameOf(o, name)))))));
+      }
     }
-    if (g.links && Object.keys(g.links).length) {
+    if (m.links && Object.keys(m.links).length) {
       const items = [];
-      for (const [p, ids] of Object.entries(g.links)) {
+      for (const [p, ids] of Object.entries(m.links)) {
         if (p === "ps_product") continue;
         for (const other of ids) {
-          const inData = PLATFORMS.includes(p) && p !== platform;
+          const inData = PLATFORMS.includes(p) && !es.some((e) => e.p === p);
           items.push(el("li", {}, el("span", { class: "badge", text: STORE_NAMES[p] || p }),
-            inData ? el("a", { href: `#${p}/game/${encodeURIComponent(other)}` }, el("code", { text: other }))
-              : el("code", { text: other }),
+            inData ? el("a", { href: gameHref(p, other) }, el("code", { text: other })) : el("code", { text: other }),
             STORES[p] ? el("a", { class: "out", href: STORES[p](other), rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: "↗", "aria-label": `${STORE_NAMES[p]} ${other}` }) : null));
         }
       }
@@ -268,6 +291,59 @@
     setStatus(t("x_loaded", { size: kb(read) }));
     head.querySelector("h2").focus({ preventScroll: true });
     window.scrollTo({ top: sheet.getBoundingClientRect().top + window.scrollY - 16 });
+  }
+
+  const backTo = (platform) => (lastBrowse.startsWith(`#${platform}/browse`) ? lastBrowse : `#${platform}/popular`);
+
+  // The sheet of a game on several platforms, by its Wikidata item.
+  async function unified(qid) {
+    leaveBrowse();
+    results.hidden = true;
+    pressed("x-views", "view", "");
+    setStatus(t("x_loading"));
+    const meta = await get("x/u/meta.json");
+    const part = await get(`x/u/${shard(qid, meta.shards)}.json`);
+    const u = part[qid];
+    if (!u) {
+      sheet.replaceChildren(el("a", { class: "back", href: backTo(from || PLATFORMS[0]) }, `← ${t("x_back")}`), el("p", { text: t("x_not_found") }));
+      sheet.hidden = false;
+      setStatus("");
+      return;
+    }
+    if (!from) {
+      // Arrived by the address alone: the first of its platforms that has a button is the one shown.
+      from = (u.platforms.find((e) => document.querySelector(`#x-platforms button[data-platform="${e.p}"]`)) || u.platforms[0]).p;
+      pressed("x-platforms", "platform", from);
+      machine.value = [...machine.options].some((o) => o.value === from) ? from : "";
+    }
+    renderSheet(u, backTo(from));
+  }
+
+  // The sheet of a game on one platform; a game on several goes to the sheet of all of them
+  // (the address is replaced), unless the address asks for this platform's alone.
+  async function game(platform, id, query) {
+    leaveBrowse();
+    results.hidden = true;
+    pressed("x-views", "view", "");
+    setStatus(t("x_loading"));
+    const lists = await get(`x/${platform}/lists.json`);
+    const part = await get(`x/${platform}/g/${shard(id, lists.shards)}.json`);
+    const g = part[id];
+    if (g && g.unified && !query.has("alone")) {
+      history.replaceState(null, "", gameHref("u", g.qid));
+      from = platform;
+      return unified(g.qid);
+    }
+    if (!g) {
+      sheet.replaceChildren(el("a", { class: "back", href: backTo(platform) }, `← ${t("x_back")}`), el("p", { text: t("x_not_found") }));
+      sheet.hidden = false;
+      setStatus("");
+      return;
+    }
+    const entry = { p: platform, id };
+    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "steam", "gamepass", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
+    renderSheet({ name: g.name, id, qid: g.qid, platforms: [entry], traits: g.traits,
+      similar: (g.similar || []).map(([o, name, s]) => [platform, o, name, s]), links: g.links }, backTo(platform));
   }
 
   // Browsing: facets.json gives the menus, then the pages of games, best known
@@ -516,7 +592,8 @@
     machine.value = [...machine.options].some((o) => o.value === platform) ? platform : "";
     try {
       if (view === "browse") await browse(platform, query);
-      else if (view === "game") await game(platform, arg);
+      else if (view === "ugame") await unified(arg);
+      else if (view === "game") await game(platform, arg, query);
       else if (view === "search") { if (search.value !== arg) search.value = arg; await find(platform, arg); }
       else await list(platform, view);
     } catch (e) {
@@ -528,7 +605,7 @@
     const b = e.target.closest("button[data-platform]");
     if (!b) return;
     const { view } = route();
-    const keep = view === "game" || view === "search" ? "popular" : view;
+    const keep = view === "game" || view === "ugame" || view === "search" ? "popular" : view;
     go(`#${b.dataset.platform}/${keep}`);
   });
   machine.addEventListener("change", () => { if (machine.value) go(`#${machine.value}/popular`); });

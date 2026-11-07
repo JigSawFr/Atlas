@@ -81,6 +81,30 @@ def browse_errors(folder: Path, site: Path) -> list:
     return errors
 
 
+def unified_errors(site: Path) -> list:
+    """What is wrong with the unified sheets (x/u/): the shards meta.json counts are all there, and
+    each sheet is of its qid and has a platform."""
+    folder = site / "x" / "u"
+    try:
+        meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        return [f"x/u/meta.json: {error}"]
+    errors, found = [], 0
+    for n in range(meta.get("shards", 0)):
+        try:
+            part = json.loads((folder / f"{n}.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            errors.append(f"x/u/{n}.json: {error}")
+            continue
+        found += len(part)
+        for qid, sheet in part.items():
+            if sheet.get("qid") != qid or not sheet.get("platforms"):
+                errors.append(f"x/u/{n}.json: {qid} is not a sheet of its own")
+    if found != meta.get("games"):
+        errors.append(f"x/u: {found} sheets, not {meta.get('games')}")
+    return errors
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         sys.exit(__doc__)
@@ -99,6 +123,9 @@ def main() -> None:
         if shards != list(range(body.get("shards", 0))):
             errors.append(f"{lists.parent.relative_to(site)}: {len(shards)} shards, not {body.get('shards')}")
         errors += browse_errors(lists.parent, site)
+
+    if (site / "x").is_dir():
+        errors += unified_errors(site)
 
     total = size(site)
     if total > SIZE_MAX:

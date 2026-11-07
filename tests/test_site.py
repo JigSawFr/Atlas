@@ -76,6 +76,36 @@ class SiteData(unittest.TestCase):
         self.assertEqual(self.sheet("switch", "0100F0F0F0F0F000")["edition_of"], ["0100A1B2C3D4E000", ""])
         self.assertEqual(self.sheet("steam", "900010")["traits"], {"genres": ["action"]})    # the tag "Action" is the genre
 
+    def unified(self, qid):
+        meta = self.read("x/u/meta.json")
+        return self.read(f"x/u/{site_data.shard(qid, meta['shards'])}.json")[qid]
+
+    def test_unified_sheet(self):
+        u = self.unified("Q900001")
+        self.assertEqual(u["qid"], "Q900001")
+        self.assertEqual(u["name"], "Amber Lantern")
+        self.assertEqual([e["p"] for e in u["platforms"]], ["steam", "switch"])
+        self.assertEqual(u["platforms"][0]["popular"], [70, 5, 0])
+        self.assertEqual(u["platforms"][1]["popular"], [80, 12, 90])
+        self.assertEqual(u["platforms"][1]["steam"]["app"], 900010)
+        self.assertEqual(u["traits"], {"genres": ["action"], "series": ["Amber Saga"], "developers": ["Tiny Owl"]})
+        self.assertEqual(u["similar"], [["switch", "0100C0C0C0C0C000", "Frost Harbor", 55]])
+        self.assertEqual(u["links"], {"gog": ["amber_lantern"]})        # the stores the data has no platform for
+        self.assertTrue(self.sheet("switch", "0100A1B2C3D4E000")["unified"])
+        self.assertTrue(self.sheet("steam", "900010")["unified"])
+        self.assertNotIn("unified", self.sheet("steam", "900020"))      # one platform, no unified sheet
+        self.assertEqual(self.read("x/u/meta.json")["games"], 1)
+
+    def test_unify_spellings_and_order(self):
+        steam = ("1", {"name": "Amber", "traits": {"developers": ["INNERSLOTH"], "genres": ["action", "puzzle"]}})
+        switch = ("2", {"name": "Amber", "traits": {"developers": ["Innersloth", "Tiny Owl"], "genres": ["puzzle"]},
+                        "links": {"steam": ["1"], "gog": ["amber"]}})
+        u = site_data.unify({"switch": switch, "steam": steam}, {})
+        self.assertEqual([e["p"] for e in u["platforms"]], ["steam", "switch"])        # steam first
+        self.assertEqual(u["traits"]["developers"], ["INNERSLOTH", "Tiny Owl"])        # one spelling, the first platform's
+        self.assertEqual(u["traits"]["genres"], ["puzzle", "action"])                   # on both platforms first
+        self.assertEqual(u["links"], {"gog": ["amber"]})
+
     def facets(self, platform):
         return self.read(f"x/{platform}/facets.json")
 
