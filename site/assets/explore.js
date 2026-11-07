@@ -248,6 +248,83 @@
     return dl.childElementCount ? section(t("x_tech"), dl) : null;
   }
 
+  // The pictures of a game (tools/tech.py's `img`: the stores' own names for them). The visitor's browser
+  // never asks a store: it asks wsrv.nl (an image cache and resize service in the European Union), which asks
+  // the store, hands the picture back resized and sends nothing about the visitor on. Where a game has no
+  // picture, or one does not load, the page draws a cover (a colour from its name, its first genre's icon).
+  const PROXY = "https://wsrv.nl/";
+  const STORE_PICTURES = {
+    steam: (id, name) => `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${id}/${name}`,
+    gog: (id, name, shot) => `https://images.gog-statics.com/${name}${shot ? ".jpg" : ""}`,
+    xbox: (id, name) => `https://store-images.s-microsoft.com/image/${name}`,
+  };
+  const proxied = (origin, width, height) =>
+    `${PROXY}?url=${encodeURIComponent(origin)}&w=${width}${height ? `&h=${height}&fit=cover` : ""}&output=webp&q=75`;
+
+  // Which pictures a sheet draws: the first store that has each kind (landscape, vertical, screenshots).
+  function pictures(es) {
+    const found = { shots: [] };
+    for (const e of es) {
+      const img = e.tech && e.tech.img, make = STORE_PICTURES[e.p];
+      if (!img || !make) continue;
+      if (!found.hero && img.h) found.hero = make(e.id, img.h);
+      if (!found.poster && img.v) found.poster = make(e.id, img.v);
+      if (!found.shots.length && img.s && img.s.length) found.shots = img.s.map((n) => make(e.id, n, true));
+    }
+    return found;
+  }
+
+  const hueOf = (text) => {
+    let h = 0;
+    for (const c of String(text)) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0;
+    return h % 360;
+  };
+
+  // A cover drawn by the page: no tracker, no request, always there.
+  function drawnCover(m, extra) {
+    const svg = document.createElementNS(SVG, "svg");
+    svg.setAttribute("viewBox", "0 0 460 215");
+    svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    svg.setAttribute("aria-hidden", "true");
+    const hue = hueOf(m.qid || m.id || m.name || "");
+    const rect = document.createElementNS(SVG, "rect");
+    for (const [k, v] of [["width", "460"], ["height", "215"], ["fill", `hsl(${hue} 42% 22%)`]]) rect.setAttribute(k, v);
+    svg.append(rect);
+    const glow = document.createElementNS(SVG, "circle");
+    for (const [k, v] of [["cx", "360"], ["cy", "40"], ["r", "170"], ["fill", `hsl(${(hue + 40) % 360} 60% 38%)`], ["opacity", "0.35"]]) glow.setAttribute(k, v);
+    svg.append(glow);
+    const genre = m.traits && m.traits.genres && m.traits.genres[0];
+    if (genre && document.getElementById(`i-g-${genre}`)) {
+      const use = document.createElementNS(SVG, "use");
+      for (const [k, v] of [["href", `#i-g-${genre}`], ["x", "290"], ["y", "30"], ["width", "150"], ["height", "150"],
+        ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "1.2"], ["opacity", "0.35"]]) use.setAttribute(k, v);
+      svg.append(use);
+    }
+    return el("figure", { class: `cover drawn${extra ? ` ${extra}` : ""}` }, svg, el("figcaption", { text: m.name || m.id || "" }));
+  }
+
+  function pictureCover(m, origin, kind) {
+    const vertical = kind === "poster";
+    const img = el("img", { src: proxied(origin, vertical ? 280 : 920, vertical ? 420 : 430), alt: "", decoding: "async", referrerpolicy: "no-referrer",
+      width: vertical ? "140" : "460", height: vertical ? "210" : "215" });
+    const figure = el("figure", { class: `cover${vertical ? " poster" : ""}` }, img);
+    img.addEventListener("error", () => figure.replaceWith(drawnCover(m, vertical ? "poster" : "")));
+    return figure;
+  }
+
+  function gallery(origins) {
+    if (!origins.length) return null;
+    const strip = el("div", { class: "shots" });
+    origins.forEach((origin, i) => {
+      const img = el("img", { src: proxied(origin, 320, 180), alt: t("x_screenshot", { n: i + 1 }), loading: "lazy", decoding: "async",
+        referrerpolicy: "no-referrer", width: "240", height: "135" });
+      const link = el("a", { href: proxied(origin, 1280), target: "_blank", rel: "noreferrer noopener", referrerpolicy: "no-referrer" }, img);
+      img.addEventListener("error", () => link.remove());
+      strip.append(link);
+    });
+    return section(t("x_gallery"), strip);
+  }
+
   // A sheet is drawn from one model, whether it is of a game on one platform or on several:
   //   { name, id, qid, platforms: [{ p, id, release, upcoming, popular, reviews, rating, igdb_rating, steam,
   //     gamepass, editions, edition_of }], traits, similar: [[kind, ref, name, score]], links }
@@ -260,7 +337,9 @@
     sheet.hidden = false;
     const es = m.platforms;
     const back = el("a", { class: "back", href: backHref }, `← ${t("x_back")}`);
-    const head = el("header", {}, back,
+    const shown = pictures(es);
+    const cover = shown.hero ? pictureCover(m, shown.hero, "hero") : shown.poster ? pictureCover(m, shown.poster, "poster") : drawnCover(m);
+    const head = el("header", {}, back, cover,
       el("h2", { tabindex: "-1" }, m.name || m.id || ""),
       el("p", { class: "ids" }, ...es.map((e) => el("span", { class: "badge", text: S._names[e.p] || e.p })),
         m.name && m.id ? el("code", { text: m.id }) : null,
@@ -294,6 +373,9 @@
         break;
       }
     }
+
+    const shots = gallery(shown.shots);
+    if (shots) sheet.append(shots);
 
     if (m.traits) {
       const dl = el("dl", { class: "traits" });

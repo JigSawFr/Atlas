@@ -299,6 +299,15 @@ time.late { color: #ffb347; }
 .traits dd .more-chips { display: contents; }
 .traits dd .more-chips > summary { cursor: pointer; list-style: none; }
 .traits dd .more-chips > summary::-webkit-details-marker { display: none; }
+.cover { position: relative; margin: 0; border-radius: 14px; overflow: hidden; background: var(--abyss); border: 1px solid var(--night-line); aspect-ratio: 460 / 215; max-width: 100%; }
+.cover img, .cover svg { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cover.poster { width: 140px; aspect-ratio: 2 / 3; }
+.cover.poster svg { color: var(--snow); }
+.cover svg { color: var(--snow); }
+.cover figcaption { position: absolute; inset: auto 0 0 0; padding: 22px 14px 12px; font-weight: 600; overflow-wrap: anywhere; color: var(--snow); background: linear-gradient(to top, rgb(0 0 0 / 0.65), transparent); }
+.shots { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
+.shots a { flex: none; display: block; scroll-snap-align: start; border-radius: 10px; overflow: hidden; border: 1px solid var(--night-line); }
+.shots img { display: block; width: 240px; aspect-ratio: 16 / 9; object-fit: cover; background: var(--abyss); }
 .byplat { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .byplat li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 10px 14px; border-radius: 14px; background: var(--abyss); border: 1px solid var(--night-line); }
 .byplat .out { margin-left: auto; min-width: 44px; min-height: 44px; display: inline-grid; place-items: center; }

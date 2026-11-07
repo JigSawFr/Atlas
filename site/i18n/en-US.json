@@ -131,6 +131,8 @@
   "x_writer": "Writing",
   "x_engine": "Engine",
   "x_links": "Links",
+  "x_gallery": "Screenshots",
+  "x_screenshot": "Screenshot {n}",
   "x_official_site": "Official site",
   "x_runs_on": "Runs on",
   "x_deck_3": "Verified",

@@ -131,6 +131,8 @@
   "x_writer": "Sceneggiatura",
   "x_engine": "Motore",
   "x_links": "Link",
+  "x_gallery": "Schermate",
+  "x_screenshot": "Schermata {n}",
   "x_official_site": "Sito ufficiale",
   "x_runs_on": "Funziona su",
   "x_deck_3": "Verificato",
