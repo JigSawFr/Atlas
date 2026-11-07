@@ -25,14 +25,15 @@ import os
 from bisect import bisect_left
 
 from common import SCHEMA
-from taxonomy import KINDS, clean_title, find, fold, tidy_label
+from taxonomy import KINDS, clean_title, company_key, find, fold, tidy_label, with_parents
 import common
 import tech
 import wdfacts
 
 LIST = 200              # games a list holds
 PAGE = 5000             # games a page of the browse index holds
-FACETS = ("genres", "modes", "series", "developers", "publishers", "themes", "perspectives", "tags")
+FACETS = ("genres", "themes", "modes", "perspectives", "styles", "moods", "gameplay", "content", "access",
+          "series", "developers", "publishers", "tags")
 FACET_VALUES = 300      # values a facet keeps (the most common), year aside
 FACET_MIN = 2           # games a value needs to be worth a filter
 UNIFIED_SIMILAR = 12    # games a unified sheet lists as alike
@@ -89,8 +90,15 @@ def reverse_links(links: dict) -> dict:
 
 
 # The kinds of traits, in the order a sheet lists them; the notions' kinds are the ones the taxonomy fills.
-TRAIT_KINDS = ("genres", "themes", "modes", "perspectives", "series", "developers", "publishers", "tags", "keywords")
+TRAIT_KINDS = ("genres", "themes", "modes", "perspectives", "styles", "moods", "gameplay", "content", "access",
+               "series", "developers", "publishers", "tags", "keywords")
 NOTIONS = ("genres", "themes", "modes", "perspectives", "tags")     # whose words the taxonomy may name
+COMPANIES = ("developers", "publishers")                              # whose names are one by company_key
+
+
+def same(kind: str, name: str) -> str:
+    """What makes two spellings of a trait one: a company's name without its legal words, else the name folded."""
+    return company_key(name) if kind in COMPANIES else fold(name)
 
 
 def raw_traits(game: dict, tags: dict) -> dict:
@@ -115,13 +123,13 @@ def spellings(games: dict, tags: dict) -> dict:
                 for name in names:
                     name = clean_title(name)
                     if kind not in NOTIONS:
-                        count = seen.setdefault(fold(name), {})
+                        count = seen.setdefault((kind in COMPANIES, same(kind, name)), {})
                         count[name] = count.get(name, 0) + 1
                     elif not find(name):
                         name = tidy_label(name)
-                        count = seen.setdefault(fold(name), {})
+                        count = seen.setdefault((False, fold(name)), {})
                         count[name] = count.get(name, 0) + 1
-    return {f: min(c, key=lambda n: (-c[n], n)) for f, c in seen.items()}
+    return {k: min(c, key=lambda n: (-c[n], n)) for k, c in seen.items()}
 
 
 def trait_names(game: dict, tags: dict, spelled: dict = None) -> dict:
@@ -136,7 +144,7 @@ def trait_names(game: dict, tags: dict, spelled: dict = None) -> dict:
             found = find(name) if kind in NOTIONS else None
             if kind in NOTIONS and not found:
                 name = tidy_label(name)
-            where, value = (KINDS[found[0]], found[1]) if found else (kind, spelled.get(fold(name), name))
+            where, value = (KINDS[found[0]], found[1]) if found else (kind, spelled.get((kind in COMPANIES, same(kind, name)), name))
             if value not in out.setdefault(where, []):
                 out[where].append(value)
     return {k: out[k] for k in TRAIT_KINDS if out.get(k)}
@@ -160,7 +168,10 @@ def browse(best: list, games: dict, names: dict, tags: dict, spelled: dict = Non
             year = year_of(game)
             traits = trait_names(game, tags, spelled)
             for kind in FACETS:
-                for value in dict.fromkeys(traits.get(kind, ())):
+                values = traits.get(kind, ())
+                if kind == "genres":
+                    values = with_parents(values)      # a platformer is in the action games too
+                for value in dict.fromkeys(values):
                     found[kind].setdefault(value, []).append(len(rows))
             if year:
                 found["year"].setdefault(str(year), []).append(len(rows))
@@ -217,7 +228,7 @@ def unify(entries: dict, similar_of: dict) -> dict:
         for kind, values in (sheet.get("traits") or {}).items():
             for v in values:
                 found = traits.setdefault(kind, {})
-                seen = found.setdefault(fold(v), [0, len(found), v])     # "SEGA" and "Sega": the first one's
+                seen = found.setdefault(same(kind, v), [0, len(found), v])     # "SEGA" and "Sega Corporation": the first one's
                 seen[0] += 1
     merged = {kind: [seen[2] for seen in sorted(found.values(), key=lambda x: (-x[0], x[1]))] for kind, found in traits.items()}
     ordered = {k: merged[k] for k in TRAIT_KINDS if merged.get(k)}

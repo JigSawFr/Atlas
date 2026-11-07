@@ -107,6 +107,17 @@ class SiteData(unittest.TestCase):
         steam = [e for e in self.unified("Q900001")["platforms"] if e["p"] == "steam"][0]
         self.assertEqual(steam["tech"]["deck"], 2)                      # the sheet of all its platforms keeps each one's
 
+    def test_a_company_is_one_whatever_its_legal_form(self):
+        put(self.data, "platforms/steam/games.json", {"schema": 1, "games": {
+            "900010": {"name": "A", "developers": [["Q1", "Sega Corporation"]], "publishers": [["Q2", "Sega"]]},
+            "900020": {"name": "B", "developers": [["Q1", "SEGA"]], "publishers": [["Q2", "Sega Co., Ltd."]]},
+            "900030": {"name": "C", "developers": [["Q1", "Sega"]], "publishers": [["Q2", "Sega"]]}}})
+        site_data.build(self.data, self.out)
+        facets = self.facets("steam")["facets"]
+        self.assertEqual(facets["developers"], [["Sega", 3]])        # the spelling most games use
+        self.assertEqual(facets["publishers"], [["Sega", 3]])
+        self.assertEqual(self.sheet("steam", "900010")["traits"]["developers"], ["Sega"])
+
     def test_wikidata_facts_reach_the_sheets(self):
         put(self.data, "sources/wikidata/facts-website.json", {"schema": 1, "rows": [{"qid": "Q900001", "v": "https://example.org/amber"}]})
         put(self.data, "sources/wikidata/facts-age.json", {"schema": 1, "rows": [{"qid": "Q900001", "p": "P908", "label": "PEGI 7"}]})
@@ -147,7 +158,7 @@ class SiteData(unittest.TestCase):
         return []
 
     def steam_games(self):
-        put(self.data, "platforms/steam/games.json", {"schema": 1, "tags": {"19": "Action", "21": "Rare", "22": "Pixel Graphics", "23": "Singleplayer"}, "games": {
+        put(self.data, "platforms/steam/games.json", {"schema": 1, "tags": {"19": "Action", "21": "Rare", "22": "Great Soundtrack", "23": "Singleplayer"}, "games": {
             "900010": {"name": "Amber Lantern™", "tags": [19, 21, 22, 23], "release": 20240115, "genres": [["Q1", "Puzzle"], ["Q1", "Puzzle"]],
                        "developers": [["Q5", "SEGA"]], "something_new": {"a": 1}},
             "900020": {"name": "Moss & Märchen", "tags": [19, 22], "release": 20240820, "developers": [["Q6", "Sega"]]},
@@ -163,7 +174,7 @@ class SiteData(unittest.TestCase):
         self.assertEqual((facets["pages"], facets["games"]), (1, 3))
         self.assertEqual(facets["facets"]["genres"], [["action", 3]])                        # the tag is the genre; "puzzle" has one game
         self.assertEqual(facets["facets"]["modes"], [["single", 2]])                         # "Singleplayer" is the mode
-        self.assertEqual(facets["facets"]["tags"], [["Pixel Graphics", 3]])                  # "Rare" has one game only
+        self.assertEqual(facets["facets"]["tags"], [["Great Soundtrack", 3]])                # "Rare" has one game only
         self.assertEqual(facets["facets"]["developers"], [["Sega", 3]])                      # "SEGA" is "Sega"
         self.assertEqual(facets["facets"]["year"], [["2024", 2]])                            # 1999 has one game
         self.assertEqual(self.rows_of("steam", "genres", "action"), [0, 1, 2])
@@ -171,13 +182,28 @@ class SiteData(unittest.TestCase):
         self.assertEqual(self.rows_of("steam", "year", "2024"), [0, 1])
         self.assertEqual((summary["steam"]["browse"], summary["steam"]["pages"]), (3, 1))
 
+    def test_the_tags_the_taxonomy_names_and_a_genre_in_its_parents(self):
+        put(self.data, "platforms/steam/games.json", {"schema": 1, "tags": {"1": "Pixel Graphics", "2": "Cozy", "3": "Indie", "4": "Violent"}, "games": {
+            "900010": {"name": "A", "tags": [1, 2, 3], "genres": [["Q1", "platform game"]]},
+            "900020": {"name": "B", "tags": [1, 3, 4], "genres": [["Q1", "platform game"], ["Q2", "role-playing video game"]]}}})
+        site_data.build(self.data, self.out)
+        facets = self.facets("steam")["facets"]
+        self.assertEqual(facets["styles"], [["pixel_art", 2]])
+        self.assertEqual(facets["access"], [["indie", 2]])
+        self.assertNotIn("tags", facets)                                          # none left that no notion names
+        genres = dict(facets["genres"])
+        self.assertEqual((genres["platformer"], genres["action"]), (2, 2))        # a platformer is an action game too
+        self.assertNotIn("rpg", genres)                                           # one game only
+        self.assertEqual(self.sheet("steam", "900020")["traits"]["genres"], ["platformer", "rpg"])     # the sheet says what it is
+        self.assertEqual(self.sheet("steam", "900010")["traits"]["moods"], ["cozy"])
+
     def test_sheet_normalized(self):
         self.steam_games()
         site_data.build(self.data, self.out)
         sheet = self.sheet("steam", "900010")
         self.assertEqual(sheet["name"], "Amber Lantern")
         self.assertEqual(sheet["traits"], {"genres": ["puzzle", "action"], "modes": ["single"],
-                                           "developers": ["Sega"], "tags": ["Rare", "Pixel Graphics"]})
+                                           "developers": ["Sega"], "tags": ["Rare", "Great Soundtrack"]})
 
     def test_browse_pages(self):
         self.steam_games()

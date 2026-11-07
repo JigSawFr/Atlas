@@ -16,10 +16,11 @@ class Words(unittest.TestCase):
         self.assertEqual(taxonomy.fold("Éducatif"), "educatif")
 
     def test_the_sources_words_of_one_notion(self):
-        for word in ("RPG", "Role-playing (RPG)", "role-playing video game", "Role playing", "JRPG"):
+        for word in ("RPG", "Role-playing (RPG)", "role-playing video game", "Role playing", "CRPG"):
             self.assertEqual(taxonomy.find(word), ("g", "rpg"), word)
         for word in ("Single player", "Singleplayer", "single-player video game"):
             self.assertEqual(taxonomy.find(word), ("m", "single"), word)
+        self.assertEqual(taxonomy.find("JRPG"), ("g", "jrpg"))
         self.assertEqual(taxonomy.find("Action & adventure"), ("g", "action_adventure"))
         self.assertEqual(taxonomy.find("Bird view / Isometric"), ("p", "isometric"))
         self.assertEqual(taxonomy.find("Hack and slash/Beat 'em up"), ("g", "beat_em_up"))
@@ -31,14 +32,47 @@ class Words(unittest.TestCase):
         self.assertEqual(taxonomy.find("First-Person"), ("p", "first"))
 
     def test_what_stays_as_it_is(self):
-        for word in ("Indie", "Pixel Graphics", "Nintendo", "", "Quiz/Trivia"):
+        for word in ("Great Soundtrack", "Nintendo", "", "Quiz/Trivia", "Christmas video game"):
             self.assertIsNone(taxonomy.find(word), word)
+
+    def test_what_the_players_tags_say(self):
+        for word, found in (("Pixel Graphics", ("y", "pixel_art")), ("Hand-drawn", ("y", "hand_drawn")), ("Cozy", ("o", "cozy")),
+                            ("Atmospheric", ("o", "atmospheric")), ("Story Rich", ("h", "story_rich")), ("Perma Death", ("h", "permadeath")),
+                            ("Violent", ("c", "violence")), ("Sexual Content", ("c", "mature")), ("Indie", ("a", "indie")),
+                            ("Free to Play", ("a", "free_to_play")), ("Early Access", ("a", "early_access")),
+                            ("Souls-like", ("g", "action_rpg")), ("Tower Defense", ("g", "tower_defense")),
+                            ("Farming Sim", ("g", "life_sim")), ("World War II", ("t", "ww2")), ("Twin Stick Shooter", ("g", "shooter"))):
+            self.assertEqual(taxonomy.find(word), found, word)
+
+    def test_a_genre_is_in_the_larger_ones(self):
+        self.assertEqual(taxonomy.with_parents(["platformer", "jrpg"]), ["platformer", "action", "jrpg", "rpg"])
+        self.assertEqual(taxonomy.with_parents(["tactics"]), ["tactics", "strategy", "rpg"])
+        self.assertEqual(taxonomy.with_parents(["puzzle", "puzzle"]), ["puzzle"])
+        for child, parents in taxonomy.PARENTS.items():
+            self.assertIn(("g", child), [(c[0], c[1]) for c in taxonomy.CONCEPTS], child)
+            for parent in parents:
+                self.assertIn(("g", parent), [(c[0], c[1]) for c in taxonomy.CONCEPTS], parent)
+                self.assertNotIn(child, taxonomy.PARENTS.get(parent, ()))             # no loop
 
     def test_no_word_is_two_notions(self):
         # Building the table raises on a word two notions share; it is built on import.
         self.assertGreater(len(taxonomy.ALIASES), len(taxonomy.CONCEPTS))
         keys = [(c[0], c[1]) for c in taxonomy.CONCEPTS]
         self.assertEqual(len(keys), len(set(keys)))
+
+    def test_a_word_with_game_after_it(self):
+        self.assertEqual(taxonomy.find("horse racing video game"), ("g", "racing"))
+        self.assertEqual(taxonomy.find("Extreme sports"), ("g", "sports"))
+        self.assertIsNone(taxonomy.find("Game"))
+
+    def test_one_company_many_spellings(self):
+        for name in ("Nintendo", "NINTENDO", "Nintendo Co., Ltd.", "The Nintendo Company", "nintendo co ltd"):
+            self.assertEqual(taxonomy.company_key(name), "nintendo", name)
+        self.assertEqual(taxonomy.company_key("Square Enix Co., Ltd."), "square enix")
+        self.assertEqual(taxonomy.company_key("Ubisoft Entertainment"), "ubisoft entertainment")   # a name, not a legal form
+        self.assertNotEqual(taxonomy.company_key("Sega"), taxonomy.company_key("Sega Sammy"))
+        self.assertEqual(taxonomy.company_key("Inc"), "inc")                                       # never nothing
+        self.assertEqual(taxonomy.company_key("The"), "the")
 
     def test_titles(self):
         self.assertEqual(taxonomy.clean_title("The Legend of Zelda™: Breath of the Wild"), "The Legend of Zelda: Breath of the Wild")
