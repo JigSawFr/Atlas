@@ -328,6 +328,33 @@ a.chip:hover, a.chip:focus-visible { background: rgb(51 187 255 / 0.2); }
 .sheet .links a.out-link { padding: 0 8px; min-height: 44px; }
 .sheet .links a { display: inline-flex; align-items: center; min-height: 32px; min-width: 24px; justify-content: center; }
 
+/* ---- The head of a sheet with pictures: a wide picture fading into the page behind it, the vertical cover
+   overlapping it, the title (or the game's logo), and the scores as rings. */
+.sheet { position: relative; overflow: hidden; isolation: isolate; }
+.sheet .backdrop { position: absolute; inset: 0 0 auto 0; height: clamp(260px, 46vw, 460px); z-index: -1; opacity: 0; transition: opacity 0.5s ease; pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent); mask-image: linear-gradient(to bottom, #000 35%, transparent); }
+.sheet .backdrop.ready { opacity: 0.8; }
+.sheet .backdrop img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; display: block; }
+.sheet .backdrop.blurred img { filter: blur(28px) saturate(1.3); transform: scale(1.25); }
+.sheet .backdrop::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to right, var(--night), transparent 55%), linear-gradient(to top, var(--night), transparent 60%); }
+.sheet header.masthead { padding-top: clamp(40px, 12vw, 150px); }
+.banner { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px 24px; }
+.banner .cover.poster { width: clamp(110px, 22vw, 190px); border-radius: 12px; border-color: rgb(232 238 247 / 0.18); box-shadow: 0 14px 40px rgb(0 0 0 / 0.55); flex: none; }
+.banner .info { display: grid; gap: 12px; flex: 1 1 260px; min-width: 0; }
+.banner .info h2 { text-shadow: 0 2px 18px rgb(0 0 0 / 0.6); }
+.logo { max-width: min(100%, 420px); max-height: 140px; object-fit: contain; object-position: left bottom; justify-self: start; filter: drop-shadow(0 4px 14px rgb(0 0 0 / 0.6)); }
+.has-logo h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.rings { display: flex; flex-wrap: wrap; gap: 14px; }
+.ring { position: relative; display: grid; justify-items: center; gap: 2px; width: 84px; --tone: var(--aurora); }
+.ring.mid { --tone: #ffc857; }
+.ring.low { --tone: #ff6b6b; }
+.ring svg { width: 64px; height: 64px; transform: rotate(-90deg); fill: none; stroke-width: 3; }
+.ring .track { stroke: rgb(232 238 247 / 0.14); }
+.ring .arc { stroke: var(--tone); stroke-linecap: round; }
+.ring b { position: absolute; top: 0; height: 64px; display: grid; place-items: center; font: 600 1.25rem var(--display); }
+.ring small { font: 0.6875rem var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--mist); text-align: center; }
+@media (prefers-reduced-motion: reduce) { .sheet .backdrop { transition: none; } }
+
 /* Grid items keep to their column: a wide table scrolls in its box. */
 .explorer, .explorer > *, .sheet > * { min-width: 0; }
 .explorer, .sheet { grid-template-columns: minmax(0, 1fr); }
