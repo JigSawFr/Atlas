@@ -310,11 +310,11 @@ def igdb_found(src):
     rows = common.bindings(src("wikidata/switch-igdb.json").get("rows") or [])
     games_, popularity = src("igdb/games.json").get("items"), src("igdb/popularity.json").get("items")
     if not games_ or not rows:
-        return {"traits": {}, "popularity": {}, "hypes": {}, "ratings": {}}
+        return {"traits": {}, "popularity": {}, "hypes": {}, "ratings": {}, "covers": {}}
     by_slug = igdb.slugs(rows, base_id)
     ids, traits, hypes = igdb.read_games(games_, by_slug)
     return {"traits": traits, "popularity": igdb.read_popularity(popularity or [], ids), "hypes": hypes,
-            "ratings": igdb.read_ratings(games_, by_slug)}
+            "ratings": igdb.read_ratings(games_, by_slug), "covers": igdb.read_covers(games_, by_slug)}
 
 
 def names_of(src):
@@ -377,11 +377,13 @@ def consolidate(src, out_dir, previous_dir, today):
     # Each game's name (titledb's); every game's in names.json.
     names = names_of(src)
     table = {}
-    for tid in sorted(set(game_traits) | set(steam) | set(found["ratings"])):
+    for tid in sorted(set(game_traits) | set(steam) | set(found["ratings"]) | set(found["covers"])):
         entry = {"name": names[tid]} if tid in names else {}
         entry.update(game_traits.get(tid, {}))
         if tid in found["ratings"]:
             entry["igdb_rating"] = found["ratings"][tid]
+        if tid in found["covers"]:
+            entry["igdb_cover"] = found["covers"][tid]
         if tid in steam:
             entry["steam"] = steam[tid]
         table[tid] = entry
