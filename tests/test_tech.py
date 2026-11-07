@@ -58,7 +58,7 @@ class Stores(unittest.TestCase):
         self.assertEqual(sheet["os"], ["windows", "xbox"])
         self.assertEqual(sheet["feat"], ["crossplay", "play_anywhere", "4k"])
         self.assertEqual(sheet["players"], {"local": 4, "online": 8})
-        self.assertEqual(sheet["age"], [["PEGI", "7"], ["ESRB", "E10"]])        # the systems we show, once each
+        self.assertEqual(sheet["age"], [["PEGI", "7"], ["ESRB", "E10+"]])       # the systems we show, once each; E10 is E10+
         self.assertEqual(sheet["img"], {"h": "hero", "v": "box", "s": ["s1", "s2"]})
 
     def test_one_player_is_not_a_count(self):

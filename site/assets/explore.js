@@ -209,9 +209,10 @@
     } catch (e) { return code; }
   };
 
-  function techBlock(es) {
+  function techBlock(es, wd) {
     const techs = es.map((e) => e.tech).filter(Boolean);
-    if (!techs.length) return null;
+    wd = wd || {};
+    if (!techs.length && !(wd.age || wd.engine)) return null;
     const union = (key) => [...new Set(techs.flatMap((x) => x[key] || []))];
     const dl = el("dl", { class: "traits" });
     const row = (label, ...content) => dl.append(el("div", {}, el("dt", { text: label }), el("dd", {}, ...content)));
@@ -228,9 +229,11 @@
     if (found.has("controller")) found.delete("controller_partial");
     const feat = FEATURES.filter((f) => found.has(f));
     if (feat.length) row(t("x_features"), ...chips(feat.map((f) => t(`x_f_${f}`))));
+    if (wd.engine && wd.engine.length) row(t("x_engine"), ...chips(wd.engine));
     const ages = [];
     for (const system of AGES) {
-      const one = techs.flatMap((x) => x.age || []).find((a) => a[0] === system);
+      // The stores' ratings first, Wikidata's for the systems they do not give.
+      const one = techs.flatMap((x) => x.age || []).concat(wd.age || []).find((a) => a[0] === system);
       if (one) ages.push(`${one[0]} ${one[1]}`);
     }
     if (ages.length) row(t("x_age"), ...chips(ages));
@@ -299,7 +302,7 @@
       }
       sheet.append(dl);
     }
-    const technical = techBlock(es);
+    const technical = techBlock(es, m.wd);
     if (technical) sheet.append(technical);
 
     if (es.length > 1) {
@@ -310,6 +313,15 @@
         e.reviews || e.rating ? el("span", { class: "dim", text: t("x_reviews", { n: num((e.reviews || e.rating)[0]), p: (e.reviews || e.rating)[1] }) }) : null,
         e.gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null,
         el("a", { class: "out", href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone`, text: "→", "aria-label": `${S._names[e.p] || e.p}: ${e.id}` }))))));
+    }
+
+    const team = m.wd && m.wd.team;
+    if (team) {
+      const dl = el("dl", { class: "traits" });
+      for (const [role, key] of [["director", "x_director"], ["composer", "x_composer"], ["writer", "x_writer"]]) {
+        if (team[role] && team[role].length) dl.append(el("div", {}, el("dt", { text: t(key) }), el("dd", {}, ...team[role].map((n) => el("span", { class: "chip", text: n })))));
+      }
+      if (dl.childElementCount) sheet.append(section(t("x_team"), dl));
     }
 
     if (m.similar && m.similar.length) {
@@ -326,6 +338,13 @@
           el("li", {}, el("a", { href: gameHref(e.p, o) }, nameOf(o, name)))))));
       }
     }
+    const wd = m.wd || {};
+    const outside = [];
+    const open = (label, href) => outside.push(el("li", {}, el("a", { class: "out-link", href, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: `${label} ↗` })));
+    if (wd.web) open(t("x_official_site"), wd.web);
+    if (wd.pcgw) open("PCGamingWiki", `https://www.pcgamingwiki.com/wiki/${encodeURIComponent(wd.pcgw)}`);
+    (wd.yt || []).forEach((id, i, all) => open(all.length > 1 ? `YouTube ${i + 1}` : "YouTube", `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`));
+    if (outside.length) sheet.append(section(t("x_links"), el("ul", { class: "links" }, ...outside)));
     if (m.links && Object.keys(m.links).length) {
       const items = [];
       for (const [p, ids] of Object.entries(m.links)) {
@@ -394,7 +413,7 @@
     }
     const entry = { p: platform, id };
     for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
-    renderSheet({ name: g.name, id, qid: g.qid, platforms: [entry], traits: g.traits,
+    renderSheet({ name: g.name, id, qid: g.qid, wd: g.wd, platforms: [entry], traits: g.traits,
       similar: (g.similar || []).map(([o, name, s]) => [platform, o, name, s]), links: g.links }, backTo(platform));
   }
 
