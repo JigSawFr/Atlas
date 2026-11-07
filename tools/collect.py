@@ -54,6 +54,7 @@ import playstation
 import retro
 import steam
 import trends
+import wdfacts
 import xbox
 
 TITLEDB_REGIONS = ("US.en.json", "GB.en.json", "JP.ja.json")
@@ -86,6 +87,7 @@ def wikidata_weekly():
         out.append((f"playstation-{kind}", lambda kind=kind: common.sparql(playstation.query(kind))))
     out.append(("playstation-dates", lambda: common.sparql(playstation.DATES)))
     out.append(("3ds", lambda: common.sparql(n3ds.EXTRA)))
+    out += wdfacts.queries()
     return out
 
 

@@ -107,6 +107,17 @@ class SiteData(unittest.TestCase):
         steam = [e for e in self.unified("Q900001")["platforms"] if e["p"] == "steam"][0]
         self.assertEqual(steam["tech"]["deck"], 2)                      # the sheet of all its platforms keeps each one's
 
+    def test_wikidata_facts_reach_the_sheets(self):
+        put(self.data, "sources/wikidata/facts-website.json", {"schema": 1, "rows": [{"qid": "Q900001", "v": "https://example.org/amber"}]})
+        put(self.data, "sources/wikidata/facts-age.json", {"schema": 1, "rows": [{"qid": "Q900001", "p": "P908", "label": "PEGI 7"}]})
+        site_data.build(self.data, self.out)
+        want = {"web": "https://example.org/amber", "age": [["PEGI", "7"]]}
+        self.assertEqual(self.sheet("steam", "900010")["wd"], want)
+        self.assertEqual(self.sheet("switch", "0100A1B2C3D4E000")["wd"], want)
+        self.assertEqual(self.unified("Q900001")["wd"], want)                      # once, for the game
+        self.assertNotIn("wd", self.unified("Q900001")["platforms"][0])
+        self.assertNotIn("wd", self.sheet("steam", "900020"))
+
     def test_unify_spellings_and_order(self):
         steam = ("1", {"name": "Amber", "traits": {"developers": ["INNERSLOTH"], "genres": ["action", "puzzle"]}})
         switch = ("2", {"name": "Amber", "traits": {"developers": ["Innersloth", "Tiny Owl"], "genres": ["puzzle"]},

@@ -26,7 +26,9 @@ from bisect import bisect_left
 
 from common import SCHEMA
 from taxonomy import KINDS, clean_title, find, fold, tidy_label
+import common
 import tech
+import wdfacts
 
 LIST = 200              # games a list holds
 PAGE = 5000             # games a page of the browse index holds
@@ -200,6 +202,10 @@ def unify(entries: dict, similar_of: dict) -> dict:
             count[name] = count.get(name, 0) + 1
     if count:
         out["name"] = max(count, key=lambda n: (count[n], -min(i for i, p in enumerate(order) if entries[p][1].get("name") == n)))
+    for p in order:
+        if entries[p][1].get("wd"):
+            out["wd"] = entries[p][1]["wd"]          # the game's, the same on every platform
+            break
     traits = {}
     for p in order:
         gid, sheet = entries[p]
@@ -282,6 +288,7 @@ def build(data_dir: str, out_dir: str) -> dict:
             where.setdefault(qid, set()).add(platform)
     multi = {q for q, ps in where.items() if len(ps) > 1}
     kept, similar_refs = {}, {}
+    wd = wdfacts.facts(common.reader(data_dir))      # what Wikidata says of a game: its site, ratings, team, engine, trailers
     for platform in plats:
         files = platform_files(data_dir, platform)
         scores = files["popular"].get("games") or {}
@@ -353,6 +360,8 @@ def build(data_dir: str, out_dir: str) -> dict:
             if link:
                 sheet["qid"] = sheet.get("qid") or link[0]
                 sheet["links"] = {p: ids for p, ids in link[1].items() if p != platform or ids != [gid]}
+            if sheet.get("qid") in wd:
+                sheet["wd"] = wd[sheet["qid"]]
             if sheet.get("qid") in multi:
                 sheet["unified"] = True
                 kept.setdefault(sheet["qid"], {})[platform] = (gid, sheet)
