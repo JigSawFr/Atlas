@@ -37,8 +37,26 @@ notes="Atlas' data files as published on $day: $files files, the same as the \`d
 if gh release view "$tag" >/dev/null 2>&1; then
   gh release delete "$tag" --yes --cleanup-tag
 fi
+# A draft left by a run that failed half way (the release made, not all its
+# files sent) is of no use, and `gh release view` does not see it: deleted.
+gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[] | select(.draft) | .id' |
+  while IFS= read -r id; do gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id"; done
 # The tag pushed by git first, the release then made on it: the first run
 # (2026-10-30) had the API refuse a release that made its own tag (403).
 git push --force origin "$GITHUB_SHA:refs/tags/$tag"
-gh release create "$tag" "$out"/* --verify-tag --latest \
+# Made as a draft, the files sent one by one, then published: sending 200
+# files in one `gh release create` ran into GitHub's secondary rate limit
+# (403 on 2026-11-07, the release left as a draft). One file a second, and a
+# file that gets the limit is sent again after a wait.
+gh release create "$tag" --draft --verify-tag \
   --title "Data of $day" --notes "$notes"
+for f in "$out"/*; do
+  n=0
+  until gh release upload "$tag" "$f" --clobber; do
+    n=$((n + 1))
+    [ "$n" -lt 5 ] || { echo "archive: $f not sent after $n tries" >&2; exit 1; }
+    sleep $((60 * n))
+  done
+  sleep 1
+done
+gh release edit "$tag" --draft=false --latest
