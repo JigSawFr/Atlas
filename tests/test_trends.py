@@ -89,16 +89,16 @@ class Trends(unittest.TestCase):
 
     def test_read(self):
         start, end = trends.window(datetime.date(2026, 10, 29))
-        self.assertEqual((start, end), (datetime.date(2026, 9, 24), datetime.date(2026, 10, 28)))
+        self.assertEqual((start, end), (datetime.date(2026, 7, 30), datetime.date(2026, 10, 28)))
 
         def fetch(url):
             # Every page: 100 views a day, then 300 the last week; B's French page refused.
             if "fr.wikipedia" in url:
                 raise urllib.error.HTTPError(url, 429, "busy", {}, None)
             items = []
-            for i in range(35):
+            for i in range(trends.DAYS):
                 day = start + datetime.timedelta(days=i)
-                items.append({"timestamp": day.strftime("%Y%m%d") + "00", "views": 300 if i >= 28 else 100})
+                items.append({"timestamp": day.strftime("%Y%m%d") + "00", "views": 300 if i >= trends.DAYS - 7 else 100})
             return {"items": items}
 
         got = trends.read_trends({A: [("en", "A")], B: [("en", "B"), ("fr", "B")]}, start, end, fetch, sleep=lambda s: None)
@@ -259,6 +259,29 @@ class NetworkErrors(unittest.TestCase):
         with mock.patch.object(build, "views", views), mock.patch.object(build.time, "sleep"):
             self.assertEqual(sorted(build.fetch_views(["Lantern Tale", "Echo", "Moss Road"], starts, end)),
                              ["Lantern Tale", "Moss Road"])
+
+
+class Curves(unittest.TestCase):
+    def test_weekly(self):
+        days = list(range(1, 92))
+        weeks = trends.weekly(days)
+        self.assertEqual(len(weeks), 13)
+        self.assertEqual(weeks[-1], sum(days[-7:]))                 # the last day ends the last week
+        self.assertEqual(weeks[0], sum(days[0:7]))
+        self.assertEqual(trends.weekly([1] * 15), [7, 7])           # whole weeks only
+        self.assertEqual(trends.weekly([1] * 3), [])
+
+    def test_curves(self):
+        rows = [{"tid": "0100000000001000", "article": "https://en.wikipedia.org/wiki/Lantern_Tale"},
+                {"tid": "0100000000001000", "article": "https://fr.wikipedia.org/wiki/Lanterne"},
+                {"tid": "0100000000002000", "article": "https://en.wikipedia.org/wiki/Quiet_Pond"}]
+        files = {"wikidata/switch-pages.json": {"rows": rows},
+                 "wikipedia/daily.json": {"pages": {"en:Lantern_Tale": [10] * 91, "fr:Lanterne": [5] * 91, "en:Quiet_Pond": [0] * 91}}}
+        got = trends.curves(lambda name: files.get(name, {}))
+        self.assertEqual(got["switch"]["0100000000001000"], [105] * 13)     # the pages of all languages added up
+        self.assertNotIn("0100000000002000", got["switch"])                 # nobody read it: no curve
+        self.assertEqual(got["steam"], {})
+        self.assertEqual(trends.curves(lambda name: {}), {"switch": {}, "steam": {}})
 
 
 if __name__ == "__main__":

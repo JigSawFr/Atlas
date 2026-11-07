@@ -132,6 +132,8 @@
   "x_engine": "Engine",
   "x_links": "Links",
   "x_search_all": "Alle platforms",
+  "x_views_title": "Belangstelling",
+  "x_views_curve": "Wikipedia-weergaven per week in de laatste {n} weken: {first}, daarna {last}",
   "x_save_view": "Deze weergave opslaan",
   "x_view_name": "Naam van deze weergave",
   "x_saved_views": "Opgeslagen weergaven",

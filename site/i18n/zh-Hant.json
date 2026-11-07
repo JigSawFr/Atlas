@@ -132,6 +132,8 @@
   "x_engine": "引擎",
   "x_links": "連結",
   "x_search_all": "所有平台",
+  "x_views_title": "關注度",
+  "x_views_curve": "最近 {n} 週每週的維基百科閱讀量：從 {first} 到 {last}",
   "x_save_view": "儲存此檢視",
   "x_view_name": "此檢視的名稱",
   "x_saved_views": "已儲存的檢視",

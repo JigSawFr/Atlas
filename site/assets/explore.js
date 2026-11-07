@@ -436,6 +436,25 @@
       }
     }
 
+    // How much Wikipedia read the game, a week at a time (the best known games': tools/trends.py).
+    const curve = (es.find((e) => e.views) || {}).views;
+    if (curve && curve.length >= 4) {
+      const W = 240, H = 48, top = Math.max(...curve, 1), step = W / (curve.length - 1);
+      const svg = document.createElementNS(SVG, "svg");
+      svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+      svg.setAttribute("class", "curve");
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", t("x_views_curve", { n: curve.length, first: num(curve[0]), last: num(curve[curve.length - 1]) }));
+      const points = curve.map((v, i) => `${(i * step).toFixed(1)},${(H - 3 - (v / top) * (H - 8)).toFixed(1)}`);
+      const area = document.createElementNS(SVG, "polygon");
+      for (const [k, v] of [["points", `0,${H} ${points.join(" ")} ${W},${H}`], ["fill", "currentColor"], ["opacity", "0.15"]]) area.setAttribute(k, v);
+      const line = document.createElementNS(SVG, "polyline");
+      for (const [k, v] of [["points", points.join(" ")], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "2"], ["stroke-linejoin", "round"]]) line.setAttribute(k, v);
+      svg.append(area, line);
+      sheet.append(section(t("x_views_title"), el("div", { class: "views" }, svg,
+        el("p", { class: "dim", text: t("x_views_curve", { n: curve.length, first: num(curve[0]), last: num(curve[curve.length - 1]) }) }))));
+    }
+
     const team = m.wd && m.wd.team;
     if (team) {
       const dl = el("dl", { class: "traits" });
@@ -538,7 +557,7 @@
       return;
     }
     const entry = { p: platform, id };
-    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
+    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "views", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
     renderSheet({ name: g.name, id, qid: g.qid, wd: g.wd, platforms: [entry], traits: g.traits,
       similar: (g.similar || []).map(([o, name, s]) => [platform, o, name, s]), links: g.links }, backTo(platform));
   }

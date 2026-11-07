@@ -132,6 +132,8 @@
   "x_engine": "Motor",
   "x_links": "Enlaces",
   "x_search_all": "Todas las plataformas",
+  "x_views_title": "Interés",
+  "x_views_curve": "Lecturas de Wikipedia por semana en las últimas {n} semanas: {first} y luego {last}",
   "x_save_view": "Guardar esta vista",
   "x_view_name": "Nombre de esta vista",
   "x_saved_views": "Vistas guardadas",
