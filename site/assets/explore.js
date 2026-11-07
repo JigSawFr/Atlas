@@ -486,6 +486,11 @@
         el("p", { class: "dim", text: t("x_views_curve", { n: curve.length, first: num(curve[0]), last: num(curve[curve.length - 1]) }) }))));
     }
 
+    const won = m.wd && m.wd.awards;
+    if (won && won.length) {
+      sheet.append(section(t("x_awards"), el("ul", { class: "awards" }, ...won.map(([name, year]) => el("li", {}, el("span", { class: "chip", text: year ? `${name} (${year})` : name }))))));
+    }
+
     const team = m.wd && m.wd.team;
     if (team) {
       const dl = el("dl", { class: "traits" });
