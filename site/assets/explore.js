@@ -322,13 +322,48 @@
     return figure;
   }
 
+  // A screenshot opens in a dialog on the page (arrows, Escape, a swipe) instead of a new tab; the link still goes
+  // to the picture for a middle click. Only the opened picture is fetched at its large size.
+  let viewer = null;
+  function openViewer(origins, start) {
+    if (!viewer) {
+      const img = el("img", { alt: "", decoding: "async", referrerpolicy: "no-referrer" });
+      const mk = (cls, key, text) => el("button", { type: "button", class: `viewer-btn ${cls}`, "aria-label": t(key), text });
+      const prev = mk("prev", "x_prev", "‹"), next = mk("next", "x_next", "›"), close = mk("close", "x_close", "✕");
+      const dialog = el("dialog", { class: "viewer" }, img, prev, next, close);
+      viewer = { dialog, img, origins: [], at: 0 };
+      const go = (d) => { const n = viewer.origins.length; viewer.at = (viewer.at + d + n) % n; img.src = proxied(viewer.origins[viewer.at], 1280); };
+      prev.addEventListener("click", () => go(-1));
+      next.addEventListener("click", () => go(1));
+      close.addEventListener("click", () => dialog.close());
+      dialog.addEventListener("click", (ev) => { if (ev.target === dialog || ev.target === img) dialog.close(); });
+      dialog.addEventListener("keydown", (ev) => {
+        if (ev.key === "ArrowLeft") go(-1);
+        else if (ev.key === "ArrowRight") go(1);
+      });
+      let x0 = null;
+      dialog.addEventListener("pointerdown", (ev) => { x0 = ev.clientX; });
+      dialog.addEventListener("pointerup", (ev) => { if (x0 !== null && Math.abs(ev.clientX - x0) > 50) go(ev.clientX < x0 ? 1 : -1); x0 = null; });
+      document.body.append(dialog);
+    }
+    viewer.origins = origins;
+    viewer.at = start;
+    viewer.img.src = proxied(origins[start], 1280);
+    viewer.dialog.showModal();
+  }
+
   function gallery(origins) {
     if (!origins.length) return null;
     const strip = el("div", { class: "shots" });
     origins.forEach((origin, i) => {
-      const img = el("img", { src: proxied(origin, 320, 180), alt: t("x_screenshot", { n: i + 1 }), loading: "lazy", decoding: "async",
-        referrerpolicy: "no-referrer", width: "240", height: "135" });
-      const link = el("a", { href: proxied(origin, 1280), target: "_blank", rel: "noreferrer noopener", referrerpolicy: "no-referrer" }, img);
+      const img = el("img", { src: proxied(origin, i ? 320 : 480, i ? 180 : 270), alt: t("x_screenshot", { n: i + 1 }), loading: "lazy", decoding: "async",
+        referrerpolicy: "no-referrer", width: i ? "240" : "360", height: i ? "135" : "203" });
+      const link = el("a", { href: proxied(origin, 1280), target: "_blank", rel: "noreferrer noopener", referrerpolicy: "no-referrer", class: i ? "" : "first" }, img);
+      link.addEventListener("click", (ev) => {
+        if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button || typeof HTMLDialogElement === "undefined") return;
+        ev.preventDefault();
+        openViewer(origins, i);
+      });
       img.addEventListener("error", () => link.remove());
       strip.append(link);
     });
@@ -429,8 +464,11 @@
       }
     }
 
+    // Wide screens: the story (pictures, traits, text, alike games) beside what stays in view (the facts, platforms, team, links).
+    const main = el("div", { class: "main" }), side = el("aside", { class: "side" });
+    sheet.append(el("div", { class: "cols" }, main, side));
     const shots = gallery(shown.shots);
-    if (shots) sheet.append(shots);
+    if (shots) main.append(shots);
 
     // A trait is a way into the platform's games with it: the studio's, the series', the genre's page is the browse view filtered.
     const home = (es[0] && es[0].p) || from || PLATFORMS[0];
@@ -440,13 +478,13 @@
       for (const [kind, names] of Object.entries(m.traits)) {
         dl.append(el("div", {}, el("dt", {}, icon(`i-k-${kind}`), t(`x_${kind}`)), el("dd", {}, ...names.map((n) => chip(kind, n, traitHref(kind, n))))));
       }
-      sheet.append(dl);
+      main.append(dl);
     }
     const technical = techBlock(es, m.wd);
-    if (technical) sheet.append(technical);
+    if (technical) side.append(technical);
 
     if (es.length > 1) {
-      sheet.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => el("li", {},
+      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => el("li", {},
         el("span", { class: "badge", text: S._names[e.p] || e.p }),
         e.popular ? score(e.popular[0]) : null,
         e.release ? el("span", { class: "date", text: ymd(e.release) }) : (e.upcoming ? el("span", { class: "date", text: t("x_coming", { date: ymd(e.upcoming) }) }) : null),
@@ -461,7 +499,7 @@
       const own = LANG.split("-")[0], l = about[own] ? own : about.en ? "en" : null;
       if (l) {
         const page = m.wd.wiki && m.wd.wiki[l];
-        sheet.append(section(t("x_about"), el("div", { class: "about" },
+        main.append(section(t("x_about"), el("div", { class: "about" },
           el("p", { text: about[l] }),
           page ? el("p", { class: "dim" }, el("a", { class: "out-link", href: `https://${l}.wikipedia.org/wiki/${page}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: `${t("x_wikipedia_text")} ↗` })) : el("p", { class: "dim", text: t("x_wikipedia_text") }))));
       }
@@ -482,7 +520,7 @@
       const line = document.createElementNS(SVG, "polyline");
       for (const [k, v] of [["points", points.join(" ")], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "2"], ["stroke-linejoin", "round"]]) line.setAttribute(k, v);
       svg.append(area, line);
-      sheet.append(section(t("x_views_title"), el("div", { class: "views" }, svg,
+      main.append(section(t("x_views_title"), el("div", { class: "views" }, svg,
         el("p", { class: "dim", text: t("x_views_curve", { n: curve.length, first: num(curve[0]), last: num(curve[curve.length - 1]) }) }))));
     }
 
@@ -492,20 +530,20 @@
       for (const [role, key] of [["director", "x_director"], ["composer", "x_composer"], ["writer", "x_writer"]]) {
         if (team[role] && team[role].length) dl.append(el("div", {}, el("dt", { text: t(key) }), el("dd", {}, ...team[role].map((n) => el("span", { class: "chip", text: n })))));
       }
-      if (dl.childElementCount) sheet.append(section(t("x_team"), dl));
+      if (dl.childElementCount) side.append(section(t("x_team"), dl));
     }
 
     if (m.similar && m.similar.length) {
-      sheet.append(section(t("x_similar"), el("ol", { class: "similar" }, ...m.similar.map(([kind, ref, name, s]) =>
+      main.append(section(t("x_similar"), el("ol", { class: "similar" }, ...m.similar.map(([kind, ref, name, s]) =>
         el("li", {}, el("a", { href: gameHref(kind, ref) }, nameOf(ref, name)), el("span", { class: "dim", text: `${s}` }))))));
     }
     for (const e of es) {
       if (e.edition_of) {
         const [o, name] = e.edition_of;
-        sheet.append(section(t("x_edition_of"), el("p", {}, el("a", { href: gameHref(e.p, o) }, nameOf(o, name)))));
+        main.append(section(t("x_edition_of"), el("p", {}, el("a", { href: gameHref(e.p, o) }, nameOf(o, name)))));
       }
       if (e.editions) {
-        sheet.append(section(t("x_editions"), el("ul", { class: "similar" }, ...e.editions.map(([o, name]) =>
+        main.append(section(t("x_editions"), el("ul", { class: "similar" }, ...e.editions.map(([o, name]) =>
           el("li", {}, el("a", { href: gameHref(e.p, o) }, nameOf(o, name)))))));
       }
     }
@@ -520,7 +558,7 @@
     }
     if (wd.pcgw) open("PCGamingWiki", `https://www.pcgamingwiki.com/wiki/${encodeURIComponent(wd.pcgw)}`);
     (wd.yt || []).forEach((id, i, all) => open(all.length > 1 ? `YouTube ${i + 1}` : "YouTube", `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`));
-    if (outside.length) sheet.append(section(t("x_links"), el("ul", { class: "links" }, ...outside)));
+    if (outside.length) side.append(section(t("x_links"), el("ul", { class: "links" }, ...outside)));
     if (m.links && Object.keys(m.links).length) {
       const items = [];
       for (const [p, ids] of Object.entries(m.links)) {
@@ -532,7 +570,7 @@
             STORES[p] ? el("a", { class: "out", href: STORES[p](other), rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: "↗", "aria-label": `${STORE_NAMES[p]} ${other}` }) : null));
         }
       }
-      if (items.length) sheet.append(section(t("x_other_platforms"), el("ul", { class: "links" }, ...items)));
+      if (items.length) side.append(section(t("x_other_platforms"), el("ul", { class: "links" }, ...items)));
     }
     bars(sheet);
     setStatus(t("x_loaded", { size: kb(read) }));
