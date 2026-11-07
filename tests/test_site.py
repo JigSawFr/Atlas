@@ -74,7 +74,7 @@ class SiteData(unittest.TestCase):
         self.assertEqual(s["links"]["steam"], ["900010"])
         self.assertEqual(s["qid"], "Q900001")
         self.assertEqual(self.sheet("switch", "0100F0F0F0F0F000")["edition_of"], ["0100A1B2C3D4E000", ""])
-        self.assertEqual(self.sheet("steam", "900010")["traits"]["tags"], ["Action"])
+        self.assertEqual(self.sheet("steam", "900010")["traits"], {"genres": ["action"]})    # the tag "Action" is the genre
 
     def facets(self, platform):
         return self.read(f"x/{platform}/facets.json")
@@ -95,26 +95,37 @@ class SiteData(unittest.TestCase):
         return []
 
     def steam_games(self):
-        put(self.data, "platforms/steam/games.json", {"schema": 1, "tags": {"19": "Action", "21": "Rare"}, "games": {
-            "900010": {"name": "Amber Lantern", "tags": [19, 21], "release": 20240115, "genres": [["Q1", "Puzzle"], ["Q1", "Puzzle"]],
-                       "something_new": {"a": 1}},
-            "900020": {"name": "Moss & Märchen", "tags": [19], "release": 20240820},
-            "900030": {"name": "Old Stone", "tags": [19], "release": 19991231}}})
+        put(self.data, "platforms/steam/games.json", {"schema": 1, "tags": {"19": "Action", "21": "Rare", "22": "Pixel Graphics", "23": "Singleplayer"}, "games": {
+            "900010": {"name": "Amber Lantern™", "tags": [19, 21, 22, 23], "release": 20240115, "genres": [["Q1", "Puzzle"], ["Q1", "Puzzle"]],
+                       "developers": [["Q5", "SEGA"]], "something_new": {"a": 1}},
+            "900020": {"name": "Moss & Märchen", "tags": [19, 22], "release": 20240820, "developers": [["Q6", "Sega"]]},
+            "900030": {"name": "Old Stone", "tags": [19, 22, 23], "release": 19991231, "developers": [["Q6", "Sega"]]}}})
 
     def test_browse(self):
         self.steam_games()
         summary = site_data.build(self.data, self.out)
         page = self.page("steam")
         self.assertEqual([r[:2] for r in page["games"]], [["900010", "Amber Lantern"], ["900020", "Moss & Märchen"], ["900030", "Old Stone"]])
-        self.assertEqual(page["games"][0], ["900010", "Amber Lantern", 70, 5, 0, 2024])
+        self.assertEqual(page["games"][0], ["900010", "Amber Lantern", 70, 5, 0, 2024])      # no trademark sign
         facets = self.facets("steam")
         self.assertEqual((facets["pages"], facets["games"]), (1, 3))
-        self.assertEqual(facets["facets"]["tags"], [["Action", 3]])               # "Rare" has one game only
-        self.assertEqual(facets["facets"]["year"], [["2024", 2]])                 # 1999 has one game
-        self.assertNotIn("genres", facets["facets"])                              # one game, and listed once
-        self.assertEqual(self.rows_of("steam", "tags", "Action"), [0, 1, 2])
+        self.assertEqual(facets["facets"]["genres"], [["action", 3]])                        # the tag is the genre; "puzzle" has one game
+        self.assertEqual(facets["facets"]["modes"], [["single", 2]])                         # "Singleplayer" is the mode
+        self.assertEqual(facets["facets"]["tags"], [["Pixel Graphics", 3]])                  # "Rare" has one game only
+        self.assertEqual(facets["facets"]["developers"], [["Sega", 3]])                      # "SEGA" is "Sega"
+        self.assertEqual(facets["facets"]["year"], [["2024", 2]])                            # 1999 has one game
+        self.assertEqual(self.rows_of("steam", "genres", "action"), [0, 1, 2])
+        self.assertEqual(self.rows_of("steam", "modes", "single"), [0, 2])
         self.assertEqual(self.rows_of("steam", "year", "2024"), [0, 1])
         self.assertEqual((summary["steam"]["browse"], summary["steam"]["pages"]), (3, 1))
+
+    def test_sheet_normalized(self):
+        self.steam_games()
+        site_data.build(self.data, self.out)
+        sheet = self.sheet("steam", "900010")
+        self.assertEqual(sheet["name"], "Amber Lantern")
+        self.assertEqual(sheet["traits"], {"genres": ["puzzle", "action"], "modes": ["single"],
+                                           "developers": ["Sega"], "tags": ["Rare", "Pixel Graphics"]})
 
     def test_browse_pages(self):
         self.steam_games()
@@ -126,8 +137,8 @@ class SiteData(unittest.TestCase):
         facets = self.facets("steam")
         self.assertEqual((facets["pages"], facets["page"], facets["games"]), (2, 2, 3))
         self.assertEqual([len(self.page("steam", n)["games"]) for n in (0, 1)], [2, 1])
-        self.assertEqual(self.rows_of("steam", "tags", "Action", 0), [0, 1])
-        self.assertEqual(self.rows_of("steam", "tags", "Action", 1), [0])           # numbered in its page
+        self.assertEqual(self.rows_of("steam", "genres", "action", 0), [0, 1])
+        self.assertEqual(self.rows_of("steam", "genres", "action", 1), [0])                  # numbered in its page
         self.assertEqual(self.rows_of("steam", "year", "2024", 1), [])
         self.assertEqual(self.page("steam", 1)["games"][0][1], "Old Stone")
         import check_site
@@ -149,7 +160,7 @@ class SiteData(unittest.TestCase):
         folder = site / "x" / "steam"
         self.assertEqual(check_site.browse_errors(folder, site), [])
         page = self.page("steam")
-        page["facets"]["tags"] = [[0, [1, 9]], [7, [0]]]
+        page["facets"]["genres"] = [[0, [1, 9]], [7, [0]]]
         put(self.out, "x/steam/browse/0.json", page)
         errors = check_site.browse_errors(folder, site)
         self.assertEqual(len([e for e in errors if "points at nothing" in e]), 2)
@@ -204,6 +215,10 @@ class Build(unittest.TestCase):
             self.assertIn('<html lang="fr"', page)
             self.assertNotIn('"_country"', page)
             self.assertNotIn('data-view="deals"', page)
+            # The icons: one symbol for each notion of the taxonomy and each kind of facet, and the names in the page's language.
+            self.assertIn('<symbol id="i-g-rpg" viewBox="0 0 24 24">', page)
+            self.assertIn('<symbol id="i-k-developers" viewBox="0 0 24 24">', page)
+            self.assertIn('"x_g_rpg":"Jeu de rôle"', page)
             # The header's menu of Boréale's sites: Atlas leads home, the others carry their UTM tags.
             self.assertIn('<a href="../../fr/" aria-current="true"><img src="../../assets/marks/atlas.svg"', page)
             self.assertIn('href="https://lantern.boreale.dev/fr/?utm_source=atlas&amp;utm_medium=nav" '
