@@ -131,6 +131,8 @@
   "x_writer": "Drehbuch",
   "x_engine": "Engine",
   "x_links": "Links",
+  "x_gallery": "Screenshots",
+  "x_screenshot": "Screenshot {n}",
   "x_official_site": "Offizielle Website",
   "x_runs_on": "Läuft auf",
   "x_deck_3": "Verifiziert",

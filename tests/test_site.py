@@ -293,6 +293,9 @@ class Build(unittest.TestCase):
             self.assertIn('<html lang="fr"', page)
             self.assertNotIn('"_country"', page)
             self.assertNotIn('data-view="deals"', page)
+            # The one site the page's pictures come from besides its own: wsrv.nl (the notice says so, boreale.dev's privacy).
+            self.assertIn("img-src 'self' data: https://wsrv.nl;", page)
+            self.assertNotIn("img-src *", page)
             # The icons: one symbol for each notion of the taxonomy and each kind of facet, and the names in the page's language.
             self.assertIn('<symbol id="i-g-rpg" viewBox="0 0 24 24">', page)
             self.assertIn('<symbol id="i-k-developers" viewBox="0 0 24 24">', page)

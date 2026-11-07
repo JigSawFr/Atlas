@@ -131,6 +131,8 @@
   "x_writer": "Scenario",
   "x_engine": "Engine",
   "x_links": "Links",
+  "x_gallery": "Schermafbeeldingen",
+  "x_screenshot": "Schermafbeelding {n}",
   "x_official_site": "Officiële website",
   "x_runs_on": "Draait op",
   "x_deck_3": "Geverifieerd",
