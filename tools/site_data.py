@@ -32,6 +32,9 @@ PAGE = 5000             # games a page of the browse index holds
 FACETS = ("genres", "modes", "series", "developers", "publishers", "themes", "perspectives", "tags")
 FACET_VALUES = 300      # values a facet keeps (the most common), year aside
 FACET_MIN = 2           # games a value needs to be worth a filter
+UNIFIED_SIMILAR = 12    # games a unified sheet lists as alike
+# Whose name a unified sheet takes when the platforms disagree and none is more common.
+PRIORITY = ("steam", "switch", "gog", "xbox", "ps5", "ps4", "3ds")
 SHARD_BYTES = 160_000   # about what a shard of sheets weighs, at most on average
 # Each store's page of a game, by the platform's id in links.json.
 STORES = {
@@ -183,6 +186,56 @@ def browse(best: list, games: dict, names: dict, tags: dict, spelled: dict = Non
     return facets, pages
 
 
+def unify(entries: dict, similar_of: dict) -> dict:
+    """One sheet for a game on several platforms: {platform: (id, sheet)} merged. Its name is the
+    one most platforms give; each platform keeps its own figures (release, renown, reviews, ratings),
+    the traits are the union (most platforms first), the games alike are one list."""
+    order = sorted(entries, key=lambda p: (PRIORITY.index(p) if p in PRIORITY else len(PRIORITY), p))
+    out = {"platforms": []}
+    count = {}
+    for p in order:
+        name = entries[p][1].get("name")
+        if name:
+            count[name] = count.get(name, 0) + 1
+    if count:
+        out["name"] = max(count, key=lambda n: (count[n], -min(i for i, p in enumerate(order) if entries[p][1].get("name") == n)))
+    traits = {}
+    for p in order:
+        gid, sheet = entries[p]
+        entry = {"p": p, "id": gid}
+        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "steam", "gamepass", "editions", "edition_of"):
+            if k in sheet:
+                entry[k] = sheet[k]
+        out["platforms"].append(entry)
+        for kind, values in (sheet.get("traits") or {}).items():
+            for v in values:
+                found = traits.setdefault(kind, {})
+                seen = found.setdefault(fold(v), [0, len(found), v])     # "SEGA" and "Sega": the first one's
+                seen[0] += 1
+    merged = {kind: [seen[2] for seen in sorted(found.values(), key=lambda x: (-x[0], x[1]))] for kind, found in traits.items()}
+    ordered = {k: merged[k] for k in TRAIT_KINDS if merged.get(k)}
+    if ordered:
+        out["traits"] = ordered
+    alike = {}
+    for p in order:
+        for ref in similar_of.get(p, ()):
+            key = (ref[0], ref[1])
+            if key not in alike or ref[3] > alike[key][3]:
+                alike[key] = ref
+    if alike:
+        out["similar"] = sorted(alike.values(), key=lambda r: (-r[3], r[2], r[1]))[:UNIFIED_SIMILAR]
+    links = {}
+    for p in order:
+        for other, ids in (entries[p][1].get("links") or {}).items():
+            if other not in entries:
+                for i in ids:
+                    if i not in links.setdefault(other, []):
+                        links[other].append(i)
+    if links:
+        out["links"] = links
+    return out
+
+
 def platform_files(data_dir: str, platform: str) -> dict:
     base = os.path.join(data_dir, "platforms", platform)
     return {k: read(os.path.join(base, f"{k}.json")) or {} for k in ("popular", "games", "upcoming", "similar", "editions", "names")}
@@ -220,7 +273,15 @@ def build(data_dir: str, out_dir: str) -> dict:
     """Writes x/ into out_dir; returns {platform: summary} for the pages."""
     links = reverse_links(read(os.path.join(data_dir, "links.json")))
     summary = {}
-    for platform in platforms(data_dir):
+    plats = platforms(data_dir)
+    # The games on several of the platforms the data has (by Wikidata item): each has one sheet for all.
+    where = {}
+    for platform in plats:
+        for qid, _ in (links.get(platform) or {}).values():
+            where.setdefault(qid, set()).add(platform)
+    multi = {q for q, ps in where.items() if len(ps) > 1}
+    kept, similar_refs = {}, {}
+    for platform in plats:
         files = platform_files(data_dir, platform)
         scores = files["popular"].get("games") or {}
         games = files["games"].get("games") or {}
@@ -271,7 +332,7 @@ def build(data_dir: str, out_dir: str) -> dict:
                 traits = trait_names(game, tags, spelled)
                 if traits:
                     sheet["traits"] = traits
-                for k in ("release", "reviews", "qid", "igdb_rating"):
+                for k in ("release", "reviews", "rating", "gamepass", "qid", "igdb_rating"):
                     if game.get(k):
                         sheet[k] = game[k]
                 if isinstance(game.get("steam"), dict):
@@ -288,6 +349,18 @@ def build(data_dir: str, out_dir: str) -> dict:
             if link:
                 sheet["qid"] = sheet.get("qid") or link[0]
                 sheet["links"] = {p: ids for p, ids in link[1].items() if p != platform or ids != [gid]}
+            if sheet.get("qid") in multi:
+                sheet["unified"] = True
+                kept.setdefault(sheet["qid"], {})[platform] = (gid, sheet)
+                refs = []
+                for o, name, score in sheet.get("similar", ()):
+                    target = (links.get(platform) or {}).get(o)
+                    if target and target[0] in multi:
+                        if target[0] != sheet["qid"]:
+                            refs.append(["u", target[0], name, score])
+                    else:
+                        refs.append([platform, o, name, score])
+                similar_refs.setdefault(sheet["qid"], {})[platform] = refs
             sheets[gid] = sheet
         shards = sharded(base, "g", sheets)
         lists["shards"] = shards
@@ -297,6 +370,10 @@ def build(data_dir: str, out_dir: str) -> dict:
         summary[platform] = {"games": len(sheets), "named": len(names), "popular": len(scores),
                              "upcoming": len(upcoming), "similar": len(similar), "browse": sum(len(p["games"]) for p in pages), "pages": len(pages),
                              "shards": shards, "generated": files["popular"].get("generated")}
+    one = {q: unify(entries, similar_refs.get(q, {})) for q, entries in kept.items()}
+    os.makedirs(os.path.join(out_dir, "x", "u"), exist_ok=True)
+    write(os.path.join(out_dir, "x", "u", "meta.json"),
+          {"shards": sharded(os.path.join(out_dir, "x"), "u", {q: dict(u, qid=q) for q, u in one.items()}), "games": len(one)})
     return summary
 
 
