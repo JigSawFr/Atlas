@@ -35,17 +35,16 @@ PY
 
 files=$(python3 -c "import json,sys; print(len(json.load(open(sys.argv[1]))['files']))" "$dir/index.json")
 notes="Atlas' data files as published on $day: $files files, the same as the \`data\` branch had that day (\`platforms/switch/popular.json\` is \`platforms-switch-popular.json\` here; the zip keeps the folders). Their format is in the README."
-if gh release view "$tag" >/dev/null 2>&1; then
-  gh release delete "$tag" --yes --cleanup-tag
-fi
-# A draft left by a run that failed half way (the release made, not all its
-# files sent) is of no use, and `gh release view` does not see it: deleted if
-# GitHub lets us (it answered 502 on one, 2026-11-07, from the API and from
-# the web page), left alone if not.
-gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[] | select(.draft) | .id' |
+# The releases of an earlier run of this day, and the drafts left by a run
+# that failed half way (the release made, not all its files sent), are of no
+# use: deleted by id if GitHub lets us. It does not always: a draft answered
+# 502 from the API and from the web page (2026-11-07), and `gh release delete`
+# on its tag stopped the whole archive. A release not deleted is left alone.
+gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
+    --jq ".[] | select(.draft or .tag_name == \"$tag\") | .id" |
   while IFS= read -r id; do
     gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id" >/dev/null ||
-      echo "archive: draft $id not deleted, its tag is not reused" >&2
+      echo "archive: release $id not deleted, its tag is not reused" >&2
   done
 # A tag a release still holds is not reused (two drafts on one tag cannot be
 # told apart by `gh release upload`): data-YYYY-MM-DD-2, -3...

@@ -63,10 +63,11 @@
     return h % shards;
   };
   const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  // The notions the data names once for every source (genres, themes, modes, perspectives) have a
+  // The notions the data names once for every source (genres, themes, modes, perspectives, styles, moods,
+  // gameplay, content, access) have a
   // name in the page's language and an icon (x_<letter>_<key>, #i-<letter>-<key>); the other
   // values (series, studios, tags) are the sources' own words.
-  const NOTION = { genres: "g", themes: "t", modes: "m", perspectives: "p" };
+  const NOTION = { genres: "g", themes: "t", modes: "m", perspectives: "p", styles: "y", moods: "o", gameplay: "h", content: "c", access: "a" };
   const labelOf = (kind, value) => (NOTION[kind] && S[`x_${NOTION[kind]}_${value}`]) || value;
   const SVG = "http://www.w3.org/2000/svg";
   function icon(id) {
@@ -419,7 +420,7 @@
   // Browsing: facets.json gives the menus, then the pages of games, best known
   // first, a page at a time. Every filter narrows (a game must have all the
   // values picked); the rows are filtered here, in the browser.
-  const FACETS = ["genres", "modes", "series", "developers", "publishers", "themes", "perspectives", "tags", "year"];
+  const FACETS = ["genres", "themes", "modes", "perspectives", "styles", "moods", "gameplay", "content", "access", "series", "developers", "publishers", "tags", "year"];
   const SORTS = ["popular", "trending", "critics", "year", "name"];
   const STEP = 50;
   let B = null;            // what is loaded of the platform being browsed
