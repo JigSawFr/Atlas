@@ -104,6 +104,7 @@
     const raw = location.hash.slice(1), q = raw.indexOf("?");
     const parts = decodeURIComponent(q < 0 ? raw : raw.slice(0, q)).split("/");
     const query = new URLSearchParams(q < 0 ? "" : raw.slice(q + 1));
+    if (parts[0] === "all" && parts[1] === "search") return { platform: from || PLATFORMS[0], view: "searchall", arg: parts.slice(2).join("/"), query };
     if (parts[0] === "game" && parts[1]) return { platform: from || PLATFORMS[0], view: "ugame", arg: parts.slice(1).join("/"), query };
     const platform = PLATFORMS.includes(parts[0]) ? parts[0] : PLATFORMS[0];
     from = platform;
@@ -189,6 +190,25 @@
       if (found.length >= 200) break;
     }
     results.replaceChildren(...found.map(([id, name, s]) => row(platform, id, name, [score(s)])));
+    bars(results);
+    setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + ` · ${t("x_loaded", { size: kb(read) })}`);
+  }
+
+  // The search over every platform at once: all the names lists, asked only when the visitor asks for it.
+  async function findAll(words) {
+    leaveBrowse();
+    sheet.hidden = true;
+    results.hidden = false;
+    pressed("x-views", "view", "");
+    const q = fold(words.trim());
+    if (!q) return go(`#${from || PLATFORMS[0]}/popular`);
+    setStatus(t("x_loading"));
+    const lists = await Promise.all(PLATFORMS.map((p) => get(`x/${p}/names.json`).then((names) => [p, names], () => [p, []])));
+    const found = [];
+    for (const [p, names] of lists) for (const [id, name, s] of names) if (fold(name).includes(q)) found.push([p, id, name, s]);
+    found.sort((a, b) => (b[3] - a[3]) || a[2].localeCompare(b[2]));
+    const shown = found.slice(0, 200);
+    results.replaceChildren(...shown.map(([p, id, name, s]) => row(p, id, name, [el("span", { class: "badge", text: S._names[p] || p }), score(s)])));
     bars(results);
     setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + ` · ${t("x_loaded", { size: kb(read) })}`);
   }
@@ -802,6 +822,7 @@
       if (view === "browse") await browse(platform, query);
       else if (view === "ugame") await unified(arg);
       else if (view === "game") await game(platform, arg, query);
+      else if (view === "searchall") { if (search.value !== arg) search.value = arg; await findAll(arg); }
       else if (view === "search") { if (search.value !== arg) search.value = arg; await find(platform, arg); }
       else await list(platform, view);
     } catch (e) {
@@ -813,7 +834,7 @@
     const b = e.target.closest("button[data-platform]");
     if (!b) return;
     const { view } = route();
-    const keep = view === "game" || view === "ugame" || view === "search" ? "popular" : view;
+    const keep = view === "game" || view === "ugame" || view === "search" || view === "searchall" ? "popular" : view;
     go(`#${b.dataset.platform}/${keep}`);
   });
   machine.addEventListener("change", () => { if (machine.value) go(`#${machine.value}/popular`); });
@@ -830,6 +851,11 @@
       const q = search.value.trim();
       go(q ? `#${route().platform}/search/${encodeURIComponent(q)}` : `#${route().platform}/popular`);
     }, 250);
+  });
+  $("x-search-all").addEventListener("click", () => {
+    clearTimeout(timer);       // the typing's own search, waiting its turn, would take the address back
+    const q = search.value.trim();
+    if (q) go(`#all/search/${encodeURIComponent(q)}`);
   });
   window.addEventListener("hashchange", show);
   show();
