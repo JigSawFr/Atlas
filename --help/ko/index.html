@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: https://wsrv.nl; connect-src 'self' https://gateway.umami.is; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<title>Atlas · 모든 플랫폼의 모든 게임 지도</title>
+<meta name="description" content="Atlas는 플랫폼을 넘나들며 게임을 지도에 담습니다. 잘 알려진 게임, 이번 주 많이 읽힌 게임, 곧 나올 게임, 비슷한 게임. 매일 새로 만드는 공개 JSON 파일입니다.">
+<meta name="theme-color" content="#0b1424">
+<link rel="canonical" href="https://atlas.boreale.dev/ko/">
+<link rel="alternate" hreflang="en" href="https://atlas.boreale.dev/">
+<link rel="alternate" hreflang="fr" href="https://atlas.boreale.dev/fr/">
+<link rel="alternate" hreflang="fr-CA" href="https://atlas.boreale.dev/fr-ca/">
+<link rel="alternate" hreflang="de" href="https://atlas.boreale.dev/de/">
+<link rel="alternate" hreflang="es" href="https://atlas.boreale.dev/es/">
+<link rel="alternate" hreflang="es-419" href="https://atlas.boreale.dev/es-419/">
+<link rel="alternate" hreflang="it" href="https://atlas.boreale.dev/it/">
+<link rel="alternate" hreflang="nl" href="https://atlas.boreale.dev/nl/">
+<link rel="alternate" hreflang="pt-PT" href="https://atlas.boreale.dev/pt/">
+<link rel="alternate" hreflang="pt-BR" href="https://atlas.boreale.dev/pt-br/">
+<link rel="alternate" hreflang="ru" href="https://atlas.boreale.dev/ru/">
+<link rel="alternate" hreflang="ja" href="https://atlas.boreale.dev/ja/">
+<link rel="alternate" hreflang="ko" href="https://atlas.boreale.dev/ko/">
+<link rel="alternate" hreflang="zh-Hans" href="https://atlas.boreale.dev/zh-hans/">
+<link rel="alternate" hreflang="zh-Hant" href="https://atlas.boreale.dev/zh-hant/">
+<link rel="alternate" hreflang="x-default" href="https://atlas.boreale.dev/">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="preload" href="../assets/fonts/sora.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/figtree.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/boreale.css">
+<link rel="stylesheet" href="../assets/chrome.css">
+<link rel="stylesheet" href="../assets/site.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Atlas">
+<meta property="og:title" content="Atlas · 모든 플랫폼의 모든 게임 지도">
+<meta property="og:description" content="Atlas는 플랫폼을 넘나들며 게임을 지도에 담습니다. 잘 알려진 게임, 이번 주 많이 읽힌 게임, 곧 나올 게임, 비슷한 게임. 매일 새로 만드는 공개 JSON 파일입니다.">
+<meta property="og:url" content="https://atlas.boreale.dev/ko/">
+<meta property="og:image" content="https://atlas.boreale.dev/assets/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<script src="../assets/lang.js"></script>
+<script src="../assets/boreale.js" defer></script>
+<script src="../assets/chrome.js" defer></script>
+<script src="../assets/site.js" defer></script>
+
+<script src="../assets/umami.js" defer data-website-id="6410ffdd-ae2e-4ddb-8e18-0a77e9fa374e" data-domains="atlas.boreale.dev"></script>
+</head>
+<body class="reset-margins" data-root="../" data-lang="ko">
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<div class="sky sky-home">
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <header class="top">
+    <div class="switcher">
+      <button class="brand switch" type="button" popovertarget="sites" aria-label="Atlas · Boréale 프로젝트"><img src="../assets/marks/atlas.svg" alt="" width="34" height="34">Atlas<svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div id="sites" class="sites" popover aria-label="Boréale 프로젝트">
+        <ul>
+          <li><a href="https://boreale.dev/ko/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/boreale.svg" alt="" width="36" height="36"><span><strong>Boréale</strong><small>긴 밤을 위한 홈브루</small></span></a></li>
+        </ul>
+        <p class="sites-title">Switch 홈브루</p><ul>
+          <li><a href="https://guard.boreale.dev/ko/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/playguard.svg" alt="" width="36" height="36"><span><strong>PlayGuard</strong><small>본체에서 자녀 보호</small></span></a></li>
+          <li><a href="https://shelf.boreale.dev/ko/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/playshelf.svg" alt="" width="36" height="36"><span><strong>PlayShelf</strong><small>본체에서 보는 게임 라이브러리</small></span><em class="soon">출시 예정</em></a></li>
+        </ul>
+        <p class="sites-title">통합</p><ul>
+          <li><a href="https://ha.boreale.dev/ko/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/ha.svg" alt="" width="36" height="36"><span><strong>Home Assistant</strong><small>Home Assistant 속 여러분의 홈브루</small></span></a></li>
+        </ul>
+        <p class="sites-title">라이브러리</p><ul>
+          <li><a href="https://aurore.boreale.dev/ko/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/aurore.svg" alt="" width="36" height="36"><span><strong>Aurore</strong><small>그 뒤의 UI 라이브러리</small></span></a></li>
+        </ul>
+        <p class="sites-title">열린 데이터와 프로토콜</p><ul>
+          <li><a href="../ko/" aria-current="true"><img src="../assets/marks/atlas.svg" alt="" width="36" height="36"><span><strong>Atlas</strong><small>모든 플랫폼의 모든 게임 지도</small></span></a></li>
+          <li><a href="https://lantern.boreale.dev/ko/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/lantern.svg" alt="" width="36" height="36"><span><strong>Lantern</strong><small>서버와 콘솔 사이의 프로토콜</small></span></a></li>
+        </ul>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Atlas">
+      <a href="../ko/#platforms">플랫폼</a>
+      <a href="../ko/#files">파일</a>
+      <a href="../ko/#use">사용하기</a>
+      <a href="../ko/status/">상태</a>
+      <a href="../ko/explore/" class="nav-cta">탐색</a>
+      <a href="https://github.com/JigSawFr/Atlas" class="nav-gh" referrerpolicy="strict-origin">GitHub</a>
+    </nav>
+    <div class="settings">
+      <button class="lang-button" type="button" popovertarget="languages" aria-label="언어 · 한국어"><span class="flag" aria-hidden="true">🇰🇷</span><span class="lang-name">한국어</span><span class="lang-code">KO</span><svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <ul id="languages" class="langs" popover aria-label="언어">
+        <li><a href="../" data-lang="en-US" lang="en" hreflang="en"><span class="flag" aria-hidden="true">🇺🇸</span>English</a></li>
+        <li><a href="../fr/" data-lang="fr" lang="fr" hreflang="fr"><span class="flag" aria-hidden="true">🇫🇷</span>Français</a></li>
+        <li><a href="../fr-ca/" data-lang="fr-ca" lang="fr-CA" hreflang="fr-CA"><span class="flag" aria-hidden="true">🇨🇦</span>Français (Canada)</a></li>
+        <li><a href="../de/" data-lang="de" lang="de" hreflang="de"><span class="flag" aria-hidden="true">🇩🇪</span>Deutsch</a></li>
+        <li><a href="../es/" data-lang="es" lang="es" hreflang="es"><span class="flag" aria-hidden="true">🇪🇸</span>Español</a></li>
+        <li><a href="../es-419/" data-lang="es-419" lang="es-419" hreflang="es-419"><span class="flag" aria-hidden="true">🇲🇽</span>Español (Latinoamérica)</a></li>
+        <li><a href="../it/" data-lang="it" lang="it" hreflang="it"><span class="flag" aria-hidden="true">🇮🇹</span>Italiano</a></li>
+        <li><a href="../nl/" data-lang="nl" lang="nl" hreflang="nl"><span class="flag" aria-hidden="true">🇳🇱</span>Nederlands</a></li>
+        <li><a href="../pt/" data-lang="pt" lang="pt-PT" hreflang="pt-PT"><span class="flag" aria-hidden="true">🇵🇹</span>Português</a></li>
+        <li><a href="../pt-br/" data-lang="pt-br" lang="pt-BR" hreflang="pt-BR"><span class="flag" aria-hidden="true">🇧🇷</span>Português (Brasil)</a></li>
+        <li><a href="../ru/" data-lang="ru" lang="ru" hreflang="ru"><span class="flag" aria-hidden="true">🇷🇺</span>Русский</a></li>
+        <li><a href="../ja/" data-lang="ja" lang="ja" hreflang="ja"><span class="flag" aria-hidden="true">🇯🇵</span>日本語</a></li>
+        <li><a href="../ko/" data-lang="ko" lang="ko" hreflang="ko" aria-current="true"><span class="flag" aria-hidden="true">🇰🇷</span>한국어</a></li>
+        <li><a href="../zh-hans/" data-lang="zh-hans" lang="zh-Hans" hreflang="zh-Hans"><span class="flag" aria-hidden="true">🇨🇳</span>简体中文</a></li>
+        <li><a href="../zh-hant/" data-lang="zh-hant" lang="zh-Hant" hreflang="zh-Hant"><span class="flag" aria-hidden="true">🇹🇼</span>繁體中文</a></li>
+      </ul>
+    </div>
+  </header>
+  <section class="hero hero-home">
+    <div class="hero-text">
+      <p class="pill-eyebrow caps"><a href="../ko/status/">공개 데이터 · 모든 플랫폼</a></p>
+      <h1>모든 게임의 지도, <em>모든 플랫폼에서</em>.</h1>
+      <p class="sub"><span>단순한 JSON</span> · <span>계정도 키도 필요 없음</span> · <span>매일 갱신</span></p>
+      <p class="lede">Atlas는 스토어에서 스토어로 게임을 지도에 담습니다. 잘 알려진 게임, 이번 주 많이 읽힌 게임, 곧 나올 게임, 비슷한 게임. 단순한 JSON 파일로 자유롭게 쓸 수 있고 매일 새로 그립니다.</p>
+      <div class="actions">
+        <a class="button primary" href="../ko/explore/">데이터 탐색하기</a>
+        <a class="button" href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub에서 보기</a>
+      </div>
+    </div>
+    <!-- What the files hold, drawn rather than captured (site.css's .map):
+         one game tied across four stores by links.json, and this week's
+         trending games. Made-up games and ids; the labels are the catalog's;
+         the wire moves only where motion is welcome. -->
+    <div class="map" role="img" aria-label="links.json으로 Switch, Steam, GOG, Xbox를 잇는 게임 하나와 이번 주 인기 게임">
+      <div class="map-bar">
+        <img src="../assets/marks/atlas.svg" alt="" width="24" height="24">
+        <span class="map-title">links.json</span>
+        <span class="map-tag">schema 1</span>
+      </div>
+      <div class="map-tile map-game">
+        <span class="art art-ember"></span>
+        <span class="map-text"><strong>Emberwild Saga</strong><span class="map-label">액션 RPG · 오픈 월드</span></span>
+        <span class="map-score"><span class="map-label">인지도</span><b>92</b><span class="meter"><span></span></span></span>
+      </div>
+      <div class="map-tile map-links">
+        <span class="map-label">위키데이터 항목으로 연결 <code>Q48151623</code></span>
+        <span class="map-tree">
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><rect x="6.5" y="4.5" width="11" height="15" rx="1.5"/><path d="M6.5 7.5H4.8A2.3 2.3 0 0 0 2.5 9.8v4.4a2.3 2.3 0 0 0 2.3 2.3h1.7M17.5 7.5h1.7a2.3 2.3 0 0 1 2.3 2.3v4.4a2.3 2.3 0 0 1-2.3 2.3h-1.7"/></svg></span><span class="map-name">Switch</span><code>0100F2A01C6E4000</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/></svg></span><span class="map-name">Steam</span><code>2384170</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3a9 9 0 0 1 9 9"/></svg></span><span class="map-name">GOG</span><code>1735029481</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><path d="M7.5 7h9a4.5 4.5 0 0 1 4.4 3.6l.9 4.6a2.6 2.6 0 0 1-4.6 2.1L15.5 15h-7l-1.7 2.3a2.6 2.6 0 0 1-4.6-2.1l.9-4.6A4.5 4.5 0 0 1 7.5 7z"/><path d="M8 9.5v3M6.5 11h3M15.5 10.5h.01M17.5 12h.01"/></svg></span><span class="map-name">Xbox</span><code>9P4KQZ7RV1XD</code></span>
+        </span>
+      </div>
+      <div class="map-tile map-trending">
+        <span class="map-label">이번 주 인기</span>
+        <span class="map-row"><span class="art art-tide"></span><span class="map-game-name">Tidebound</span><span class="up">+142%</span></span>
+        <span class="map-row"><span class="art art-neon"></span><span class="map-game-name">Neon Drift Rally</span><span class="up">+87%</span></span>
+        <span class="map-row"><span class="art art-moss"></span><span class="map-game-name">Moss &amp; Mortar</span><span class="up">+54%</span></span>
+      </div>
+    </div>
+  </section>
+
+</div>
+<main id="main">
+  <section id="platforms" class="section">
+    <div class="section-head">
+      <p class="eyebrow">플랫폼</p>
+      <h2>하나의 지도, 플랫폼마다</h2>
+      <p>플랫폼마다 폴더가 있고 파일 형식은 같습니다. 각 스토어에서의 게임 ID가 플랫폼을 서로 잇습니다.</p>
+    </div>
+    <ul class="cards platforms">
+      <li class="card platform soon"><div class="head"><h3>Nintendo Switch</h3><span class="state">예정</span></div><p>Wikipedia의 인지도와 트렌드, Wikidata의 시리즈와 스튜디오, 비슷한 게임, 에디션.</p></li>
+      <li class="card platform soon"><div class="head"><h3>Steam</h3><span class="state">예정</span></div><p>Wikipedia와 Steam 리뷰의 인지도, 가장 많이 플레이된 게임, 태그, 비슷한 게임.</p></li>
+      <li class="card platform soon"><div class="head"><h3>GOG</h3><span class="state">예정</span></div><p>GOG 전체 카탈로그와 리뷰.</p></li>
+      <li class="card platform soon"><div class="head"><h3>Xbox and Microsoft Store</h3><span class="state">예정</span></div><p>Microsoft Store 게임, 플레이어 평점, Game Pass 목록.</p></li>
+      <li class="card platform soon"><div class="head"><h3>Nintendo 3DS</h3><span class="state">예정</span></div><p>모든 지역의 3DS 게임과 타이틀 ID(Nlib API와 Wikidata 기준).</p></li>
+      <li class="card platform soon"><div class="head"><h3>PlayStation 4</h3><span class="state">예정</span></div><p>Wikidata 기준 PS4 게임: 출시일, 특징, PlayStation Store ID(소니 약관은 스토어 데이터 수집을 금지합니다).</p></li>
+      <li class="card platform soon"><div class="head"><h3>PlayStation 5</h3><span class="state">예정</span></div><p>Wikidata 기준 PS5 게임: 출시일, 특징, PlayStation Store ID(소니 약관은 스토어 데이터 수집을 금지합니다).</p></li>
+      <li class="card platform soon"><div class="head"><h3>Retro</h3><span class="state">예정</span></div><p>더 이상 어느 스토어에서도 팔지 않는 게임, Wikidata에서.</p></li>
+    </ul>
+  </section>
+
+  <section id="files" class="section">
+    <div class="section-head">
+      <p class="eyebrow">파일</p>
+      <h2>무엇이 언제 공개되는지</h2>
+      <p>각 파일과 크기, 만든 날짜. 이틀이 지난 일간 파일이나 9일이 지난 주간 파일은 지연으로 표시됩니다.</p>
+    </div>
+    <div class="table" tabindex="0" role="region" aria-label="무엇이 언제 공개되는지">
+      <table class="files">
+        <thead><tr><th scope="col">파일</th><th scope="col">내용</th><th scope="col">생성</th><th scope="col">크기</th><th scope="col">업데이트</th></tr></thead>
+        <tbody>
+          <tr><td><code>index.json</code></td><td>각 파일의 날짜, 크기, 해시</td><td>매주</td><td class="num">—</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">각 파일에는 스키마 번호가 있습니다. 새 필드가 추가될 수 있지만 기존 필드의 의미는 바뀌지 않습니다. <a href="../ko/status/">각 소스와 플랫폼의 최신 상태</a></p>
+  </section>
+
+  <section id="use" class="section">
+    <div class="section-head">
+      <p class="eyebrow">사용하기</p>
+      <h2>계정도, 키도, 제한도 없이</h2>
+      <p>파일은 단순한 JSON입니다. 편한 곳에서 읽으세요.</p>
+    </div>
+    <ul class="cards ways">
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
+        <h3>jsDelivr에서</h3>
+        <p>빠른 CDN이 제공하는 데이터 브랜치. 주소는 바뀌지 않습니다.</p>
+        <pre tabindex="0"><code>https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/popular.json</code></pre>
+      </li>
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="2.2"/><path d="M2.5 8.5h19M5.5 6.25h.01M8 6.25h.01"/></svg>
+        <h3>이 사이트에서</h3>
+        <p>같은 파일을 data/ 아래에, 실행할 때마다 새로 만듭니다.</p>
+        <pre tabindex="0"><code>https://atlas.boreale.dev/data/platforms/steam/popular.json</code></pre>
+      </li>
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="m15 17 2 2 4-4"/></svg>
+        <h3>바뀐 것만</h3>
+        <p>index.json은 각 파일의 해시를 알려 줍니다. 하루 한 번 받아 바뀐 파일만 내려받으세요.</p>
+        <pre tabindex="0"><code>{"files": {"platforms/switch/popular.json": {"generated": "2026-11-02", "bytes": 71646, "sha256": "11c54e3b7c6f150f"}}}</code></pre>
+      </li>
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/></svg>
+        <h3>주간 릴리스</h3>
+        <p>매주 월요일 파일은 릴리스로 영구 보관되며 파일마다 증명이 붙습니다. 최신 릴리스는 늘 같은 주소에 있습니다.</p>
+        <pre tabindex="0"><code>https://github.com/JigSawFr/Atlas/releases/latest/download/switch-popular.json
+gh attestation verify switch-popular.json -R JigSawFr/Atlas</code></pre>
+      </li>
+    </ul>
+    <p class="note">각 파일의 형식은 필드별로 다음에 있습니다: <a href="https://github.com/JigSawFr/Atlas#the-files" referrerpolicy="strict-origin">README</a></p>
+  </section>
+
+  <section id="sources" class="section">
+    <div class="section-head">
+      <p class="eyebrow">출처</p>
+      <h2>데이터의 출처</h2>
+      <p>계정이 필요 없는 출처만 씁니다. 각 파일에 자신의 출처가 적혀 있습니다.</p>
+    </div>
+    <ul class="sources">
+      <li><a href="https://www.wikidata.org/" rel="noreferrer">Wikidata</a><span>게임, 시리즈, 스튜디오, 장르, 평론, 각 스토어 ID</span><small>CC0</small></li>
+      <li><a href="https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews" rel="noreferrer">Wikimedia</a><span>각 게임 문서가 읽힌 횟수, 8개 언어</span><small>CC0</small></li>
+      <li><a href="https://github.com/blawar/titledb" rel="noreferrer">titledb</a><span>Switch 게임과 설명, 출시일</span><small>공개된 그대로</small></li>
+      <li><a href="https://store.steampowered.com/" rel="noreferrer">Steam</a><span>Steam 게임, 리뷰, 태그, 가장 많이 플레이된 게임</span><small>Steam Web API 약관</small></li>
+      <li><a href="https://steamspy.com/" rel="noreferrer">SteamSpy</a><span>Steam 게임의 소유자와 플레이어</span><small>공개된 그대로</small></li>
+      <li><a href="https://www.igdb.com/" rel="noreferrer">IGDB</a><span>테마, 키워드, 플레이어 평점(키가 설정된 경우)</span><small>IGDB API 약관</small></li>
+    </ul>
+  </section>
+
+  <section id="keys" class="section">
+    <div class="section-head">
+      <p class="eyebrow">키</p>
+      <h2>필요 없음</h2>
+      <p>키 없이도 모두 작동합니다. 선택 키 두 개를 저장소 시크릿으로 설정하면 정보가 조금 늘어납니다.</p>
+    </div>
+    <ul class="keys">
+      <li><span class="k"><code>IGDB_CLIENT_ID</code><code>IGDB_CLIENT_SECRET</code></span><span>Twitch 애플리케이션을 통한 IGDB: 테마, 키워드, 플레이어 평점, 기대도.</span></li>
+      <li><span class="k"><code>STEAM_API_KEY</code></span><span>Wikidata가 아는 게임 너머의 Steam 앱 전체 목록.</span></li>
+    </ul>
+  </section>
+
+  <section class="band">
+    <div>
+      <h2>게임별로 길을 찾으세요</h2>
+      <p>탐색기는 같은 파일을 읽습니다. 게임을 찾고, 플랫폼마다 무엇을 말하는지 보고, 비슷한 게임을 찾아보세요.</p>
+    </div>
+    <div class="band-actions">
+      <a class="button primary" href="../ko/explore/">데이터 탐색하기</a>
+      <a class="button" href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub에서 보기</a>
+    </div>
+  </section>
+
+</main>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-cols">
+        <div>
+          <p><img src="../assets/marks/atlas.svg" alt="" width="20" height="20"> <strong>Atlas</strong></p>
+          <p>코드는 GPL-3.0, 데이터는 공개 출처에서 가져옵니다.</p>
+          <p><a href="https://boreale.dev/ko/?utm_source=atlas&amp;utm_medium=footer" class="boreale" referrerpolicy="strict-origin">Boréale 프로젝트</a></p>
+        </div>
+        <div>
+          <h2>프로젝트</h2>
+          <ul><li><a href="../ko/explore/">탐색기</a></li><li><a href="../ko/status/">상태</a></li><li><a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a></li><li><a href="https://github.com/JigSawFr/Atlas/releases" referrerpolicy="strict-origin">주간 릴리스</a></li><li><a href="https://github.com/JigSawFr/Atlas/issues" referrerpolicy="strict-origin">이슈</a></li></ul>
+        </div>
+        <div>
+          <h2>Boréale</h2>
+          <ul><li><a href="https://boreale.dev/ko/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Boréale</a></li><li><a href="https://guard.boreale.dev/ko/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">PlayGuard</a></li><li><a href="https://shelf.boreale.dev/ko/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">PlayShelf</a></li><li><a href="https://ha.boreale.dev/ko/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Home Assistant</a></li><li><a href="https://aurore.boreale.dev/ko/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Aurore</a></li><li><a href="https://lantern.boreale.dev/ko/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Lantern</a></li><li><a href="https://boreale.dev/ko/legal/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">개인정보 및 법적 고지</a></li></ul>
+        </div>
+        <div>
+          <h2>프로젝트 후원하기</h2>
+          <ul><li><a href="https://github.com/sponsors/JigSawFr" rel="noreferrer">GitHub Sponsors</a></li><li><a href="https://ko-fi.com/jigsawfr" rel="noreferrer">Ko-fi</a></li></ul>
+        </div>
+    </div>
+    <p class="footer-fine">Nintendo Switch, Steam 및 여기에 언급된 게임은 각 소유자의 상표입니다. Atlas는 이들과 제휴하지 않았습니다.</p>
+  </div>
+</footer>
+</body>
+</html>

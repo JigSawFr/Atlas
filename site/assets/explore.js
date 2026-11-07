@@ -82,7 +82,8 @@
     return svg;
   }
   const iconOf = (kind, value) => icon(NOTION[kind] ? `i-${NOTION[kind]}-${value}` : null);
-  const chip = (kind, value) => el("span", { class: "chip" }, iconOf(kind, value), labelOf(kind, value));
+  const BROWSABLE = ["genres", "themes", "modes", "perspectives", "styles", "moods", "gameplay", "content", "access", "series", "developers", "publishers"];
+  const chip = (kind, value, href) => el(href ? "a" : "span", href ? { class: "chip", href } : { class: "chip" }, iconOf(kind, value), labelOf(kind, value));
 
   async function get(path) {
     if (cache.has(path)) return cache.get(path);
@@ -380,10 +381,13 @@
     const shots = gallery(shown.shots);
     if (shots) sheet.append(shots);
 
+    // A trait is a way into the platform's games with it: the studio's, the series', the genre's page is the browse view filtered.
+    const home = (es[0] && es[0].p) || from || PLATFORMS[0];
+    const traitHref = (kind, value) => (BROWSABLE.includes(kind) ? `#${home}/browse?${new URLSearchParams([[kind, value]])}` : undefined);
     if (m.traits) {
       const dl = el("dl", { class: "traits" });
       for (const [kind, names] of Object.entries(m.traits)) {
-        dl.append(el("div", {}, el("dt", {}, icon(`i-k-${kind}`), t(`x_${kind}`)), el("dd", {}, ...names.map((n) => chip(kind, n)))));
+        dl.append(el("div", {}, el("dt", {}, icon(`i-k-${kind}`), t(`x_${kind}`)), el("dd", {}, ...names.map((n) => chip(kind, n, traitHref(kind, n))))));
       }
       sheet.append(dl);
     }
