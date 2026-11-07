@@ -90,7 +90,7 @@ def ms(product: dict) -> dict:
     for r in market.get("ContentRatings") or []:
         system, _, value = str(r.get("RatingId") or "").partition(":")
         if system in MS_AGES and value and system not in [a[0] for a in age]:
-            age.append([system, value])
+            age.append([system, "E10+" if (system, value) == ("ESRB", "E10") else value])
     pictures = {}
     for purpose, name in ((product.get("LocalizedProperties") or [{}])[0].get("Images") or []):
         if purpose == "SuperHeroArt":
