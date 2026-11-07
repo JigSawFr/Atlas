@@ -8,7 +8,9 @@ import json
 import math
 import os
 import shutil
+import random
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -16,7 +18,8 @@ import urllib.request
 
 AGENT = "Atlas/1.0 (https://github.com/JigSawFr/Atlas)"
 SPARQL = "https://query.wikidata.org/sparql"
-MAX_WAIT = 1800        # seconds a rate-limited service is waited for, at most
+MAX_WAIT = 1800        # seconds a rate-limited service is waited for, at most, in one go
+WAIT_BUDGET = 2700     # seconds all a run's waits for one host come to, at most: past it the host's refusals are raised at once
 GUARD_KEEP = 0.7       # a file with fewer games than this share of the last run's is not published
 GUARD_FLOOR = 50       # games the last run's file had at least, for that to count
 # The data files' schema (README): a new field keeps it, a field changing
@@ -47,30 +50,109 @@ def why(error):
     return f"refused ({error.code})" if isinstance(error, urllib.error.HTTPError) else f"not reached ({error})"
 
 
+class Pacer:
+    """Keeps a host's requests apart: at least `interval` seconds from the start of one to the start
+    of the next (threads queue), and, for a service that counts the time its answers take (Wikidata's
+    query service allows about as much compute as clock), at least `share` times the last answer's
+    duration besides. `clock` and `sleep` are for the tests."""
+
+    def __init__(self, interval, share=0.0, clock=time.monotonic, sleep=time.sleep):
+        self.interval, self.share, self.clock, self.sleep = interval, share, clock, sleep
+        self.lock = threading.Lock()
+        self.ready = 0.0       # when the next request may start
+        self.waited = 0.0      # seconds spent waiting for it
+
+    def wait(self):
+        with self.lock:
+            delay = self.ready - self.clock()
+            if delay > 0:
+                self.sleep(delay)
+                self.waited += delay
+            self.ready = self.clock() + self.interval
+
+    def done(self, started):
+        with self.lock:
+            took = self.clock() - started
+            self.ready = max(self.ready, self.clock() + took * self.share)
+
+
+# The services' manners, by host (a suffix): seconds between two requests, and the share of an answer's
+# own time to wait besides. What each says: Wikidata's query service, a minute of compute for each minute
+# (one query at a time, spaced by what it cost); QLever, the same courtesy; Steam's store API refuses
+# a burst, SteamSpy answers a request a second; the others publish no limit, so a few a second.
+PACING = {"query.wikidata.org": (5.0, 1.0), "qlever.dev": (5.0, 1.0), "api.steampowered.com": (0.4, 0.0),
+          "steamspy.com": (1.05, 0.0), "catalog.gog.com": (0.25, 0.0), "displaycatalog.mp.microsoft.com": (0.2, 0.0),
+          "catalog.gamepass.com": (0.2, 0.0), "api.nlib.cc": (0.25, 0.0), "wikimedia.org": (0.1, 0.0)}
+PACERS = {}
+WAITED = {}            # host -> seconds waited for a refusal (429, 503…) so far in this run
+
+
+def host_of(url):
+    return urllib.parse.urlsplit(url).hostname or ""
+
+
+def pacer_for(url):
+    """The Pacer of the url's host (one for each, shared by the threads), None for a host with no manners listed."""
+    host = host_of(url)
+    for suffix, (interval, share) in PACING.items():
+        if host == suffix or host.endswith("." + suffix):
+            return PACERS.setdefault(suffix, Pacer(interval, share))
+    return None
+
+
+def retry_after(error, default):
+    """Seconds a refusal says to wait (Retry-After as a number of seconds), else `default`."""
+    try:
+        return max(0, int(float(error.headers.get("Retry-After", ""))))
+    except (TypeError, ValueError, AttributeError):
+        return default
+
+
 def fetch(url, tries=4, patient=True, timeout=120, data=None, headers=None):
-    """`url`'s JSON answer; None for a 404. A 429 waits as long as the
-    service says (`patient`) or is raised at once. `data` (bytes) makes it
-    a POST."""
+    """`url`'s JSON answer; None for a 404. Requests to a host are spaced (PACING). A 429 waits as long as the
+    service says, a minute at least (`patient`), or is raised at once; a 502, 503 or 504 waits what it says or
+    a growing while with some jitter; all a run's waits for a host stop at WAIT_BUDGET, then its refusals are
+    raised, so a service that will not answer cannot hold the run (the callers keep the last run's file).
+    `data` (bytes) makes it a POST."""
+    pacer = pacer_for(url)
+    host = host_of(url)
     for attempt in range(tries):
+        started = time.monotonic()
+        if pacer:
+            pacer.wait()
+            started = time.monotonic()
         try:
             request = urllib.request.Request(url, data=data, headers={
                 "User-Agent": AGENT, "Accept": "application/json", **(headers or {})})
             with urllib.request.urlopen(request, timeout=timeout) as r:
-                # Wikidata's labels may hold control characters, which strict JSON refuses.
-                return json.loads(r.read(), strict=False)
+                body = r.read()
+            if pacer:
+                pacer.done(started)
+            # Wikidata's labels may hold control characters, which strict JSON refuses.
+            return json.loads(body, strict=False)
         except urllib.error.HTTPError as e:
+            if pacer:
+                pacer.done(started)
             if e.code == 404:
                 return None
             if attempt == tries - 1 or (e.code == 429 and not patient):
                 raise
             if e.code == 429:
-                wait = max(int(e.headers.get("Retry-After", "60") or 60), 60) + 5
-                if wait > MAX_WAIT:
-                    raise
-                print(f"{url.split('?')[0]}: rate-limited, again in {wait} s", file=sys.stderr)
-                time.sleep(wait)
+                wait = max(retry_after(e, 60), 60) + 5
+            elif e.code in (502, 503, 504):
+                wait = min(retry_after(e, 2 ** attempt * 5), MAX_WAIT) + random.uniform(0, 1)
+            else:
+                time.sleep(2 ** attempt)
                 continue
+            if wait > MAX_WAIT or WAITED.get(host, 0) + wait > WAIT_BUDGET:
+                raise
+            WAITED[host] = WAITED.get(host, 0) + wait
+            print(f"{url.split('?')[0]}: refused ({e.code}), again in {wait:.0f} s", file=sys.stderr)
+            time.sleep(wait)
+            continue
         except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if pacer:
+                pacer.done(started)
             if attempt == tries - 1:
                 raise
         time.sleep(2 ** attempt)
