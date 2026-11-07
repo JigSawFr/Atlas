@@ -131,6 +131,8 @@
   "x_writer": "シナリオ",
   "x_engine": "エンジン",
   "x_links": "リンク",
+  "x_views_title": "関心",
+  "x_views_curve": "直近{n}週間のウィキペディア閲覧数（週ごと）：{first}から{last}へ",
   "x_save_view": "このビューを保存",
   "x_view_name": "このビューの名前",
   "x_saved_views": "保存したビュー",

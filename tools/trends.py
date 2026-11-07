@@ -28,7 +28,9 @@ import steam
 LANGS = ("en", "fr", "de", "es", "it", "ja", "nl", "pt")
 TOP = 400            # the best known games measured
 MIN_VIEWS = 300      # views in the last seven days below which a trend says nothing
-DAYS = 35            # the last seven days and the four weeks before
+DAYS = 91            # 13 weeks: the last seven days, the four weeks before for the trend, and the curve of the sheet
+WEEKS = 13           # weeks of the curve
+MIN_CURVE = 100      # views in all the weeks below which a curve says nothing
 PAUSE = 0.1          # seconds between two requests
 MISSES = 5           # pages in a row not read after which the day's collection stops
 WAIT_MIN, WAIT_MAX = 30, 120   # seconds waited after a page not read (Wikimedia's Retry-After within them)
@@ -105,6 +107,33 @@ def daily(lang, title, start, end, fetch):
     counts = {item["timestamp"][:8]: item["views"] for item in (body or {}).get("items", [])}
     days = (end - start).days + 1
     return [counts.get((start + datetime.timedelta(days=i)).strftime("%Y%m%d"), 0) for i in range(days)]
+
+
+def weekly(days):
+    """Views a week, the oldest first, over the whole weeks of `days` (the last day ends the last week),
+    WEEKS at most."""
+    n = min(len(days) // 7, WEEKS)
+    return [sum(days[len(days) - 7 * (n - i):len(days) - 7 * (n - i - 1)]) for i in range(n)]
+
+
+def curves(src):
+    """{platform: {game id: [views a week]}} of the best known games, from the pages' views collected
+    (sources/wikipedia/daily.json); a game read less than MIN_CURVE times in all, or on fewer than 4 weeks, has none."""
+    pages_read = (src("wikipedia/daily.json").get("pages")) or {}
+    out = {}
+    for platform, _, base_id in PLATFORMS:
+        by_game = pages(common.bindings(src(f"wikidata/{platform}-pages.json").get("rows") or []), base_id)
+        found = out.setdefault(platform, {})
+        for tid, langs in by_game.items():
+            total = None
+            for lang, title in langs:
+                days = pages_read.get(f"{lang}:{title}")
+                if isinstance(days, list) and days and all(isinstance(d, int) for d in days):
+                    total = days if total is None else [a + b for a, b in zip(total, days)]
+            weeks = weekly(total) if total else []
+            if len(weeks) >= 4 and sum(weeks) >= MIN_CURVE:
+                found[tid] = weeks
+    return out
 
 
 def trend(days):

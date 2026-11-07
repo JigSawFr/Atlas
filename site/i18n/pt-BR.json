@@ -131,6 +131,8 @@
   "x_writer": "Roteiro",
   "x_engine": "Engine",
   "x_links": "Links",
+  "x_views_title": "Interesse",
+  "x_views_curve": "Leituras da Wikipédia por semana nas últimas {n} semanas: {first} e depois {last}",
   "x_save_view": "Salvar esta visualização",
   "x_view_name": "Nome desta visualização",
   "x_saved_views": "Visualizações salvas",

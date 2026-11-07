@@ -29,6 +29,7 @@ from taxonomy import KINDS, clean_title, company_key, find, fold, tidy_label, wi
 import common
 import extracts
 import tech
+import trends
 import wdfacts
 
 LIST = 200              # games a list holds
@@ -222,7 +223,7 @@ def unify(entries: dict, similar_of: dict) -> dict:
     for p in order:
         gid, sheet = entries[p]
         entry = {"p": p, "id": gid}
-        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "steam", "gamepass", "tech", "editions", "edition_of"):
+        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "views", "steam", "gamepass", "tech", "editions", "edition_of"):
             if k in sheet:
                 entry[k] = sheet[k]
         out["platforms"].append(entry)
@@ -305,6 +306,7 @@ def build(data_dir: str, out_dir: str) -> dict:
         about = {l: t for l, t in texts.items() if l in extracts.LANGS and isinstance(t, str) and t} if isinstance(texts, dict) else {}
         if about and wdfacts.QID.match(str(qid)):
             wd.setdefault(qid, {})["about"] = about            # Wikipedia's first lines (tools/extracts.py)
+    curves = trends.curves(common.reader(data_dir))  # the best known games' Wikipedia views a week
     for platform in plats:
         files = platform_files(data_dir, platform)
         scores = files["popular"].get("games") or {}
@@ -362,6 +364,8 @@ def build(data_dir: str, out_dir: str) -> dict:
                         sheet[k] = game[k]
                 if isinstance(game.get("steam"), dict):
                     sheet["steam"] = game["steam"]
+            if gid in curves.get(platform, ()):
+                sheet["views"] = curves[platform][gid]
             if gid in stores:
                 sheet["tech"] = stores[gid]
             if gid in upcoming:
