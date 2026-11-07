@@ -11,8 +11,9 @@ Each query gives {qid, p, label or v} for the games with a platform (P400):
     sources/wikidata/facts-website.json  P856 official website
     sources/wikidata/facts-pcgw.json     P6337 PCGamingWiki id
     sources/wikidata/facts-youtube.json  P1651 YouTube video id
+    sources/wikidata/facts-wiki.json     the game's Wikipedia pages in the site's languages ({qid, p: "wiki", lang, v: title})
 
-facts() reduces them to {qid: {"web": url, "pcgw": id, "yt": [ids], "age": [[system, value]],
+facts() reduces them to {qid: {"web": url, "pcgw": id, "yt": [ids], "wiki": {lang: title}, "age": [[system, value]],
 "team": {"director": [names], "composer": […], "writer": […]}, "engine": [names]}}, a key left out
 when there is nothing. Python's standard library only.
 """
@@ -20,7 +21,8 @@ import re
 
 import common
 
-PREFIXES = """PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIXES = """PREFIX schema: <http://schema.org/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 """
 # file -> (properties, whether the value is an item whose English label is wanted)
@@ -32,6 +34,7 @@ GROUPS = {
     "facts-pcgw": (("P6337",), False),
     "facts-youtube": (("P1651",), False),
 }
+WIKIS = ("de", "en", "es", "fr", "it", "ja", "ko", "nl", "pt", "ru", "zh")     # the site's languages
 TEAM = {"P57": "director", "P86": "composer", "P58": "writer"}
 NAMES = 3          # people kept for each role
 VIDEOS = 3
@@ -53,14 +56,30 @@ def query(properties, labels):
 }}"""
 
 
+def wiki_query():
+    """The query of the Wikipedia pages: {qid, p, lang, v} of the games with a platform, in WIKIS."""
+    sites = " ".join(f"<https://{lang}.wikipedia.org/>" for lang in WIKIS)
+    return PREFIXES + f"""SELECT ?qid ?p ?lang ?v WHERE {{
+  VALUES ?site {{ {sites} }}
+  ?item wdt:P400 [] .
+  ?article schema:about ?item ; schema:isPartOf ?site .
+  BIND(STRAFTER(STR(?item), "/entity/") AS ?qid)
+  BIND("wiki" AS ?p)
+  BIND(STRBEFORE(STRAFTER(STR(?site), "https://"), ".wikipedia.org") AS ?lang)
+  BIND(STRAFTER(STR(?article), "/wiki/") AS ?v)
+}}"""
+
+
 def queries():
     """[(file, ask)] of the group queries, for the weekly collection."""
-    return [(name, lambda props=props, labels=labels: common.sparql(query(props, labels)))
-            for name, (props, labels) in GROUPS.items()]
+    out = [(name, lambda props=props, labels=labels: common.sparql(query(props, labels)))
+           for name, (props, labels) in GROUPS.items()]
+    return out + [("facts-wiki", lambda: common.sparql(wiki_query()))]
 
 
 QID = re.compile(r"^Q[0-9]+$")
 VIDEO = re.compile(r"^[A-Za-z0-9_-]{11}$")
+TITLE = re.compile(r"^[^\s#?]{1,200}$")      # as the wiki's address has it (percent-encoded)
 PCGW = re.compile(r"^[^\s/#?&]{1,120}$")
 PEGI = re.compile(r"^PEGI (3|7|12|16|18)$")
 USK = re.compile(r"^USK (0|6|12|16|18)$")
@@ -91,7 +110,7 @@ def age(prop: str, label: str):
 def rows(src, name):
     """The rows of a file that are of a Wikidata item, in an order that does not depend on the service's."""
     found = [r for r in (src(name).get("rows") or []) if isinstance(r, dict) and QID.match(str(r.get("qid") or ""))]
-    return sorted(found, key=lambda r: (int(r["qid"][1:]), str(r.get("p") or ""), str(r.get("label") or ""), str(r.get("v") or "")))
+    return sorted(found, key=lambda r: (int(r["qid"][1:]), str(r.get("p") or ""), str(r.get("lang") or ""), str(r.get("label") or ""), str(r.get("v") or "")))
 
 
 def facts(src) -> dict:
@@ -116,6 +135,10 @@ def facts(src) -> dict:
     for r in rows(src, "wikidata/facts-pcgw.json"):
         if PCGW.match(str(r.get("v") or "")):
             put(r["qid"], "pcgw", r["v"])
+    for r in rows(src, "wikidata/facts-wiki.json"):
+        title = str(r.get("v") or "")
+        if r.get("lang") in WIKIS and TITLE.match(title):
+            put(r["qid"], "wiki", title, sub=r["lang"])
     for r in rows(src, "wikidata/facts-youtube.json"):
         if VIDEO.match(str(r.get("v") or "")):
             put(r["qid"], "yt", r["v"], many=VIDEOS)

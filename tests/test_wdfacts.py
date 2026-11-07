@@ -13,8 +13,8 @@ def src_of(files):
 class Queries(unittest.TestCase):
     def test_a_query_for_each_group(self):
         names = [n for n, _ in wdfacts.queries()]
-        self.assertEqual(names, list(wdfacts.GROUPS))
-        self.assertEqual(len(names), 6)
+        self.assertEqual(names, list(wdfacts.GROUPS) + ["facts-wiki"])
+        self.assertEqual(len(names), 7)
 
     def test_labels_only_where_the_value_is_an_item(self):
         with_labels = wdfacts.query(("P908",), True)
@@ -46,6 +46,10 @@ class Facts(unittest.TestCase):
                                         {"qid": "Q2", "v": "javascript:alert(1)"}, {"qid": "Q3", "v": "http://example.org/with space"},
                                         {"qid": "not a qid", "v": "https://example.org/x"}],
         "wikidata/facts-pcgw.json": [{"qid": "Q1", "v": "Amber_Lantern"}, {"qid": "Q2", "v": "bad/id"}],
+        "wikidata/facts-wiki.json": [{"qid": "Q1", "p": "wiki", "lang": "fr", "v": "Lanterne_d%27ambre"},
+                                     {"qid": "Q1", "p": "wiki", "lang": "en", "v": "Amber_Lantern"},
+                                     {"qid": "Q1", "p": "wiki", "lang": "xx", "v": "Other"},
+                                     {"qid": "Q1", "p": "wiki", "lang": "de", "v": "with space"}],
         "wikidata/facts-youtube.json": [{"qid": "Q1", "v": f"abcdefghij{i}"} for i in range(5)] + [{"qid": "Q1", "v": "short"}],
         "wikidata/facts-age.json": [{"qid": "Q1", "p": "P908", "label": "PEGI 16"}, {"qid": "Q1", "p": "P908", "label": "PEGI 12"},
                                     {"qid": "Q1", "p": "P852", "label": "Teen"}, {"qid": "Q1", "p": "P853", "label": "C (Ages 15 and up)"},
@@ -62,6 +66,9 @@ class Facts(unittest.TestCase):
         got = wdfacts.facts(src_of(self.FILES))
         self.assertEqual(got["Q1"]["web"], "https://example.org/a")          # the first, in a fixed order
         self.assertEqual(got["Q1"]["pcgw"], "Amber_Lantern")
+        self.assertEqual(got["Q1"]["wiki"], {"en": "Amber_Lantern", "fr": "Lanterne_d%27ambre"})   # the site's languages, a clean address
+        self.assertIn("schema:about", wdfacts.wiki_query())
+        self.assertIn("facts-wiki", [n for n, _ in wdfacts.queries()])
         self.assertEqual(len(got["Q1"]["yt"]), wdfacts.VIDEOS)                # 11 characters, three at most
         self.assertEqual(got["Q1"]["age"], [["ESRB", "T"], ["CERO", "C"], ["PEGI", "12"], ["USK", "12"]])    # one for a system, by property
         self.assertEqual(got["Q1"]["team"], {"director": ["Ann", "Bo", "Cy"], "composer": ["Eve"]})
