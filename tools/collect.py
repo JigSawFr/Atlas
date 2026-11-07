@@ -41,10 +41,12 @@ import os
 import sys
 import time
 import urllib.error
+import urllib.parse
 import zlib
 
 import build
 import common
+import extracts
 import features
 import gog
 import igdb
@@ -382,6 +384,17 @@ def collect_wikipedia(what, out_dir, previous_dir, fresh, today, report):
         common.publish_source(out_dir, f"{common.SOURCES}/wikipedia/monthly.json", payload(
             "wikipedia", today, "Wikimedia pageviews (en.wikipedia, monthly)", licence,
             months=[s.strftime("%Y-%m") for s in starts], pages=read), previous_dir, report)
+        # The first lines of the best known games' pages (tools/extracts.py), the known ones kept.
+        wiki = {}
+        for r in wdfacts.rows(common.reader(*fresh, previous_dir), "wikidata/facts-wiki.json"):
+            if r.get("lang") in extracts.LANGS:
+                wiki.setdefault(r["qid"], {})[r["lang"]] = urllib.parse.unquote(r["v"])
+        kept = (common.source(f"{common.SOURCES}/wikipedia/extracts.json", previous_dir) or {}).get("items") or {}
+        found = extracts.collect(wiki, kept, lambda url: common.fetch(url, tries=2, patient=False, timeout=30))
+        print(f"wikipedia: extracts of {len(found)} games ({len(wiki)} have a page)", file=sys.stderr)
+        common.publish_source(out_dir, f"{common.SOURCES}/wikipedia/extracts.json", payload(
+            "wikipedia", today, "Wikipedia (summary service, en and fr: introductions)", "CC-BY-SA-4.0 (Wikipedia)",
+            items=found), previous_dir, report)
         return
     by_game = {}
     for platform, _, base_id in trends.PLATFORMS:

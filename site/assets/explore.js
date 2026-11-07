@@ -400,6 +400,18 @@
         el("a", { class: "out", href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone`, text: "→", "aria-label": `${S._names[e.p] || e.p}: ${e.id}` }))))));
     }
 
+    // The first lines of the Wikipedia page, in the visitor's language else English, with its credit (CC BY-SA 4.0).
+    const about = m.wd && m.wd.about;
+    if (about) {
+      const own = LANG.split("-")[0], l = about[own] ? own : about.en ? "en" : null;
+      if (l) {
+        const page = m.wd.wiki && m.wd.wiki[l];
+        sheet.append(section(t("x_about"), el("div", { class: "about" },
+          el("p", { text: about[l] }),
+          page ? el("p", { class: "dim" }, el("a", { class: "out-link", href: `https://${l}.wikipedia.org/wiki/${page}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: `${t("x_wikipedia_text")} ↗` })) : el("p", { class: "dim", text: t("x_wikipedia_text") }))));
+      }
+    }
+
     const team = m.wd && m.wd.team;
     if (team) {
       const dl = el("dl", { class: "traits" });

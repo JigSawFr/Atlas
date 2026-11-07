@@ -27,6 +27,7 @@ from bisect import bisect_left
 from common import SCHEMA
 from taxonomy import KINDS, clean_title, company_key, find, fold, tidy_label, with_parents
 import common
+import extracts
 import tech
 import wdfacts
 
@@ -300,6 +301,10 @@ def build(data_dir: str, out_dir: str) -> dict:
     multi = {q for q, ps in where.items() if len(ps) > 1}
     kept, similar_refs = {}, {}
     wd = wdfacts.facts(common.reader(data_dir))      # what Wikidata says of a game: its site, ratings, team, engine, trailers
+    for qid, texts in (common.reader(data_dir)("wikipedia/extracts.json").get("items") or {}).items():
+        about = {l: t for l, t in texts.items() if l in extracts.LANGS and isinstance(t, str) and t} if isinstance(texts, dict) else {}
+        if about and wdfacts.QID.match(str(qid)):
+            wd.setdefault(qid, {})["about"] = about            # Wikipedia's first lines (tools/extracts.py)
     for platform in plats:
         files = platform_files(data_dir, platform)
         scores = files["popular"].get("games") or {}
