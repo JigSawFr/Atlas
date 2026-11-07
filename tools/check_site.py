@@ -16,7 +16,8 @@
   none empty, the same {placeholders} and <em> as English's, no common text
   repeated here;
 - sitemap.xml reads; with a data copy built in, each platform's
-  x/<platform>/lists.json and its sheets' shards;
+  x/<platform>/lists.json and its sheets' shards, and x/<platform>/browse.json
+  (every row a facet points at exists);
 - its size: GitHub Pages takes a site of 1 GB at most; past SIZE_WARN a
   warning in the run (time to cut data/ or x/), past SIZE_MAX an error.
 """
@@ -40,6 +41,25 @@ def size(site: Path) -> int:
     return sum(p.stat().st_size for p in site.rglob("*") if p.is_file())
 
 
+def browse_errors(path: Path, site: Path) -> list:
+    """What is wrong with a browse index: missing, or a facet pointing past its rows."""
+    name = path.relative_to(site)
+    try:
+        body = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        return [f"{name}: {error}"]
+    rows, errors = len(body.get("games") or []), []
+    for kind, values in (body.get("facets") or {}).items():
+        for value, count, gaps in values:
+            last, at = 0, []
+            for gap in gaps:
+                last += gap
+                at.append(last)
+            if len(gaps) != count or (at and (at[-1] >= rows or min(gaps[1:], default=1) < 1)):
+                errors.append(f"{name}: facet {kind}/{value} does not match its rows")
+    return errors
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         sys.exit(__doc__)
@@ -57,6 +77,7 @@ def main() -> None:
         shards = sorted(int(p.stem) for p in (lists.parent / "g").glob("*.json"))
         if shards != list(range(body.get("shards", 0))):
             errors.append(f"{lists.parent.relative_to(site)}: {len(shards)} shards, not {body.get('shards')}")
+        errors += browse_errors(lists.parent / "browse.json", site)
 
     total = size(site)
     if total > SIZE_MAX:

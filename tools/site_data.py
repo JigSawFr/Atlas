@@ -5,6 +5,11 @@ holds them cut for a phone, one platform a folder:
 - x/<platform>/lists.json: the lists the explorer opens on (the best known,
   the trending, the coming soon), each game with its name;
 - x/<platform>/names.json: every game with a name, for the search;
+- x/<platform>/browse.json: the best known named games (BROWSE of them) as
+  [id, name, score, trend, critics, year] rows, and for each facet (genres,
+  modes, series, developers, publishers, themes, perspectives, tags, year)
+  its values with their count and the rows that have it (row numbers, each
+  as the gap from the one before), so the explorer filters without a server;
 - x/<platform>/g/<shard>.json: each game's sheet (what every file says of
   it, its ids on the other platforms), the games spread over shards by
   shard() so a sheet costs one small file.
@@ -17,6 +22,10 @@ import os
 from common import SCHEMA
 
 LIST = 200              # games a list holds
+BROWSE = 5000           # games the browse index holds (the best known, named)
+FACETS = ("genres", "modes", "series", "developers", "publishers", "themes", "perspectives", "tags")
+FACET_VALUES = 300      # values a facet keeps (the most common), year aside
+FACET_MIN = 2           # games a value needs to be worth a filter
 SHARD_BYTES = 160_000   # about what a shard of sheets weighs, at most on average
 # Each store's page of a game, by the platform's id in links.json.
 STORES = {
@@ -77,6 +86,39 @@ def trait_names(game: dict, tags: dict) -> dict:
     if game.get("tags"):
         out["tags"] = [tags.get(str(t), "") for t in game["tags"] if tags.get(str(t))]
     return out
+
+
+def year_of(game: dict) -> int:
+    """The year of a game's release (yyyymmdd), 0 when it has none."""
+    release = game.get("release")
+    return release // 10000 if isinstance(release, int) and release >= 10_000_000 else 0
+
+
+def browse(best: list, games: dict, names: dict, tags: dict) -> dict:
+    """The browse index of the named games in `best` ([(id, [score, trend, critics])],
+    best first): {"games": rows, "facets": {facet: [[value, count, row gaps]]}}."""
+    rows, values = [], {k: {} for k in (*FACETS, "year")}
+    for gid, score in [b for b in best if names.get(b[0])][:BROWSE]:
+        game = games.get(gid)
+        year = 0
+        if isinstance(game, dict):
+            year = year_of(game)
+            traits = trait_names(game, tags)
+            for kind in FACETS:
+                for value in dict.fromkeys(traits.get(kind, ())):
+                    values[kind].setdefault(value, []).append(len(rows))
+            if year:
+                values["year"].setdefault(str(year), []).append(len(rows))
+        rows.append([gid, names[gid], *(list(score) + [0, 0, 0])[:3], year])
+    facets = {}
+    for kind, found in values.items():
+        kept = [(v, rows_) for v, rows_ in found.items() if len(rows_) >= FACET_MIN]
+        kept.sort(key=(lambda x: -int(x[0])) if kind == "year" else (lambda x: (-len(x[1]), x[0])))
+        if kind != "year":
+            kept = kept[:FACET_VALUES]
+        if kept:
+            facets[kind] = [[v, len(r), [r[0]] + [b - a for a, b in zip(r, r[1:])]] for v, r in kept]
+    return {"games": rows, "facets": facets}
 
 
 def platform_files(data_dir: str, platform: str) -> dict:
@@ -140,6 +182,10 @@ def build(data_dir: str, out_dir: str) -> dict:
         write(os.path.join(base, "names.json"),
               sorted(([g, n, (scores.get(g) or [0])[0]] for g, n in names.items()), key=lambda x: (-x[2], x[1])))
 
+        index = browse(best, games, names, tags)
+        write(os.path.join(base, "browse.json"),
+              {"platform": platform, "generated": files["popular"].get("generated"), **index})
+
         sheets = {}
         every = set(scores) | set(games) | set(upcoming) | set(similar)
         of_edition = {}
@@ -180,7 +226,7 @@ def build(data_dir: str, out_dir: str) -> dict:
         lists["named"] = len(names)
         write(os.path.join(base, "lists.json"), lists)
         summary[platform] = {"games": len(sheets), "named": len(names), "popular": len(scores),
-                             "upcoming": len(upcoming), "similar": len(similar),
+                             "upcoming": len(upcoming), "similar": len(similar), "browse": len(index["games"]),
                              "shards": shards, "generated": files["popular"].get("generated")}
     return summary
 
