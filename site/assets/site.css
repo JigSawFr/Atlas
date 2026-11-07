@@ -212,6 +212,11 @@ time.late { color: #ffb347; }
   min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--night-line); background: var(--night);
   color: var(--mist); font: 600 0.9375rem var(--body); cursor: pointer;
 }
+.fields > button {
+  min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--night-line); background: var(--night);
+  color: var(--mist); font: 600 0.9375rem var(--body); cursor: pointer; align-self: end;
+}
+.fields > button:hover { color: var(--snow); border-color: var(--mist); }
 .group button:hover { color: var(--snow); border-color: var(--mist); }
 .group button[aria-pressed="true"] { color: var(--abyss); background: var(--snow); border-color: var(--snow); }
 #x-platforms button[aria-pressed="true"] { background: var(--aurora-grad); border-color: transparent; }
