@@ -5,6 +5,15 @@ holds them cut for a phone, one platform a folder:
 - x/<platform>/lists.json: the lists the explorer opens on (the best known,
   the trending, the coming soon), each game with its name;
 - x/<platform>/names.json: every game with a name, for the search;
+- x/<platform>/facets.json: for each facet (genres, modes, series,
+  developers, publishers, themes, perspectives, tags, year) its values with
+  the number of named games that have them, for the explorer's menus;
+- x/<platform>/browse/<page>.json: every named game, best known first, PAGE
+  of them a page, as [id, name, score, trend, critics, year] rows and, for
+  each facet, the rows of the page that have each value (the value's number
+  in facets.json, then the row numbers as the gap from the one before), so
+  the explorer filters in the browser and fetches the next page only when it
+  needs more;
 - x/<platform>/g/<shard>.json: each game's sheet (what every file says of
   it, its ids on the other platforms), the games spread over shards by
   shard() so a sheet costs one small file.
@@ -13,10 +22,15 @@ Python's standard library only. Usage: see tools/build_site.py.
 """
 import json
 import os
+from bisect import bisect_left
 
 from common import SCHEMA
 
 LIST = 200              # games a list holds
+PAGE = 5000             # games a page of the browse index holds
+FACETS = ("genres", "modes", "series", "developers", "publishers", "themes", "perspectives", "tags")
+FACET_VALUES = 300      # values a facet keeps (the most common), year aside
+FACET_MIN = 2           # games a value needs to be worth a filter
 SHARD_BYTES = 160_000   # about what a shard of sheets weighs, at most on average
 # Each store's page of a game, by the platform's id in links.json.
 STORES = {
@@ -77,6 +91,53 @@ def trait_names(game: dict, tags: dict) -> dict:
     if game.get("tags"):
         out["tags"] = [tags.get(str(t), "") for t in game["tags"] if tags.get(str(t))]
     return out
+
+
+def year_of(game: dict) -> int:
+    """The year of a game's release (yyyymmdd), 0 when it has none."""
+    release = game.get("release")
+    return release // 10000 if isinstance(release, int) and release >= 10_000_000 else 0
+
+
+def browse(best: list, games: dict, names: dict, tags: dict) -> tuple:
+    """The browse index of the named games in `best` ([(id, [score, trend, critics])],
+    best first): (facets, pages), the facets as {facet: [[value, count]]} and
+    each page as {"games": rows, "facets": {facet: [[value number, row gaps]]}}."""
+    rows, found = [], {k: {} for k in (*FACETS, "year")}
+    for gid, score in [b for b in best if names.get(b[0])]:
+        game = games.get(gid)
+        year = 0
+        if isinstance(game, dict):
+            year = year_of(game)
+            traits = trait_names(game, tags)
+            for kind in FACETS:
+                for value in dict.fromkeys(traits.get(kind, ())):
+                    found[kind].setdefault(value, []).append(len(rows))
+            if year:
+                found["year"].setdefault(str(year), []).append(len(rows))
+        rows.append([gid, names[gid], *(list(score) + [0, 0, 0])[:3], year])
+    kept = {}
+    for kind, values in found.items():
+        chosen = [(v, at) for v, at in values.items() if len(at) >= FACET_MIN]
+        chosen.sort(key=(lambda x: -int(x[0])) if kind == "year" else (lambda x: (-len(x[1]), x[0])))
+        if kind != "year":
+            chosen = chosen[:FACET_VALUES]
+        if chosen:
+            kept[kind] = chosen
+    facets = {kind: [[v, len(at)] for v, at in chosen] for kind, chosen in kept.items()}
+    pages = []
+    for start in range(0, len(rows), PAGE):
+        page = {"games": rows[start:start + PAGE], "facets": {}}
+        for kind, chosen in kept.items():
+            out = []
+            for number, (_, at) in enumerate(chosen):
+                here = [r - start for r in at[bisect_left(at, start):bisect_left(at, start + PAGE)]]
+                if here:
+                    out.append([number, [here[0]] + [b - a for a, b in zip(here, here[1:])]])
+            if out:
+                page["facets"][kind] = out
+        pages.append(page)
+    return facets, pages
 
 
 def platform_files(data_dir: str, platform: str) -> dict:
@@ -140,6 +201,15 @@ def build(data_dir: str, out_dir: str) -> dict:
         write(os.path.join(base, "names.json"),
               sorted(([g, n, (scores.get(g) or [0])[0]] for g, n in names.items()), key=lambda x: (-x[2], x[1])))
 
+        facets, pages = browse(best, games, names, tags)
+        generated = files["popular"].get("generated")
+        os.makedirs(os.path.join(base, "browse"), exist_ok=True)
+        for n, page in enumerate(pages):
+            write(os.path.join(base, "browse", f"{n}.json"), {"page": n, **page})
+        write(os.path.join(base, "facets.json"),
+              {"platform": platform, "generated": generated, "page": PAGE, "pages": len(pages),
+               "games": sum(len(p["games"]) for p in pages), "facets": facets})
+
         sheets = {}
         every = set(scores) | set(games) | set(upcoming) | set(similar)
         of_edition = {}
@@ -180,7 +250,7 @@ def build(data_dir: str, out_dir: str) -> dict:
         lists["named"] = len(names)
         write(os.path.join(base, "lists.json"), lists)
         summary[platform] = {"games": len(sheets), "named": len(names), "popular": len(scores),
-                             "upcoming": len(upcoming), "similar": len(similar),
+                             "upcoming": len(upcoming), "similar": len(similar), "browse": sum(len(p["games"]) for p in pages), "pages": len(pages),
                              "shards": shards, "generated": files["popular"].get("generated")}
     return summary
 
