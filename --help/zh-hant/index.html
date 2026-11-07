@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: https://wsrv.nl; connect-src 'self' https://gateway.umami.is; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<title>Atlas · 所有平台上所有遊戲的地圖</title>
+<meta name="description" content="Atlas 跨平台繪製遊戲地圖：哪些廣為人知，哪些本週被閱讀最多，哪些即將推出，哪些彼此相似。開放的 JSON 檔案，每天重新產生。">
+<meta name="theme-color" content="#0b1424">
+<link rel="canonical" href="https://atlas.boreale.dev/zh-hant/">
+<link rel="alternate" hreflang="en" href="https://atlas.boreale.dev/">
+<link rel="alternate" hreflang="fr" href="https://atlas.boreale.dev/fr/">
+<link rel="alternate" hreflang="fr-CA" href="https://atlas.boreale.dev/fr-ca/">
+<link rel="alternate" hreflang="de" href="https://atlas.boreale.dev/de/">
+<link rel="alternate" hreflang="es" href="https://atlas.boreale.dev/es/">
+<link rel="alternate" hreflang="es-419" href="https://atlas.boreale.dev/es-419/">
+<link rel="alternate" hreflang="it" href="https://atlas.boreale.dev/it/">
+<link rel="alternate" hreflang="nl" href="https://atlas.boreale.dev/nl/">
+<link rel="alternate" hreflang="pt-PT" href="https://atlas.boreale.dev/pt/">
+<link rel="alternate" hreflang="pt-BR" href="https://atlas.boreale.dev/pt-br/">
+<link rel="alternate" hreflang="ru" href="https://atlas.boreale.dev/ru/">
+<link rel="alternate" hreflang="ja" href="https://atlas.boreale.dev/ja/">
+<link rel="alternate" hreflang="ko" href="https://atlas.boreale.dev/ko/">
+<link rel="alternate" hreflang="zh-Hans" href="https://atlas.boreale.dev/zh-hans/">
+<link rel="alternate" hreflang="zh-Hant" href="https://atlas.boreale.dev/zh-hant/">
+<link rel="alternate" hreflang="x-default" href="https://atlas.boreale.dev/">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="preload" href="../assets/fonts/sora.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/figtree.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/boreale.css">
+<link rel="stylesheet" href="../assets/chrome.css">
+<link rel="stylesheet" href="../assets/site.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Atlas">
+<meta property="og:title" content="Atlas · 所有平台上所有遊戲的地圖">
+<meta property="og:description" content="Atlas 跨平台繪製遊戲地圖：哪些廣為人知，哪些本週被閱讀最多，哪些即將推出，哪些彼此相似。開放的 JSON 檔案，每天重新產生。">
+<meta property="og:url" content="https://atlas.boreale.dev/zh-hant/">
+<meta property="og:image" content="https://atlas.boreale.dev/assets/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<script src="../assets/lang.js"></script>
+<script src="../assets/boreale.js" defer></script>
+<script src="../assets/chrome.js" defer></script>
+<script src="../assets/site.js" defer></script>
+
+<script src="../assets/umami.js" defer data-website-id="6410ffdd-ae2e-4ddb-8e18-0a77e9fa374e" data-domains="atlas.boreale.dev"></script>
+</head>
+<body class="reset-margins" data-root="../" data-lang="zh-Hant">
+<a class="skip" href="#main">跳到內容</a>
+<div class="sky sky-home">
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <header class="top">
+    <div class="switcher">
+      <button class="brand switch" type="button" popovertarget="sites" aria-label="Atlas · Boréale 的專案"><img src="../assets/marks/atlas.svg" alt="" width="34" height="34">Atlas<svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div id="sites" class="sites" popover aria-label="Boréale 的專案">
+        <ul>
+          <li><a href="https://boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/boreale.svg" alt="" width="36" height="36"><span><strong>Boréale</strong><small>為漫漫長夜而作的自製軟體</small></span></a></li>
+        </ul>
+        <p class="sites-title">Switch 自製軟體</p><ul>
+          <li><a href="https://guard.boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/playguard.svg" alt="" width="36" height="36"><span><strong>PlayGuard</strong><small>在主機上進行家長監護</small></span></a></li>
+          <li><a href="https://shelf.boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/playshelf.svg" alt="" width="36" height="36"><span><strong>PlayShelf</strong><small>在主機上管理你的遊戲庫</small></span><em class="soon">即將推出</em></a></li>
+        </ul>
+        <p class="sites-title">整合</p><ul>
+          <li><a href="https://ha.boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/ha.svg" alt="" width="36" height="36"><span><strong>Home Assistant</strong><small>Home Assistant 中的自製軟體</small></span></a></li>
+        </ul>
+        <p class="sites-title">函式庫</p><ul>
+          <li><a href="https://aurore.boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/aurore.svg" alt="" width="36" height="36"><span><strong>Aurore</strong><small>它們背後的介面函式庫</small></span></a></li>
+        </ul>
+        <p class="sites-title">開放資料與協定</p><ul>
+          <li><a href="../zh-hant/" aria-current="true"><img src="../assets/marks/atlas.svg" alt="" width="36" height="36"><span><strong>Atlas</strong><small>所有平台上所有遊戲的地圖</small></span></a></li>
+          <li><a href="https://lantern.boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/lantern.svg" alt="" width="36" height="36"><span><strong>Lantern</strong><small>伺服器與主機之間的協定</small></span></a></li>
+        </ul>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Atlas">
+      <a href="../zh-hant/#platforms">平台</a>
+      <a href="../zh-hant/#files">檔案</a>
+      <a href="../zh-hant/#use">使用</a>
+      <a href="../zh-hant/status/">狀態</a>
+      <a href="../zh-hant/explore/" class="nav-cta">探索</a>
+      <a href="https://github.com/JigSawFr/Atlas" class="nav-gh" referrerpolicy="strict-origin">GitHub</a>
+    </nav>
+    <div class="settings">
+      <button class="lang-button" type="button" popovertarget="languages" aria-label="語言 · 繁體中文"><span class="flag" aria-hidden="true">🇹🇼</span><span class="lang-name">繁體中文</span><span class="lang-code">ZH</span><svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <ul id="languages" class="langs" popover aria-label="語言">
+        <li><a href="../" data-lang="en-US" lang="en" hreflang="en"><span class="flag" aria-hidden="true">🇺🇸</span>English</a></li>
+        <li><a href="../fr/" data-lang="fr" lang="fr" hreflang="fr"><span class="flag" aria-hidden="true">🇫🇷</span>Français</a></li>
+        <li><a href="../fr-ca/" data-lang="fr-ca" lang="fr-CA" hreflang="fr-CA"><span class="flag" aria-hidden="true">🇨🇦</span>Français (Canada)</a></li>
+        <li><a href="../de/" data-lang="de" lang="de" hreflang="de"><span class="flag" aria-hidden="true">🇩🇪</span>Deutsch</a></li>
+        <li><a href="../es/" data-lang="es" lang="es" hreflang="es"><span class="flag" aria-hidden="true">🇪🇸</span>Español</a></li>
+        <li><a href="../es-419/" data-lang="es-419" lang="es-419" hreflang="es-419"><span class="flag" aria-hidden="true">🇲🇽</span>Español (Latinoamérica)</a></li>
+        <li><a href="../it/" data-lang="it" lang="it" hreflang="it"><span class="flag" aria-hidden="true">🇮🇹</span>Italiano</a></li>
+        <li><a href="../nl/" data-lang="nl" lang="nl" hreflang="nl"><span class="flag" aria-hidden="true">🇳🇱</span>Nederlands</a></li>
+        <li><a href="../pt/" data-lang="pt" lang="pt-PT" hreflang="pt-PT"><span class="flag" aria-hidden="true">🇵🇹</span>Português</a></li>
+        <li><a href="../pt-br/" data-lang="pt-br" lang="pt-BR" hreflang="pt-BR"><span class="flag" aria-hidden="true">🇧🇷</span>Português (Brasil)</a></li>
+        <li><a href="../ru/" data-lang="ru" lang="ru" hreflang="ru"><span class="flag" aria-hidden="true">🇷🇺</span>Русский</a></li>
+        <li><a href="../ja/" data-lang="ja" lang="ja" hreflang="ja"><span class="flag" aria-hidden="true">🇯🇵</span>日本語</a></li>
+        <li><a href="../ko/" data-lang="ko" lang="ko" hreflang="ko"><span class="flag" aria-hidden="true">🇰🇷</span>한국어</a></li>
+        <li><a href="../zh-hans/" data-lang="zh-hans" lang="zh-Hans" hreflang="zh-Hans"><span class="flag" aria-hidden="true">🇨🇳</span>简体中文</a></li>
+        <li><a href="../zh-hant/" data-lang="zh-hant" lang="zh-Hant" hreflang="zh-Hant" aria-current="true"><span class="flag" aria-hidden="true">🇹🇼</span>繁體中文</a></li>
+      </ul>
+    </div>
+  </header>
+  <section class="hero hero-home">
+    <div class="hero-text">
+      <p class="pill-eyebrow caps"><a href="../zh-hant/status/">開放資料 · 所有平台</a></p>
+      <h1>所有遊戲的地圖，<em>涵蓋所有平台</em>。</h1>
+      <p class="sub"><span>純 JSON</span> · <span>無需帳號與金鑰</span> · <span>每日更新</span></p>
+      <p class="lede">Atlas 從一個商店到另一個商店繪製遊戲地圖：哪些廣為人知，哪些本週被閱讀最多，哪些即將推出，哪些彼此相似。簡單的 JSON 檔案，免費使用，每天重新繪製。</p>
+      <div class="actions">
+        <a class="button primary" href="../zh-hant/explore/">瀏覽資料</a>
+        <a class="button" href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">在 GitHub 上查看</a>
+      </div>
+    </div>
+    <!-- What the files hold, drawn rather than captured (site.css's .map):
+         one game tied across four stores by links.json, and this week's
+         trending games. Made-up games and ids; the labels are the catalog's;
+         the wire moves only where motion is welcome. -->
+    <div class="map" role="img" aria-label="一款遊戲經 links.json 在 Switch、Steam、GOG 與 Xbox 之間相連，旁邊是本週的熱門遊戲">
+      <div class="map-bar">
+        <img src="../assets/marks/atlas.svg" alt="" width="24" height="24">
+        <span class="map-title">links.json</span>
+        <span class="map-tag">schema 1</span>
+      </div>
+      <div class="map-tile map-game">
+        <span class="art art-ember"></span>
+        <span class="map-text"><strong>Emberwild Saga</strong><span class="map-label">動作角色扮演 · 開放世界</span></span>
+        <span class="map-score"><span class="map-label">知名度</span><b>92</b><span class="meter"><span></span></span></span>
+      </div>
+      <div class="map-tile map-links">
+        <span class="map-label">由其 Wikidata 項目相連 <code>Q48151623</code></span>
+        <span class="map-tree">
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><rect x="6.5" y="4.5" width="11" height="15" rx="1.5"/><path d="M6.5 7.5H4.8A2.3 2.3 0 0 0 2.5 9.8v4.4a2.3 2.3 0 0 0 2.3 2.3h1.7M17.5 7.5h1.7a2.3 2.3 0 0 1 2.3 2.3v4.4a2.3 2.3 0 0 1-2.3 2.3h-1.7"/></svg></span><span class="map-name">Switch</span><code>0100F2A01C6E4000</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/></svg></span><span class="map-name">Steam</span><code>2384170</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3a9 9 0 0 1 9 9"/></svg></span><span class="map-name">GOG</span><code>1735029481</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><path d="M7.5 7h9a4.5 4.5 0 0 1 4.4 3.6l.9 4.6a2.6 2.6 0 0 1-4.6 2.1L15.5 15h-7l-1.7 2.3a2.6 2.6 0 0 1-4.6-2.1l.9-4.6A4.5 4.5 0 0 1 7.5 7z"/><path d="M8 9.5v3M6.5 11h3M15.5 10.5h.01M17.5 12h.01"/></svg></span><span class="map-name">Xbox</span><code>9P4KQZ7RV1XD</code></span>
+        </span>
+      </div>
+      <div class="map-tile map-trending">
+        <span class="map-label">本週熱門</span>
+        <span class="map-row"><span class="art art-tide"></span><span class="map-game-name">Tidebound</span><span class="up">+142%</span></span>
+        <span class="map-row"><span class="art art-neon"></span><span class="map-game-name">Neon Drift Rally</span><span class="up">+87%</span></span>
+        <span class="map-row"><span class="art art-moss"></span><span class="map-game-name">Moss &amp; Mortar</span><span class="up">+54%</span></span>
+      </div>
+    </div>
+  </section>
+
+</div>
+<main id="main">
+  <section id="platforms" class="section">
+    <div class="section-head">
+      <p class="eyebrow">平台</p>
+      <h2>一張地圖，一個平台接一個平台</h2>
+      <p>每個平台都有自己的資料夾，檔案格式相同。遊戲在各商店的 ID 把平台連在一起。</p>
+    </div>
+    <ul class="cards platforms">
+      <li class="card platform soon"><div class="head"><h3>Nintendo Switch</h3><span class="state">即將推出</span></div><p>來自維基百科的知名度與趨勢，來自 Wikidata 的系列與工作室，相似遊戲與版本。</p></li>
+      <li class="card platform soon"><div class="head"><h3>Steam</h3><span class="state">即將推出</span></div><p>來自維基百科與 Steam 評論的知名度、最多人玩的遊戲、標籤與相似遊戲。</p></li>
+      <li class="card platform soon"><div class="head"><h3>GOG</h3><span class="state">即將推出</span></div><p>完整的 GOG 目錄，含評論。</p></li>
+      <li class="card platform soon"><div class="head"><h3>Xbox and Microsoft Store</h3><span class="state">即將推出</span></div><p>Microsoft Store 的遊戲、玩家評分與 Game Pass 中的遊戲。</p></li>
+      <li class="card platform soon"><div class="head"><h3>Nintendo 3DS</h3><span class="state">即將推出</span></div><p>各地區的 3DS 遊戲及其 title id，來自 Nlib API 和 Wikidata。</p></li>
+      <li class="card platform soon"><div class="head"><h3>PlayStation 4</h3><span class="state">即將推出</span></div><p>來自 Wikidata 的 PS4 遊戲：發售日期、特徵和 PlayStation Store id（索尼的條款禁止收集商店的資料）。</p></li>
+      <li class="card platform soon"><div class="head"><h3>PlayStation 5</h3><span class="state">即將推出</span></div><p>來自 Wikidata 的 PS5 遊戲：發售日期、特徵和 PlayStation Store id（索尼的條款禁止收集商店的資料）。</p></li>
+      <li class="card platform soon"><div class="head"><h3>Retro</h3><span class="state">即將推出</span></div><p>已無任何商店販售的遊戲，來自 Wikidata。</p></li>
+    </ul>
+  </section>
+
+  <section id="files" class="section">
+    <div class="section-head">
+      <p class="eyebrow">檔案</p>
+      <h2>發佈了什麼，何時發佈</h2>
+      <p>每個檔案、它的大小與產生日期。超過兩天的每日檔案或超過九天的每週檔案會標示為延遲。</p>
+    </div>
+    <div class="table" tabindex="0" role="region" aria-label="發佈了什麼，何時發佈">
+      <table class="files">
+        <thead><tr><th scope="col">檔案</th><th scope="col">內容</th><th scope="col">產生</th><th scope="col">大小</th><th scope="col">更新</th></tr></thead>
+        <tbody>
+          <tr><td><code>index.json</code></td><td>每個檔案的日期、大小與雜湊</td><td>每週</td><td class="num">—</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">每個檔案都有結構編號：可能會新增欄位，舊欄位的意義保持不變。 <a href="../zh-hant/status/">各來源與平台的新鮮度</a></p>
+  </section>
+
+  <section id="use" class="section">
+    <div class="section-head">
+      <p class="eyebrow">使用</p>
+      <h2>無需帳號，無需金鑰，沒有限制</h2>
+      <p>檔案是一般的 JSON。從任何方便的地方讀取。</p>
+    </div>
+    <ul class="cards ways">
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
+        <h3>透過 jsDelivr</h3>
+        <p>資料分支，由快速 CDN 提供。網址永不改變。</p>
+        <pre tabindex="0"><code>https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/popular.json</code></pre>
+      </li>
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="2.2"/><path d="M2.5 8.5h19M5.5 6.25h.01M8 6.25h.01"/></svg>
+        <h3>從本站</h3>
+        <p>同樣的檔案，位於 data/ 下，每次執行重新產生。</p>
+        <pre tabindex="0"><code>https://atlas.boreale.dev/data/platforms/steam/popular.json</code></pre>
+      </li>
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="m15 17 2 2 4-4"/></svg>
+        <h3>只取有變化的部分</h3>
+        <p>index.json 提供每個檔案的雜湊：每天取得一次，然後只下載有變化的檔案。</p>
+        <pre tabindex="0"><code>{"files": {"platforms/switch/popular.json": {"generated": "2026-11-02", "bytes": 71646, "sha256": "11c54e3b7c6f150f"}}}</code></pre>
+      </li>
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/></svg>
+        <h3>每週發佈</h3>
+        <p>每個週一的檔案都會作為發佈永久保存，每個檔案都附有證明。最新版本永遠在同一網址。</p>
+        <pre tabindex="0"><code>https://github.com/JigSawFr/Atlas/releases/latest/download/switch-popular.json
+gh attestation verify switch-popular.json -R JigSawFr/Atlas</code></pre>
+      </li>
+    </ul>
+    <p class="note">每個檔案的格式（逐欄位）請見 <a href="https://github.com/JigSawFr/Atlas#the-files" referrerpolicy="strict-origin">README</a></p>
+  </section>
+
+  <section id="sources" class="section">
+    <div class="section-head">
+      <p class="eyebrow">來源</p>
+      <h2>資料從哪裡來</h2>
+      <p>只使用無需帳號的來源。每個檔案都註明了自己的來源。</p>
+    </div>
+    <ul class="sources">
+      <li><a href="https://www.wikidata.org/" rel="noreferrer">Wikidata</a><span>遊戲、系列、工作室、類型、評論、各商店的 ID</span><small>CC0</small></li>
+      <li><a href="https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews" rel="noreferrer">Wikimedia</a><span>每款遊戲頁面被閱讀的次數，八種語言</span><small>CC0</small></li>
+      <li><a href="https://github.com/blawar/titledb" rel="noreferrer">titledb</a><span>Switch 遊戲及其介紹與發售日期</span><small>依原樣發佈</small></li>
+      <li><a href="https://store.steampowered.com/" rel="noreferrer">Steam</a><span>Steam 遊戲、評論、標籤與最多人玩的遊戲</span><small>Steam Web API 條款</small></li>
+      <li><a href="https://steamspy.com/" rel="noreferrer">SteamSpy</a><span>Steam 遊戲的擁有者與玩家</span><small>依原樣發佈</small></li>
+      <li><a href="https://www.igdb.com/" rel="noreferrer">IGDB</a><span>主題、關鍵字與玩家評分（設定其金鑰時）</span><small>IGDB API 條款</small></li>
+    </ul>
+  </section>
+
+  <section id="keys" class="section">
+    <div class="section-head">
+      <p class="eyebrow">金鑰</p>
+      <h2>不需要金鑰</h2>
+      <p>沒有金鑰一切照常運作。兩個選用金鑰可增加一些資訊，以儲存庫的機密設定。</p>
+    </div>
+    <ul class="keys">
+      <li><span class="k"><code>IGDB_CLIENT_ID</code><code>IGDB_CLIENT_SECRET</code></span><span>IGDB，透過 Twitch 應用程式：主題、關鍵字、玩家評分與期待度。</span></li>
+      <li><span class="k"><code>STEAM_API_KEY</code></span><span>Steam 應用程式的完整清單，超出 Wikidata 已知的遊戲。</span></li>
+    </ul>
+  </section>
+
+  <section class="band">
+    <div>
+      <h2>逐款遊戲，找到你的方向</h2>
+      <p>瀏覽器讀取同樣的檔案：搜尋遊戲、查看各平台對它的資訊、找到相似的遊戲。</p>
+    </div>
+    <div class="band-actions">
+      <a class="button primary" href="../zh-hant/explore/">瀏覽資料</a>
+      <a class="button" href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">在 GitHub 上查看</a>
+    </div>
+  </section>
+
+</main>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-cols">
+        <div>
+          <p><img src="../assets/marks/atlas.svg" alt="" width="20" height="20"> <strong>Atlas</strong></p>
+          <p>程式碼採用 GPL-3.0，資料來自開放來源。</p>
+          <p><a href="https://boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=footer" class="boreale" referrerpolicy="strict-origin">Boréale 專案</a></p>
+        </div>
+        <div>
+          <h2>專案</h2>
+          <ul><li><a href="../zh-hant/explore/">瀏覽器</a></li><li><a href="../zh-hant/status/">狀態</a></li><li><a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a></li><li><a href="https://github.com/JigSawFr/Atlas/releases" referrerpolicy="strict-origin">每週發佈</a></li><li><a href="https://github.com/JigSawFr/Atlas/issues" referrerpolicy="strict-origin">Issues</a></li></ul>
+        </div>
+        <div>
+          <h2>Boréale</h2>
+          <ul><li><a href="https://boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Boréale</a></li><li><a href="https://guard.boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">PlayGuard</a></li><li><a href="https://shelf.boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">PlayShelf</a></li><li><a href="https://ha.boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Home Assistant</a></li><li><a href="https://aurore.boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Aurore</a></li><li><a href="https://lantern.boreale.dev/zh-hant/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Lantern</a></li><li><a href="https://boreale.dev/zh-hant/legal/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">隱私與法律聲明</a></li></ul>
+        </div>
+        <div>
+          <h2>支持本專案</h2>
+          <ul><li><a href="https://github.com/sponsors/JigSawFr" rel="noreferrer">GitHub Sponsors</a></li><li><a href="https://ko-fi.com/jigsawfr" rel="noreferrer">Ko-fi</a></li></ul>
+        </div>
+    </div>
+    <p class="footer-fine">Nintendo Switch、Steam 及此處提到的遊戲均為其所有者的商標。Atlas 與它們無關。</p>
+  </div>
+</footer>
+</body>
+</html>

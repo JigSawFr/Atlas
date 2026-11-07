@@ -312,6 +312,8 @@ time.late { color: #ffb347; }
 .byplat li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 10px 14px; border-radius: 14px; background: var(--abyss); border: 1px solid var(--night-line); }
 .byplat .out { margin-left: auto; min-width: 44px; min-height: 44px; display: inline-grid; place-items: center; }
 .traits dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+a.chip { text-decoration: none; }
+a.chip:hover, a.chip:focus-visible { background: rgb(51 187 255 / 0.2); }
 .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8125rem; padding: 2px 10px; border-radius: 99px; background: rgb(51 187 255 / 0.1); border: 1px solid rgb(51 187 255 / 0.25); color: var(--snow); }
 @media (max-width: 520px) { .traits div { grid-template-columns: minmax(0, 1fr); } }
 .similar { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }

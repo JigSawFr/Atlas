@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: https://wsrv.nl; connect-src 'self' https://gateway.umami.is; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<title>Atlas · La mappa di tutti i giochi, su tutte le piattaforme</title>
+<meta name="description" content="Atlas mappa i videogiochi da una piattaforma all&#x27;altra: i più noti, quelli di cui si legge di più questa settimana, quelli in arrivo e quelli simili. File JSON aperti, rifatti ogni giorno.">
+<meta name="theme-color" content="#0b1424">
+<link rel="canonical" href="https://atlas.boreale.dev/it/">
+<link rel="alternate" hreflang="en" href="https://atlas.boreale.dev/">
+<link rel="alternate" hreflang="fr" href="https://atlas.boreale.dev/fr/">
+<link rel="alternate" hreflang="fr-CA" href="https://atlas.boreale.dev/fr-ca/">
+<link rel="alternate" hreflang="de" href="https://atlas.boreale.dev/de/">
+<link rel="alternate" hreflang="es" href="https://atlas.boreale.dev/es/">
+<link rel="alternate" hreflang="es-419" href="https://atlas.boreale.dev/es-419/">
+<link rel="alternate" hreflang="it" href="https://atlas.boreale.dev/it/">
+<link rel="alternate" hreflang="nl" href="https://atlas.boreale.dev/nl/">
+<link rel="alternate" hreflang="pt-PT" href="https://atlas.boreale.dev/pt/">
+<link rel="alternate" hreflang="pt-BR" href="https://atlas.boreale.dev/pt-br/">
+<link rel="alternate" hreflang="ru" href="https://atlas.boreale.dev/ru/">
+<link rel="alternate" hreflang="ja" href="https://atlas.boreale.dev/ja/">
+<link rel="alternate" hreflang="ko" href="https://atlas.boreale.dev/ko/">
+<link rel="alternate" hreflang="zh-Hans" href="https://atlas.boreale.dev/zh-hans/">
+<link rel="alternate" hreflang="zh-Hant" href="https://atlas.boreale.dev/zh-hant/">
+<link rel="alternate" hreflang="x-default" href="https://atlas.boreale.dev/">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="preload" href="../assets/fonts/sora.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/figtree.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/boreale.css">
+<link rel="stylesheet" href="../assets/chrome.css">
+<link rel="stylesheet" href="../assets/site.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Atlas">
+<meta property="og:title" content="Atlas · La mappa di tutti i giochi, su tutte le piattaforme">
+<meta property="og:description" content="Atlas mappa i videogiochi da una piattaforma all&#x27;altra: i più noti, quelli di cui si legge di più questa settimana, quelli in arrivo e quelli simili. File JSON aperti, rifatti ogni giorno.">
+<meta property="og:url" content="https://atlas.boreale.dev/it/">
+<meta property="og:image" content="https://atlas.boreale.dev/assets/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:locale" content="it_IT">
+<meta name="twitter:card" content="summary_large_image">
+<script src="../assets/lang.js"></script>
+<script src="../assets/boreale.js" defer></script>
+<script src="../assets/chrome.js" defer></script>
+<script src="../assets/site.js" defer></script>
+
+<script src="../assets/umami.js" defer data-website-id="6410ffdd-ae2e-4ddb-8e18-0a77e9fa374e" data-domains="atlas.boreale.dev"></script>
+</head>
+<body class="reset-margins" data-root="../" data-lang="it">
+<a class="skip" href="#main">Vai al contenuto</a>
+<div class="sky sky-home">
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <header class="top">
+    <div class="switcher">
+      <button class="brand switch" type="button" popovertarget="sites" aria-label="Atlas · I progetti Boréale"><img src="../assets/marks/atlas.svg" alt="" width="34" height="34">Atlas<svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div id="sites" class="sites" popover aria-label="I progetti Boréale">
+        <ul>
+          <li><a href="https://boreale.dev/it/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/boreale.svg" alt="" width="36" height="36"><span><strong>Boréale</strong><small>Homebrew per le lunghe notti</small></span></a></li>
+        </ul>
+        <p class="sites-title">Homebrew per Switch</p><ul>
+          <li><a href="https://guard.boreale.dev/it/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/playguard.svg" alt="" width="36" height="36"><span><strong>PlayGuard</strong><small>Il filtro famiglia, sulla console</small></span></a></li>
+          <li><a href="https://shelf.boreale.dev/it/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/playshelf.svg" alt="" width="36" height="36"><span><strong>PlayShelf</strong><small>La tua libreria di giochi, sulla console</small></span><em class="soon">In arrivo</em></a></li>
+        </ul>
+        <p class="sites-title">Integrazioni</p><ul>
+          <li><a href="https://ha.boreale.dev/it/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/ha.svg" alt="" width="36" height="36"><span><strong>Home Assistant</strong><small>I tuoi homebrew in Home Assistant</small></span></a></li>
+        </ul>
+        <p class="sites-title">Librerie</p><ul>
+          <li><a href="https://aurore.boreale.dev/it/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/aurore.svg" alt="" width="36" height="36"><span><strong>Aurore</strong><small>La libreria di interfaccia dietro di loro</small></span></a></li>
+        </ul>
+        <p class="sites-title">Dati e protocolli aperti</p><ul>
+          <li><a href="../it/" aria-current="true"><img src="../assets/marks/atlas.svg" alt="" width="36" height="36"><span><strong>Atlas</strong><small>Una mappa di tutti i giochi, su ogni piattaforma</small></span></a></li>
+          <li><a href="https://lantern.boreale.dev/it/?utm_source=atlas&amp;utm_medium=nav" referrerpolicy="strict-origin"><img src="../assets/marks/lantern.svg" alt="" width="36" height="36"><span><strong>Lantern</strong><small>Il protocollo tra server e console</small></span></a></li>
+        </ul>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Atlas">
+      <a href="../it/#platforms">Piattaforme</a>
+      <a href="../it/#files">I file</a>
+      <a href="../it/#use">Usalo</a>
+      <a href="../it/status/">Stato</a>
+      <a href="../it/explore/" class="nav-cta">Esplora</a>
+      <a href="https://github.com/JigSawFr/Atlas" class="nav-gh" referrerpolicy="strict-origin">GitHub</a>
+    </nav>
+    <div class="settings">
+      <button class="lang-button" type="button" popovertarget="languages" aria-label="Lingua · Italiano"><span class="flag" aria-hidden="true">🇮🇹</span><span class="lang-name">Italiano</span><span class="lang-code">IT</span><svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <ul id="languages" class="langs" popover aria-label="Lingua">
+        <li><a href="../" data-lang="en-US" lang="en" hreflang="en"><span class="flag" aria-hidden="true">🇺🇸</span>English</a></li>
+        <li><a href="../fr/" data-lang="fr" lang="fr" hreflang="fr"><span class="flag" aria-hidden="true">🇫🇷</span>Français</a></li>
+        <li><a href="../fr-ca/" data-lang="fr-ca" lang="fr-CA" hreflang="fr-CA"><span class="flag" aria-hidden="true">🇨🇦</span>Français (Canada)</a></li>
+        <li><a href="../de/" data-lang="de" lang="de" hreflang="de"><span class="flag" aria-hidden="true">🇩🇪</span>Deutsch</a></li>
+        <li><a href="../es/" data-lang="es" lang="es" hreflang="es"><span class="flag" aria-hidden="true">🇪🇸</span>Español</a></li>
+        <li><a href="../es-419/" data-lang="es-419" lang="es-419" hreflang="es-419"><span class="flag" aria-hidden="true">🇲🇽</span>Español (Latinoamérica)</a></li>
+        <li><a href="../it/" data-lang="it" lang="it" hreflang="it" aria-current="true"><span class="flag" aria-hidden="true">🇮🇹</span>Italiano</a></li>
+        <li><a href="../nl/" data-lang="nl" lang="nl" hreflang="nl"><span class="flag" aria-hidden="true">🇳🇱</span>Nederlands</a></li>
+        <li><a href="../pt/" data-lang="pt" lang="pt-PT" hreflang="pt-PT"><span class="flag" aria-hidden="true">🇵🇹</span>Português</a></li>
+        <li><a href="../pt-br/" data-lang="pt-br" lang="pt-BR" hreflang="pt-BR"><span class="flag" aria-hidden="true">🇧🇷</span>Português (Brasil)</a></li>
+        <li><a href="../ru/" data-lang="ru" lang="ru" hreflang="ru"><span class="flag" aria-hidden="true">🇷🇺</span>Русский</a></li>
+        <li><a href="../ja/" data-lang="ja" lang="ja" hreflang="ja"><span class="flag" aria-hidden="true">🇯🇵</span>日本語</a></li>
+        <li><a href="../ko/" data-lang="ko" lang="ko" hreflang="ko"><span class="flag" aria-hidden="true">🇰🇷</span>한국어</a></li>
+        <li><a href="../zh-hans/" data-lang="zh-hans" lang="zh-Hans" hreflang="zh-Hans"><span class="flag" aria-hidden="true">🇨🇳</span>简体中文</a></li>
+        <li><a href="../zh-hant/" data-lang="zh-hant" lang="zh-Hant" hreflang="zh-Hant"><span class="flag" aria-hidden="true">🇹🇼</span>繁體中文</a></li>
+      </ul>
+    </div>
+  </header>
+  <section class="hero hero-home">
+    <div class="hero-text">
+      <p class="pill-eyebrow caps"><a href="../it/status/">Dati aperti · tutte le piattaforme</a></p>
+      <h1>La mappa di tutti i giochi, <em>su tutte le piattaforme</em>.</h1>
+      <p class="sub"><span>JSON semplice</span> · <span>Niente account né chiavi</span> · <span>Rifatto ogni giorno</span></p>
+      <p class="lede">Atlas mappa i videogiochi da negozio a negozio: quali sono noti, di quali si legge di più questa settimana, quali escono presto e quali si somigliano. Semplici file JSON, liberi da usare, ridisegnati ogni giorno.</p>
+      <div class="actions">
+        <a class="button primary" href="../it/explore/">Esplora i dati</a>
+        <a class="button" href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">Su GitHub</a>
+      </div>
+    </div>
+    <!-- What the files hold, drawn rather than captured (site.css's .map):
+         one game tied across four stores by links.json, and this week's
+         trending games. Made-up games and ids; the labels are the catalog's;
+         the wire moves only where motion is welcome. -->
+    <div class="map" role="img" aria-label="Un gioco collegato tra Switch, Steam, GOG e Xbox da links.json, accanto ai giochi di tendenza della settimana">
+      <div class="map-bar">
+        <img src="../assets/marks/atlas.svg" alt="" width="24" height="24">
+        <span class="map-title">links.json</span>
+        <span class="map-tag">schema 1</span>
+      </div>
+      <div class="map-tile map-game">
+        <span class="art art-ember"></span>
+        <span class="map-text"><strong>Emberwild Saga</strong><span class="map-label">GDR d'azione · Mondo aperto</span></span>
+        <span class="map-score"><span class="map-label">Notorietà</span><b>92</b><span class="meter"><span></span></span></span>
+      </div>
+      <div class="map-tile map-links">
+        <span class="map-label">Legati dal suo elemento Wikidata <code>Q48151623</code></span>
+        <span class="map-tree">
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><rect x="6.5" y="4.5" width="11" height="15" rx="1.5"/><path d="M6.5 7.5H4.8A2.3 2.3 0 0 0 2.5 9.8v4.4a2.3 2.3 0 0 0 2.3 2.3h1.7M17.5 7.5h1.7a2.3 2.3 0 0 1 2.3 2.3v4.4a2.3 2.3 0 0 1-2.3 2.3h-1.7"/></svg></span><span class="map-name">Switch</span><code>0100F2A01C6E4000</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/></svg></span><span class="map-name">Steam</span><code>2384170</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3a9 9 0 0 1 9 9"/></svg></span><span class="map-name">GOG</span><code>1735029481</code></span>
+          <span class="map-store"><span class="map-icon"><svg viewBox="0 0 24 24"><path d="M7.5 7h9a4.5 4.5 0 0 1 4.4 3.6l.9 4.6a2.6 2.6 0 0 1-4.6 2.1L15.5 15h-7l-1.7 2.3a2.6 2.6 0 0 1-4.6-2.1l.9-4.6A4.5 4.5 0 0 1 7.5 7z"/><path d="M8 9.5v3M6.5 11h3M15.5 10.5h.01M17.5 12h.01"/></svg></span><span class="map-name">Xbox</span><code>9P4KQZ7RV1XD</code></span>
+        </span>
+      </div>
+      <div class="map-tile map-trending">
+        <span class="map-label">Di tendenza questa settimana</span>
+        <span class="map-row"><span class="art art-tide"></span><span class="map-game-name">Tidebound</span><span class="up">+142%</span></span>
+        <span class="map-row"><span class="art art-neon"></span><span class="map-game-name">Neon Drift Rally</span><span class="up">+87%</span></span>
+        <span class="map-row"><span class="art art-moss"></span><span class="map-game-name">Moss &amp; Mortar</span><span class="up">+54%</span></span>
+      </div>
+    </div>
+  </section>
+
+</div>
+<main id="main">
+  <section id="platforms" class="section">
+    <div class="section-head">
+      <p class="eyebrow">Piattaforme</p>
+      <h2>Una sola mappa, piattaforma dopo piattaforma</h2>
+      <p>Ogni piattaforma ha la sua cartella, con i file negli stessi formati. Gli ID di un gioco in ogni negozio collegano le piattaforme.</p>
+    </div>
+    <ul class="cards platforms">
+      <li class="card platform soon"><div class="head"><h3>Nintendo Switch</h3><span class="state">In arrivo</span></div><p>Notorietà e tendenze da Wikipedia, serie e studi da Wikidata, giochi simili ed edizioni.</p></li>
+      <li class="card platform soon"><div class="head"><h3>Steam</h3><span class="state">In arrivo</span></div><p>Notorietà da Wikipedia e dalle recensioni di Steam, i più giocati, tag e giochi simili.</p></li>
+      <li class="card platform soon"><div class="head"><h3>GOG</h3><span class="state">In arrivo</span></div><p>L'intero catalogo GOG, con le sue recensioni.</p></li>
+      <li class="card platform soon"><div class="head"><h3>Xbox and Microsoft Store</h3><span class="state">In arrivo</span></div><p>I giochi del Microsoft Store, i voti dei giocatori e cosa c'è nel Game Pass.</p></li>
+      <li class="card platform soon"><div class="head"><h3>Nintendo 3DS</h3><span class="state">In arrivo</span></div><p>I giochi 3DS di tutte le regioni, con i loro title id, da Nlib API e Wikidata.</p></li>
+      <li class="card platform soon"><div class="head"><h3>PlayStation 4</h3><span class="state">In arrivo</span></div><p>I giochi PS4 da Wikidata: date di uscita, caratteristiche e id del PlayStation Store (i termini di Sony vietano di raccogliere i dati del negozio).</p></li>
+      <li class="card platform soon"><div class="head"><h3>PlayStation 5</h3><span class="state">In arrivo</span></div><p>I giochi PS5 da Wikidata: date di uscita, caratteristiche e id del PlayStation Store (i termini di Sony vietano di raccogliere i dati del negozio).</p></li>
+      <li class="card platform soon"><div class="head"><h3>Retro</h3><span class="state">In arrivo</span></div><p>I giochi che nessun negozio vende più, da Wikidata.</p></li>
+    </ul>
+  </section>
+
+  <section id="files" class="section">
+    <div class="section-head">
+      <p class="eyebrow">I file</p>
+      <h2>Cosa viene pubblicato, e quando</h2>
+      <p>Ogni file, la sua dimensione e il giorno in cui è stato fatto. Un file quotidiano più vecchio di due giorni, o settimanale più vecchio di nove, è segnato in ritardo.</p>
+    </div>
+    <div class="table" tabindex="0" role="region" aria-label="Cosa viene pubblicato, e quando">
+      <table class="files">
+        <thead><tr><th scope="col">File</th><th scope="col">Cosa contiene</th><th scope="col">Rifatto</th><th scope="col">Dimensione</th><th scope="col">Aggiornato</th></tr></thead>
+        <tbody>
+          <tr><td><code>index.json</code></td><td>Ogni file con giorno, dimensione e hash</td><td>ogni settimana</td><td class="num">—</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Ogni file ha un numero di schema: possono arrivare nuovi campi, uno vecchio mantiene il suo significato. <a href="../it/status/">Quanto è aggiornata ogni fonte e piattaforma</a></p>
+  </section>
+
+  <section id="use" class="section">
+    <div class="section-head">
+      <p class="eyebrow">Usalo</p>
+      <h2>Senza account, senza chiave, senza limiti</h2>
+      <p>I file sono semplice JSON. Leggili da dove preferisci.</p>
+    </div>
+    <ul class="cards ways">
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
+        <h3>Da jsDelivr</h3>
+        <p>Il branch dei dati, servito da un CDN veloce. L'indirizzo non cambia mai.</p>
+        <pre tabindex="0"><code>https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/popular.json</code></pre>
+      </li>
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="2.2"/><path d="M2.5 8.5h19M5.5 6.25h.01M8 6.25h.01"/></svg>
+        <h3>Da questo sito</h3>
+        <p>Gli stessi file, sotto data/, rifatti a ogni esecuzione.</p>
+        <pre tabindex="0"><code>https://atlas.boreale.dev/data/platforms/steam/popular.json</code></pre>
+      </li>
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="m15 17 2 2 4-4"/></svg>
+        <h3>Solo ciò che è cambiato</h3>
+        <p>index.json dà l'hash di ogni file: chiedilo una volta al giorno, poi scarica solo i file cambiati.</p>
+        <pre tabindex="0"><code>{"files": {"platforms/switch/popular.json": {"generated": "2026-11-02", "bytes": 71646, "sha256": "11c54e3b7c6f150f"}}}</code></pre>
+      </li>
+      <li class="card way stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/></svg>
+        <h3>Release settimanali</h3>
+        <p>I file di ogni lunedì restano per sempre in una release, ognuno attestato. L'ultima è sempre allo stesso indirizzo.</p>
+        <pre tabindex="0"><code>https://github.com/JigSawFr/Atlas/releases/latest/download/switch-popular.json
+gh attestation verify switch-popular.json -R JigSawFr/Atlas</code></pre>
+      </li>
+    </ul>
+    <p class="note">Il formato di ogni file, campo per campo, è nel <a href="https://github.com/JigSawFr/Atlas#the-files" referrerpolicy="strict-origin">README</a></p>
+  </section>
+
+  <section id="sources" class="section">
+    <div class="section-head">
+      <p class="eyebrow">Fonti</p>
+      <h2>Da dove viene</h2>
+      <p>Solo fonti che non richiedono un account. Ogni file indica le sue.</p>
+    </div>
+    <ul class="sources">
+      <li><a href="https://www.wikidata.org/" rel="noreferrer">Wikidata</a><span>Giochi, serie, studi, generi, critica, ID in ogni negozio</span><small>CC0</small></li>
+      <li><a href="https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews" rel="noreferrer">Wikimedia</a><span>Quanto vengono lette le pagine di ogni gioco, in otto lingue</span><small>CC0</small></li>
+      <li><a href="https://github.com/blawar/titledb" rel="noreferrer">titledb</a><span>I giochi Switch, le loro descrizioni e date di uscita</span><small>come pubblicato</small></li>
+      <li><a href="https://store.steampowered.com/" rel="noreferrer">Steam</a><span>I giochi Steam, recensioni, tag e i più giocati</span><small>Condizioni dell'API di Steam</small></li>
+      <li><a href="https://steamspy.com/" rel="noreferrer">SteamSpy</a><span>Possessori e giocatori dei giochi Steam</span><small>come pubblicato</small></li>
+      <li><a href="https://www.igdb.com/" rel="noreferrer">IGDB</a><span>Temi, parole chiave e voti dei giocatori, quando le sue chiavi sono impostate</span><small>Condizioni dell'API di IGDB</small></li>
+    </ul>
+  </section>
+
+  <section id="keys" class="section">
+    <div class="section-head">
+      <p class="eyebrow">Chiavi</p>
+      <h2>Nessuna necessaria</h2>
+      <p>Tutto funziona senza chiave. Due facoltative aggiungono qualcosa, salvate come secret del repository.</p>
+    </div>
+    <ul class="keys">
+      <li><span class="k"><code>IGDB_CLIENT_ID</code><code>IGDB_CLIENT_SECRET</code></span><span>IGDB, tramite un'applicazione Twitch: temi, parole chiave, voti dei giocatori e attesa.</span></li>
+      <li><span class="k"><code>STEAM_API_KEY</code></span><span>L'elenco completo delle app di Steam, oltre ai giochi che Wikidata conosce.</span></li>
+    </ul>
+  </section>
+
+  <section class="band">
+    <div>
+      <h2>Trova la tua strada, gioco per gioco</h2>
+      <p>L'esploratore legge gli stessi file: cerca un gioco, guarda cosa ne dice ogni piattaforma, trova quelli simili.</p>
+    </div>
+    <div class="band-actions">
+      <a class="button primary" href="../it/explore/">Esplora i dati</a>
+      <a class="button" href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">Su GitHub</a>
+    </div>
+  </section>
+
+</main>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-cols">
+        <div>
+          <p><img src="../assets/marks/atlas.svg" alt="" width="20" height="20"> <strong>Atlas</strong></p>
+          <p>Codice sotto GPL-3.0, dati da fonti aperte.</p>
+          <p><a href="https://boreale.dev/it/?utm_source=atlas&amp;utm_medium=footer" class="boreale" referrerpolicy="strict-origin">Un progetto Boréale</a></p>
+        </div>
+        <div>
+          <h2>Il progetto</h2>
+          <ul><li><a href="../it/explore/">Esploratore</a></li><li><a href="../it/status/">Stato</a></li><li><a href="https://github.com/JigSawFr/Atlas" referrerpolicy="strict-origin">GitHub</a></li><li><a href="https://github.com/JigSawFr/Atlas/releases" referrerpolicy="strict-origin">Release settimanali</a></li><li><a href="https://github.com/JigSawFr/Atlas/issues" referrerpolicy="strict-origin">Issue</a></li></ul>
+        </div>
+        <div>
+          <h2>Boréale</h2>
+          <ul><li><a href="https://boreale.dev/it/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Boréale</a></li><li><a href="https://guard.boreale.dev/it/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">PlayGuard</a></li><li><a href="https://shelf.boreale.dev/it/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">PlayShelf</a></li><li><a href="https://ha.boreale.dev/it/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Home Assistant</a></li><li><a href="https://aurore.boreale.dev/it/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Aurore</a></li><li><a href="https://lantern.boreale.dev/it/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Lantern</a></li><li><a href="https://boreale.dev/it/legal/?utm_source=atlas&amp;utm_medium=footer" referrerpolicy="strict-origin">Privacy e note legali</a></li></ul>
+        </div>
+        <div>
+          <h2>Sostieni il progetto</h2>
+          <ul><li><a href="https://github.com/sponsors/JigSawFr" rel="noreferrer">GitHub Sponsors</a></li><li><a href="https://ko-fi.com/jigsawfr" rel="noreferrer">Ko-fi</a></li></ul>
+        </div>
+    </div>
+    <p class="footer-fine">Nintendo Switch, Steam e i giochi citati qui sono marchi dei rispettivi proprietari. Atlas non è affiliato a loro.</p>
+  </div>
+</footer>
+</body>
+</html>
