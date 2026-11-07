@@ -90,7 +90,8 @@ def items_of(rows):
 def request(apps, country="US"):
     """GetItems' address for `apps` (at most BATCH)."""
     data = {"include_reviews": True, "include_release": True, "include_basic_info": True,
-            "include_tag_count": TAGS_KEPT}
+            "include_tag_count": TAGS_KEPT, "include_platforms": True, "include_assets": True,
+            "include_screenshots": True, "include_supported_languages": True}
     body = {"ids": [{"appid": int(a)} for a in apps],
             "context": {"language": "english", "country_code": country}, "data_request": data}
     return ITEMS.format(urllib.parse.quote(json.dumps(body, separators=(",", ":"))))

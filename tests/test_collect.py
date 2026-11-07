@@ -155,6 +155,89 @@ class SameFiles(unittest.TestCase):
         self.assertEqual(build.steam_figures(lambda n: src.get(n, {}), apps, before), asked)
 
 
+class RicherSources(unittest.TestCase):
+    """What the sheets show beyond the names and the figures (2026-11-07): where a game runs, how the
+    Steam Deck takes it, the languages, the age ratings, the capabilities, and the pictures' names (the
+    pictures themselves are not kept). Each source's answer is cut to those, and what it is not asked for stays out."""
+
+    def test_steam_item(self):
+        item = {"appid": 900001, "success": 1, "type": 0, "name": "Lantern Tale",
+                "platforms": {"windows": True, "mac": True, "steamos_linux": False, "vr_support": {}, "steam_deck_compat_category": 3,
+                              "steam_os_compat_category": 2},
+                "categories": {"supported_player_categoryids": [2, 1], "feature_categoryids": [22], "controller_categoryids": [28],
+                               "something_new": [1]},
+                "assets": {"asset_url_format": "steam/apps/900001/${FILENAME}?t=1", "header": "ab12/header.jpg",
+                           "small_capsule": "cd34/capsule_231x87.jpg", "hero_capsule": "ef56/hero_capsule.jpg"},
+                "screenshots": {"all_ages_screenshots": [{"filename": f"steam/apps/900001/ss_{i}.jpg?t=1", "ordinal": i} for i in range(9)]},
+                "supported_languages": [{"elanguage": 0, "supported": True, "full_audio": True},
+                                        {"elanguage": 2, "supported": True, "full_audio": False},
+                                        {"elanguage": 5, "supported": False}],
+                "trailers": {"highlights": [{"trailer_name": "x"}]}}
+        kept = collect.steam_item(item)
+        self.assertEqual(kept["platforms"], {"windows": True, "mac": True, "steamos_linux": False, "steam_deck_compat_category": 3})
+        self.assertEqual(kept["categories"], {"supported_player_categoryids": [2, 1], "feature_categoryids": [22], "controller_categoryids": [28]})
+        self.assertEqual(kept["assets"], {"header": "ab12/header.jpg", "small_capsule": "cd34/capsule_231x87.jpg"})
+        self.assertEqual(kept["screenshots"], [f"ss_{i}.jpg" for i in range(collect.SHOTS)])    # the first ones, by name
+        self.assertEqual(kept["languages"], [[0, 1], [2, 0]])                                    # the supported ones
+        self.assertNotIn("trailers", kept)
+        self.assertNotIn("supported_languages", kept)
+
+    def test_steam_item_without_them(self):
+        kept = collect.steam_item({"appid": 1, "success": 1, "name": "Old", "screenshots": {}, "supported_languages": []})
+        self.assertEqual(kept, {"appid": 1, "success": 1, "name": "Old"})
+
+    def test_steam_asks_for_them(self):
+        import steam
+        request = steam.request(["620"])
+        for flag in ("include_platforms", "include_assets", "include_screenshots", "include_supported_languages"):
+            self.assertIn(flag, request)
+        self.assertLess(len(steam.request([str(i) for i in range(steam.BATCH)])), 8000)    # an address the API takes
+
+    def test_gog_product(self):
+        host = collect.GOG_IMAGES
+        product = {"id": "1", "title": "Quiet Pond", "operatingSystems": ["windows", "linux"],
+                   "features": [{"name": "Single-player", "slug": "single"}, {"name": "Cloud saves", "slug": "cloud_saves"}],
+                   "ratings": [{"name": "pegiRating", "ageRating": "16"}, {"name": "esrbRating", "ageRating": 17}, {"name": "x"}],
+                   "coverHorizontal": host + "aa.png", "coverVertical": host + "bb.jpg", "logo": host + "cc.png",
+                   "screenshots": [host + f"{i}_{{formatter}}.jpg" for i in range(9)],
+                   "price": {"finalMoney": {"amount": "3.99"}}}
+        kept = collect.gog_product(product)
+        self.assertEqual(kept["operatingSystems"], ["windows", "linux"])
+        self.assertEqual(kept["features"], ["single", "cloud_saves"])
+        self.assertEqual(kept["ratings"], [["pegiRating", "16"], ["esrbRating", "17"]])
+        self.assertEqual(kept["pictures"], {"cover": "aa.png", "poster": "bb.jpg", "screenshots": [str(i) for i in range(collect.SHOTS)]})
+        self.assertNotIn("price", kept)
+        self.assertNotIn("logo", kept)
+        self.assertEqual(collect.gog_product({"id": "2", "coverHorizontal": "https://elsewhere.example.org/x.png"}), {"id": "2"})
+
+    def test_ms_product(self):
+        host = collect.MS_IMAGES
+        product = {"ProductId": "9ABC", "ProductKind": "Game",
+                   "LocalizedProperties": [{"ProductTitle": "Quiet Pond", "ProductDescription": "long text", "Images": [
+                       {"ImagePurpose": "Logo", "Uri": host + "logo"}, {"ImagePurpose": "BoxArt", "Uri": host + "box"},
+                       {"ImagePurpose": "BoxArt", "Uri": host + "box2"}, {"ImagePurpose": "Poster", "Uri": host + "poster"}] +
+                       [{"ImagePurpose": "Screenshot", "Uri": host + f"s{i}"} for i in range(9)] +
+                       [{"ImagePurpose": "Screenshot", "Uri": "https://elsewhere.example.org/x"}]}],
+                   "MarketProperties": [{"OriginalReleaseDate": "2020-01-01", "MinimumUserAge": 12,
+                                         "ContentRatings": [{"RatingSystem": "PEGI", "RatingId": "PEGI:16", "RatingDescriptors": ["PEGI:Vio"]},
+                                                            {"RatingSystem": "ESRB"}]}],
+                   "Properties": {"Categories": ["Action & adventure"], "Attributes": [
+                       {"Name": "XblOnlineCoop", "Minimum": 2, "Maximum": 8}, {"Name": "SinglePlayer", "Maximum": None},
+                       {"Name": "XblPresence", "Maximum": None}]},
+                   "DisplaySkuAvailabilities": [{"Sku": {"Properties": {"Packages": [
+                       {"PlatformDependencies": [{"PlatformName": "Windows.Xbox"}, {"PlatformName": "Windows.Desktop"}]},
+                       {"PlatformDependencies": [{"PlatformName": "Windows.Xbox"}]}]}}}]}
+        kept = collect.ms_product(product)
+        self.assertEqual(kept["MarketProperties"][0]["ContentRatings"], [{"RatingSystem": "PEGI", "RatingId": "PEGI:16"}])
+        self.assertEqual(kept["Properties"]["Attributes"], [{"Name": "XblOnlineCoop", "Maximum": 8}, {"Name": "SinglePlayer"}])
+        self.assertEqual(kept["Properties"]["Platforms"], ["Windows.Desktop", "Windows.Xbox"])
+        images = kept["LocalizedProperties"][0]["Images"]
+        self.assertEqual(images[:2], [["BoxArt", "box"], ["Poster", "poster"]])                  # one of each, no logo
+        self.assertEqual([i[1] for i in images if i[0] == "Screenshot"], [f"s{i}" for i in range(collect.SHOTS)])
+        self.assertNotIn("ProductDescription", kept["LocalizedProperties"][0])
+        self.assertEqual(collect.ms_product({"ProductId": "9X"})["Properties"], {"Categories": []})
+
+
 class NoPrices(unittest.TestCase):
     """Atlas keeps no price nor sale (2026-10-30): the stores' answers are
     kept without theirs, nothing is asked for them every day, and the one-time

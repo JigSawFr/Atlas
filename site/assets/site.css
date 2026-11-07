@@ -296,6 +296,9 @@ time.late { color: #ffb347; }
 .traits div { display: grid; grid-template-columns: minmax(7rem, 9rem) minmax(0, 1fr); gap: 8px; align-items: baseline; }
 .traits dt { display: flex; align-items: center; gap: 8px; color: var(--mist); font-size: 0.875rem; }
 .chip .ico { width: 1rem; height: 1rem; }
+.traits dd .more-chips { display: contents; }
+.traits dd .more-chips > summary { cursor: pointer; list-style: none; }
+.traits dd .more-chips > summary::-webkit-details-marker { display: none; }
 .byplat { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .byplat li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 10px 14px; border-radius: 14px; background: var(--abyss); border: 1px solid var(--night-line); }
 .byplat .out { margin-left: auto; min-width: 44px; min-height: 44px; display: inline-grid; place-items: center; }
