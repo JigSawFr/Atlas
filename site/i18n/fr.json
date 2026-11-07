@@ -131,6 +131,7 @@
   "x_writer": "Scénario",
   "x_engine": "Moteur",
   "x_links": "Liens",
+  "x_search_all": "Toutes les plateformes",
   "x_views_title": "Intérêt",
   "x_views_curve": "Lectures Wikipédia par semaine sur les {n} dernières semaines : {first} puis {last}",
   "x_save_view": "Enregistrer cette vue",
