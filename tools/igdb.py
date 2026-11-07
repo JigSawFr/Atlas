@@ -24,6 +24,7 @@ request a 500 games; each game asked again every REFRESH weeks, the others
 kept from the last run (collect.py).
 """
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -68,8 +69,29 @@ def others_query(items):
 def others_games_query(batch):
     fields = ["slug", "rating", "rating_count", "collections.name", "franchises.name", "genres.name",
               "game_modes.name", "involved_companies.company.name", "involved_companies.developer",
-              "involved_companies.publisher"]
+              "involved_companies.publisher", "cover.image_id"]
     return f"fields {','.join(fields)}; where slug = ({quoted(batch)}); limit {BATCH};"
+
+
+COVER = re.compile(r"^[a-z0-9]{6,40}$")
+
+
+def cover_of(game):
+    """The name of a game's cover on IGDB's image service (`cover.image_id`), None when it has none."""
+    cover = game.get("cover")
+    name = cover.get("image_id") if isinstance(cover, dict) else None
+    return name if isinstance(name, str) and COVER.match(name) else None
+
+
+def read_covers(records, by_slug):
+    """{title id: cover name} from IGDB's games."""
+    out = {}
+    for g in records:
+        name = cover_of(g)
+        if name:
+            for tid in by_slug.get(g.get("slug")) or []:
+                out[tid] = name
+    return out
 
 
 def read_others(records, by_slug):
@@ -100,6 +122,8 @@ def read_others(records, by_slug):
         rating, count = g.get("rating"), g.get("rating_count")
         if isinstance(rating, (int, float)) and isinstance(count, int) and count > 0:
             found["igdb_rating"] = [max(0, min(100, round(rating))), count]
+        if cover_of(g):
+            found["igdb_cover"] = cover_of(g)
         if found:
             for qid in qids:
                 out[qid] = found
@@ -129,6 +153,8 @@ def complete(games, found, kinds=tuple(OTHER_KINDS)):
                 entry[kind] = record[kind]
         if record.get("igdb_rating") and "igdb_rating" not in entry:
             entry["igdb_rating"] = record["igdb_rating"]
+        if record.get("igdb_cover") and "igdb_cover" not in entry:
+            entry["igdb_cover"] = record["igdb_cover"]
         added += len(entry) > before
     return added
 
@@ -151,7 +177,7 @@ def quoted(values):
 
 
 def games_query(batch):
-    fields = ",".join(["slug", "hypes", "rating", "rating_count"] + [f"{f}.name" for f in KINDS.values()])
+    fields = ",".join(["slug", "hypes", "rating", "rating_count", "cover.image_id"] + [f"{f}.name" for f in KINDS.values()])
     return f"fields {fields}; where slug = ({quoted(batch)}); limit {BATCH};"
 
 

@@ -271,6 +271,9 @@
       if (!found.poster && img.v) found.poster = make(e.id, img.v);
       if (!found.shots.length && img.s && img.s.length) found.shots = img.s.map((n) => make(e.id, n, true));
     }
+    // Where no store has a vertical cover, IGDB's (it has one for the consoles' games too).
+    const igdb = es.find((e) => e.igdb_cover);
+    if (!found.poster && igdb) found.poster = `https://images.igdb.com/igdb/image/upload/t_cover_big/${igdb.igdb_cover}.jpg`;
     return found;
   }
 
@@ -499,7 +502,7 @@
       return;
     }
     const entry = { p: platform, id };
-    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
+    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
     renderSheet({ name: g.name, id, qid: g.qid, wd: g.wd, platforms: [entry], traits: g.traits,
       similar: (g.similar || []).map(([o, name, s]) => [platform, o, name, s]), links: g.links }, backTo(platform));
   }
