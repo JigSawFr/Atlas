@@ -264,14 +264,20 @@
 
   // Which pictures a sheet draws: the first store that has each kind (landscape, vertical, screenshots).
   function pictures(es) {
-    const found = { shots: [] };
+    const found = { shots: [], backdrops: [] };
     for (const e of es) {
+      // Steam's wide library art and logo are at fixed names for the games that have them: a missing one just does not load.
+      if (e.p === "steam" && STORE_PICTURES.steam) {
+        found.backdrops.push(STORE_PICTURES.steam(e.id, "library_hero.jpg"));
+        if (!found.logo) found.logo = STORE_PICTURES.steam(e.id, "logo.png");
+      }
       const img = e.tech && e.tech.img, make = STORE_PICTURES[e.p];
       if (!img || !make) continue;
       if (!found.hero && img.h) found.hero = make(e.id, img.h);
       if (!found.poster && img.v) found.poster = make(e.id, img.v);
       if (!found.shots.length && img.s && img.s.length) found.shots = img.s.map((n) => make(e.id, n, true));
     }
+    if (found.hero) found.backdrops.push(found.hero);
     // Where no store has a vertical cover, IGDB's (it has one for the consoles' games too).
     const igdb = es.find((e) => e.igdb_cover);
     if (!found.poster && igdb) found.poster = `https://images.igdb.com/igdb/image/upload/t_cover_big/${igdb.igdb_cover}.jpg`;
@@ -329,6 +335,41 @@
     return section(t("x_gallery"), strip);
   }
 
+  // The wide picture behind the head of a sheet: the first of the candidates that loads, else a vertical cover
+  // blurred, else nothing (the head then draws its cover). Decorative: no alt, no request without a candidate.
+  function backdrop(origins, poster) {
+    const layer = el("div", { class: "backdrop", "aria-hidden": "true" });
+    const queue = origins.slice();
+    let blur = false;
+    const img = el("img", { alt: "", decoding: "async", referrerpolicy: "no-referrer", width: "1280", height: "430" });
+    const next = () => {
+      let origin = queue.shift();
+      if (!origin && poster && !blur) { origin = poster; blur = true; layer.classList.add("blurred"); }
+      if (!origin) { layer.remove(); return; }
+      img.src = proxied(origin, 1280, 430);
+    };
+    img.addEventListener("load", () => layer.classList.add("ready"));
+    img.addEventListener("error", next);
+    layer.append(img);
+    next();
+    return layer;
+  }
+
+  // A score out of 100 as a ring (a dasharray set by script, as the bars' widths: the CSP allows no style attribute).
+  function ring(v, label) {
+    const svg = document.createElementNS(SVG, "svg");
+    svg.setAttribute("viewBox", "0 0 36 36");
+    svg.setAttribute("aria-hidden", "true");
+    for (const cls of ["track", "arc"]) {
+      const c = document.createElementNS(SVG, "circle");
+      for (const [k, x] of [["cx", "18"], ["cy", "18"], ["r", "15.5"], ["class", cls]]) c.setAttribute(k, x);
+      if (cls === "arc") { c.setAttribute("pathLength", "100"); c.setAttribute("stroke-dasharray", `${Math.max(2, Math.min(100, v))} 100`); }
+      svg.append(c);
+    }
+    const tone = v >= 75 ? "high" : v >= 50 ? "mid" : "low";
+    return el("div", { class: `ring ${tone}`, role: "img", "aria-label": `${label}: ${v} / 100` }, svg, el("b", { text: String(v) }), el("small", { text: label }));
+  }
+
   // A sheet is drawn from one model, whether it is of a game on one platform or on several:
   //   { name, id, qid, platforms: [{ p, id, release, upcoming, popular, reviews, rating, igdb_rating, steam,
   //     gamepass, editions, edition_of }], traits, similar: [[kind, ref, name, score]], links }
@@ -342,24 +383,34 @@
     const es = m.platforms;
     const back = el("a", { class: "back", href: backHref }, `← ${t("x_back")}`);
     const shown = pictures(es);
-    const cover = shown.hero ? pictureCover(m, shown.hero, "hero") : shown.poster ? pictureCover(m, shown.poster, "poster") : drawnCover(m);
-    const head = el("header", {}, back, cover,
-      el("h2", { tabindex: "-1" }, m.name || m.id || ""),
+    const wide = shown.backdrops.length || shown.poster;
+    const cover = wide ? null : shown.hero ? pictureCover(m, shown.hero, "hero") : drawnCover(m);
+    const best = es.filter((e) => e.popular).sort((x, y) => y.popular[0] - x.popular[0])[0];
+    const critics = Math.max(0, ...es.map((e) => (e.popular ? e.popular[2] : 0)));
+    const title = el("h2", { tabindex: "-1" }, m.name || m.id || "");
+    const logo = shown.logo ? el("img", { class: "logo", src: proxied(shown.logo, 560), alt: "", decoding: "async", referrerpolicy: "no-referrer" }) : null;
+    const rings = el("div", { class: "rings" });
+    if (best) rings.append(ring(best.popular[0], t("x_score")));
+    if (critics) rings.append(ring(critics, t("x_critics")));
+    const info = el("div", { class: "info" }, logo, title,
       el("p", { class: "ids" }, ...es.map((e) => el("span", { class: "badge", text: S._names[e.p] || e.p })),
         m.name && m.id ? el("code", { text: m.id }) : null,
         m.qid ? el("a", { href: `https://www.wikidata.org/wiki/${m.qid}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: m.qid }) : null,
-        !m.name ? el("small", { text: t("x_no_name") }) : null));
+        !m.name ? el("small", { text: t("x_no_name") }) : null),
+      rings.childElementCount ? rings : null);
+    const head = el("header", { class: wide ? "masthead" : "" }, back, cover,
+      wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
+    if (logo) {
+      logo.addEventListener("load", () => head.classList.add("has-logo"));
+      logo.addEventListener("error", () => logo.remove());
+    }
+    if (wide) sheet.append(backdrop(shown.backdrops, shown.poster));
+    sheet.classList.toggle("with-backdrop", !!wide);
     sheet.append(head);
 
     const stats = el("dl", { class: "stats" });
     const stat = (label, value) => { if (value !== null && value !== undefined && value !== "") stats.append(el("div", {}, el("dt", { text: label }), el("dd", {}, value))); };
-    const best = es.filter((e) => e.popular).sort((x, y) => y.popular[0] - x.popular[0])[0];
-    if (best) {
-      stat(t("x_score"), score(best.popular[0]));
-      if (best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
-    }
-    const critics = Math.max(0, ...es.map((e) => (e.popular ? e.popular[2] : 0)));
-    if (critics) stat(t("x_critics"), `${critics} / 100`);
+    if (best && best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
     for (const e of es) {
       if (e.reviews) stat(storeName(e.p), t("x_reviews", { n: num(e.reviews[0]), p: e.reviews[1] }));
       if (e.rating) stat(storeName(e.p), t("x_reviews", { n: num(e.rating[0]), p: e.rating[1] }));
