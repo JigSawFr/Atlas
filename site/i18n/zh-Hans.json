@@ -131,6 +131,8 @@
   "x_writer": "编剧",
   "x_engine": "引擎",
   "x_links": "链接",
+  "x_about": "简介",
+  "x_wikipedia_text": "文字来自维基百科，CC BY-SA 4.0",
   "x_gallery": "截图",
   "x_screenshot": "截图 {n}",
   "x_official_site": "官方网站",

@@ -82,7 +82,8 @@ class Pacer:
 # a burst, SteamSpy answers a request a second; the others publish no limit, so a few a second.
 PACING = {"query.wikidata.org": (5.0, 1.0), "qlever.dev": (5.0, 1.0), "api.steampowered.com": (0.4, 0.0),
           "steamspy.com": (1.05, 0.0), "catalog.gog.com": (0.25, 0.0), "displaycatalog.mp.microsoft.com": (0.2, 0.0),
-          "catalog.gamepass.com": (0.2, 0.0), "api.nlib.cc": (0.25, 0.0), "wikimedia.org": (0.1, 0.0)}
+          "catalog.gamepass.com": (0.2, 0.0), "api.nlib.cc": (0.25, 0.0), "wikimedia.org": (0.1, 0.0),
+          "wikipedia.org": (0.1, 0.0)}
 PACERS = {}
 WAITED = {}            # host -> seconds waited for a refusal (429, 503…) so far in this run
 

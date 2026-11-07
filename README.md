@@ -417,7 +417,7 @@ branch: the platforms' files are then made from these, asking nothing more
 | `sources/msstore/` | `products.json` (with each product's age ratings, capabilities, platforms and the names of its box art, poster, hero art and first 6 screenshots), `gamepass.json` | Monday |
 | `sources/nlib-ctr/` | `categories.json` (the 3DS's title ids by category), `titles.json` (each base game's name, region, publisher, product code, first day; kept from run to run) | Monday |
 | `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records of the Switch's games; `others.json`, of every console's (with its keys only) | Monday |
-| `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (the Switch's and Steam's best known games' pages' views a day, 8 languages) | Monday, every day |
+| `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (the Switch's and Steam's best known games' pages' views a day, 8 languages), `extracts.json` (the first lines of the best known games' English and French pages, `{qid: {lang: text}}`, CC BY-SA 4.0: 2,500 games a Monday, most-translated first, the known ones kept; the sheet credits Wikipedia and links the page) | Monday, every day |
 
 Each file says its source, its licence or terms, the day it was
 collected (`generated`) and its `schema` (1), which moves up like a
