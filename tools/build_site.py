@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import platforms  # noqa: E402
 from common import REPORT_SCHEMA  # noqa: E402
 import site_data  # noqa: E402
+import taxonomy  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -271,6 +272,19 @@ def footer(language: str, catalog: dict, root: str) -> str:
                         about=[catalog["footer_about"]], fine=catalog["footer_trademarks"])
 
 
+def icon_sprite() -> str:
+    """The icons the explorer draws, as the <symbol>s of one sprite the page holds: one per notion
+    of the taxonomy (i-<kind letter>-<key>) and one per kind of facet (i-k-<kind>), drawn by
+    Lucide's icons (site/icons/)."""
+    def drawing(name: str) -> str:
+        text = (SITE / "icons" / f"{name}.svg").read_text(encoding="utf-8")
+        return " ".join(re.search(r"<svg[^>]*>(.*)</svg>", text, re.S).group(1).split())
+
+    symbols = [(f"i-{letter}-{key}", icon) for letter, key, icon, _ in taxonomy.CONCEPTS]
+    symbols += [(f"i-k-{kind}", icon) for kind, icon in taxonomy.KIND_ICONS.items()]
+    return "".join(f'<symbol id="{name}" viewBox="0 0 24 24">{drawing(icon)}</symbol>' for name, icon in symbols)
+
+
 def strings(catalog: dict, language: str, summary: dict) -> str:
     """The explorer's texts and settings, as JSON in the page (data, not a script)."""
     body = {k: v for k, v in catalog.items() if k.startswith("x_")}
@@ -317,6 +331,7 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
             f'          <option value="{k}">{html.escape(n)}</option>' for k, n in PLATFORMS
             if k in summary and k not in STORE_IDS) if page == "explore" else "",
         "strings": strings(catalog, language, summary) if page == "explore" else "",
+        "icons": icon_sprite() if page == "explore" else "",
     })
     values["body"] = fill(body, values)
     return ATLAS.links_out(fill(template, values))

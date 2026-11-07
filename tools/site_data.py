@@ -25,6 +25,7 @@ import os
 from bisect import bisect_left
 
 from common import SCHEMA
+from taxonomy import KINDS, clean_title, find, fold, tidy_label
 
 LIST = 200              # games a list holds
 PAGE = 5000             # games a page of the browse index holds
@@ -81,8 +82,13 @@ def reverse_links(links: dict) -> dict:
     return out
 
 
-def trait_names(game: dict, tags: dict) -> dict:
-    """A game's traits as {kind: [names]}: Wikidata's or Steam's."""
+# The kinds of traits, in the order a sheet lists them; the notions' kinds are the ones the taxonomy fills.
+TRAIT_KINDS = ("genres", "themes", "modes", "perspectives", "series", "developers", "publishers", "tags", "keywords")
+NOTIONS = ("genres", "themes", "modes", "perspectives", "tags")     # whose words the taxonomy may name
+
+
+def raw_traits(game: dict, tags: dict) -> dict:
+    """A game's traits as {kind: [names]}, as its sources wrote them: Wikidata's, IGDB's or Steam's."""
     out = {}
     for kind in ("series", "developers", "publishers", "genres", "modes", "themes", "keywords", "perspectives"):
         names = [t[1] for t in game.get(kind) or [] if isinstance(t, list) and len(t) > 1 and t[1]]
@@ -93,13 +99,50 @@ def trait_names(game: dict, tags: dict) -> dict:
     return out
 
 
+def spellings(games: dict, tags: dict) -> dict:
+    """{folded name: the spelling most games use} of the traits the taxonomy does not name
+    ("SEGA" and "Sega" are one developer)."""
+    seen = {}
+    for game in games.values():
+        if isinstance(game, dict):
+            for kind, names in raw_traits(game, tags).items():
+                for name in names:
+                    name = clean_title(name)
+                    if kind not in NOTIONS:
+                        count = seen.setdefault(fold(name), {})
+                        count[name] = count.get(name, 0) + 1
+                    elif not find(name):
+                        name = tidy_label(name)
+                        count = seen.setdefault(fold(name), {})
+                        count[name] = count.get(name, 0) + 1
+    return {f: min(c, key=lambda n: (-c[n], n)) for f, c in seen.items()}
+
+
+def trait_names(game: dict, tags: dict, spelled: dict = None) -> dict:
+    """A game's traits as {kind: [values]}: what the taxonomy names is its key under the notion's
+    kind (a Steam tag "Singleplayer" and Wikidata's "single-player video game" both give the mode
+    "single"), the rest the name in the spelling most games use."""
+    spelled = spelled or {}
+    out = {}
+    for kind, names in raw_traits(game, tags).items():
+        for name in names:
+            name = clean_title(name)
+            found = find(name) if kind in NOTIONS else None
+            if kind in NOTIONS and not found:
+                name = tidy_label(name)
+            where, value = (KINDS[found[0]], found[1]) if found else (kind, spelled.get(fold(name), name))
+            if value not in out.setdefault(where, []):
+                out[where].append(value)
+    return {k: out[k] for k in TRAIT_KINDS if out.get(k)}
+
+
 def year_of(game: dict) -> int:
     """The year of a game's release (yyyymmdd), 0 when it has none."""
     release = game.get("release")
     return release // 10000 if isinstance(release, int) and release >= 10_000_000 else 0
 
 
-def browse(best: list, games: dict, names: dict, tags: dict) -> tuple:
+def browse(best: list, games: dict, names: dict, tags: dict, spelled: dict = None) -> tuple:
     """The browse index of the named games in `best` ([(id, [score, trend, critics])],
     best first): (facets, pages), the facets as {facet: [[value, count]]} and
     each page as {"games": rows, "facets": {facet: [[value number, row gaps]]}}."""
@@ -109,7 +152,7 @@ def browse(best: list, games: dict, names: dict, tags: dict) -> tuple:
         year = 0
         if isinstance(game, dict):
             year = year_of(game)
-            traits = trait_names(game, tags)
+            traits = trait_names(game, tags, spelled)
             for kind in FACETS:
                 for value in dict.fromkeys(traits.get(kind, ())):
                     found[kind].setdefault(value, []).append(len(rows))
@@ -153,7 +196,8 @@ def names_of(files: dict) -> dict:
     for gid, game in (files["games"].get("games") or {}).items():
         if isinstance(game, dict) and game.get("name"):
             names[gid] = game["name"]
-    return names
+    cleaned = {gid: clean_title(n) for gid, n in names.items()}
+    return {gid: n for gid, n in cleaned.items() if n}
 
 
 def sharded(base: str, folder: str, entries: dict) -> int:
@@ -196,12 +240,13 @@ def build(data_dir: str, out_dir: str) -> dict:
             "generated": files["popular"].get("generated"),
             "popular": [[g, names.get(g, ""), *s] for g, s in best[:LIST]],
             "trending": [[g, names.get(g, ""), *s] for g, s in trending[:LIST]],
-            "upcoming": [[g, r[1] if len(r) > 1 else "", r[0], r[2] if len(r) > 2 else 0] for g, r in soon[:LIST]],
+            "upcoming": [[g, names.get(g, ""), r[0], r[2] if len(r) > 2 else 0] for g, r in soon[:LIST]],
         }
         write(os.path.join(base, "names.json"),
               sorted(([g, n, (scores.get(g) or [0])[0]] for g, n in names.items()), key=lambda x: (-x[2], x[1])))
 
-        facets, pages = browse(best, games, names, tags)
+        spelled = spellings(games, tags)
+        facets, pages = browse(best, games, names, tags, spelled)
         generated = files["popular"].get("generated")
         os.makedirs(os.path.join(base, "browse"), exist_ok=True)
         for n, page in enumerate(pages):
@@ -223,7 +268,7 @@ def build(data_dir: str, out_dir: str) -> dict:
                 sheet["popular"] = scores[gid]
             game = games.get(gid)
             if isinstance(game, dict):
-                traits = trait_names(game, tags)
+                traits = trait_names(game, tags, spelled)
                 if traits:
                     sheet["traits"] = traits
                 for k in ("release", "reviews", "qid", "igdb_rating"):

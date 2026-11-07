@@ -63,6 +63,25 @@
     return h % shards;
   };
   const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  // The notions the data names once for every source (genres, themes, modes, perspectives) have a
+  // name in the page's language and an icon (x_<letter>_<key>, #i-<letter>-<key>); the other
+  // values (series, studios, tags) are the sources' own words.
+  const NOTION = { genres: "g", themes: "t", modes: "m", perspectives: "p" };
+  const labelOf = (kind, value) => (NOTION[kind] && S[`x_${NOTION[kind]}_${value}`]) || value;
+  const SVG = "http://www.w3.org/2000/svg";
+  function icon(id) {
+    if (!id || !document.getElementById(id)) return null;
+    const svg = document.createElementNS(SVG, "svg");
+    svg.setAttribute("class", "ico");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    const use = document.createElementNS(SVG, "use");
+    use.setAttribute("href", `#${id}`);
+    svg.append(use);
+    return svg;
+  }
+  const iconOf = (kind, value) => icon(NOTION[kind] ? `i-${NOTION[kind]}-${value}` : null);
+  const chip = (kind, value) => el("span", { class: "chip" }, iconOf(kind, value), labelOf(kind, value));
 
   async function get(path) {
     if (cache.has(path)) return cache.get(path);
@@ -214,7 +233,7 @@
     if (g.traits) {
       const dl = el("dl", { class: "traits" });
       for (const [kind, names] of Object.entries(g.traits)) {
-        dl.append(el("div", {}, el("dt", { text: t(`x_${kind}`) }), el("dd", {}, ...names.map((n) => el("span", { class: "chip", text: n })))));
+        dl.append(el("div", {}, el("dt", {}, icon(`i-k-${kind}`), t(`x_${kind}`)), el("dd", {}, ...names.map((n) => chip(kind, n)))));
       }
       sheet.append(dl);
     }
@@ -311,8 +330,9 @@
       values.forEach(([value], i) => {
         const input = el("input", { type: "checkbox", "data-kind": kind, "data-i": String(i) });
         const n = el("small", { class: "n" });
-        const li = el("li", {}, el("label", {}, input, el("span", { text: value }), n));
-        options.push({ input, n, li, value, text: fold(value) });
+        const name = labelOf(kind, value);
+        const li = el("li", {}, el("label", {}, input, iconOf(kind, value), el("span", { class: "v", text: name }), n));
+        options.push({ input, n, li, value, text: fold(`${name} ${value}`) });
         list.append(li);
       });
       const find = el("input", { type: "search", autocomplete: "off", spellcheck: "false", placeholder: t("x_find_value"), "aria-label": `${t(`x_${kind}`)}: ${t("x_find_value")}` });
@@ -320,9 +340,10 @@
         const q = fold(find.value.trim());
         for (const o of options) o.li.hidden = !!q && !o.text.includes(q);
       });
-      const summary = el("summary", { text: t(`x_${kind}`) });
+      const title = el("span", { text: t(`x_${kind}`) });
+      const summary = el("summary", {}, icon(`i-k-${kind}`), title);
       const details = el("details", { class: "facet" }, summary, el("div", { class: "facet-body" }, find, list));
-      b.boxes.set(kind, { summary, details, options });
+      b.boxes.set(kind, { title, details, options });
       facetBox.append(details);
     }
   }
@@ -393,7 +414,7 @@
         o.li.classList.toggle("empty", !count && !checked && !partial);
         o.input.disabled = !count && !checked && !partial;
       });
-      box.summary.textContent = chosen ? `${t(`x_${kind}`)} · ${chosen}` : t(`x_${kind}`);
+      box.title.textContent = chosen ? `${t(`x_${kind}`)} · ${chosen}` : t(`x_${kind}`);
       if (chosen && !box.details.open) box.details.open = true;
     }
   }
