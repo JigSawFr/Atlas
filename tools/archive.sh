@@ -1,6 +1,7 @@
 #!/bin/bash
 # The data branch's files as they are in <data-dir>, kept as a GitHub
-# release: data-YYYY-MM-DD, tagged on the commit of main that made them, with
+# release: data-YYYY-MM-DD (data-YYYY-MM-DD-2… when a release still holds
+# the day's tag), tagged on the commit of main that made them, with
 # each file attached on its own (platforms/switch/popular.json as
 # platforms-switch-popular.json: a
 # release's files have no folders), all of them in one zip
@@ -38,9 +39,23 @@ if gh release view "$tag" >/dev/null 2>&1; then
   gh release delete "$tag" --yes --cleanup-tag
 fi
 # A draft left by a run that failed half way (the release made, not all its
-# files sent) is of no use, and `gh release view` does not see it: deleted.
+# files sent) is of no use, and `gh release view` does not see it: deleted if
+# GitHub lets us (it answered 502 on one, 2026-11-07, from the API and from
+# the web page), left alone if not.
 gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[] | select(.draft) | .id' |
-  while IFS= read -r id; do gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id"; done
+  while IFS= read -r id; do
+    gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id" >/dev/null ||
+      echo "archive: draft $id not deleted, its tag is not reused" >&2
+  done
+# A tag a release still holds is not reused (two drafts on one tag cannot be
+# told apart by `gh release upload`): data-YYYY-MM-DD-2, -3...
+base=$tag; version=1
+taken=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[].tag_name')
+while grep -qxF "$tag" <<<"$taken"; do
+  version=$((version + 1)); tag="$base-$version"
+done
+title="Data of $day"
+[ "$version" -eq 1 ] || title="$title, version $version"
 # The tag pushed by git first, the release then made on it: the first run
 # (2026-10-30) had the API refuse a release that made its own tag (403).
 git push --force origin "$GITHUB_SHA:refs/tags/$tag"
@@ -49,7 +64,7 @@ git push --force origin "$GITHUB_SHA:refs/tags/$tag"
 # (403 on 2026-11-07, the release left as a draft). One file a second, and a
 # file that gets the limit is sent again after a wait.
 gh release create "$tag" --draft --verify-tag \
-  --title "Data of $day" --notes "$notes"
+  --title "$title" --notes "$notes"
 for f in "$out"/*; do
   n=0
   until gh release upload "$tag" "$f" --clobber; do

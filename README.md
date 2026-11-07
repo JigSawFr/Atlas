@@ -370,7 +370,8 @@ and `sales` was already absent on a day without one).
 ## The archives
 
 The `data` branch keeps only the last files. Every Monday's build also keeps
-them as a [release](../../releases), `data-YYYY-MM-DD`, tagged on the commit
+them as a [release](../../releases), `data-YYYY-MM-DD` (`data-YYYY-MM-DD-2` if a
+release still holds the day's tag), tagged on the commit
 that made them: each file the branch had that day, attached on its own
 (`platforms/switch/popular.json` as `platforms-switch-popular.json`, a release's files having
 no folders),
