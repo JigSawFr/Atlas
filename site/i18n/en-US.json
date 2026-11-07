@@ -131,6 +131,8 @@
   "x_writer": "Writing",
   "x_engine": "Engine",
   "x_links": "Links",
+  "x_views_title": "Interest",
+  "x_views_curve": "Wikipedia views a week over the last {n} weeks: {first} then {last}",
   "x_save_view": "Save this view",
   "x_view_name": "Name for this view",
   "x_saved_views": "Saved views",
