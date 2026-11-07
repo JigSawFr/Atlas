@@ -8,6 +8,7 @@
 {{machine_options}}
         </select></label>
       <div class="group" role="group" aria-label="{{x_view}}" id="x-views">
+        <button type="button" data-view="browse">{{x_browse}}</button>
         <button type="button" data-view="popular">{{x_popular}}</button>
         <button type="button" data-view="trending">{{x_trending}}</button>
         <button type="button" data-view="upcoming">{{x_upcoming}}</button>
@@ -15,9 +16,28 @@
       <div class="fields">
         <label class="field search"><span>{{x_search}}</span><input id="x-search" type="search" autocomplete="off" spellcheck="false" placeholder="{{x_search_hint}}"></label>
       </div>
+      <div class="browse" id="x-browse" hidden>
+        <p class="dim">{{x_browse_note}}</p>
+        <div class="fields">
+          <label class="field"><span>{{x_sort}}</span><select id="x-sort">
+              <option value="popular">{{x_score}}</option>
+              <option value="trending">{{x_trend}}</option>
+              <option value="critics">{{x_critics}}</option>
+              <option value="year">{{x_release}}</option>
+              <option value="name">{{x_sort_name}}</option>
+            </select></label>
+        </div>
+        <div class="facets" id="x-facets" role="group" aria-label="{{x_filters}}"></div>
+        <div class="group">
+          <button type="button" id="x-clear">{{x_clear}}</button>
+          <button type="button" id="x-random">{{x_random}}</button>
+          <button type="button" id="x-loadall" hidden>{{x_load_all}}</button>
+        </div>
+      </div>
     </div>
     <p class="status" id="x-status">{{x_loading}}</p>
     <ol class="results" id="x-results"></ol>
+    <button type="button" class="more" id="x-more" hidden>{{x_more}}</button>
     <article class="sheet" id="x-sheet" hidden></article>
     <noscript><p class="status">{{x_noscript}}</p></noscript>
   </section>

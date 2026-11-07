@@ -2,6 +2,8 @@
 // under x/, read from this site, a file when a view needs it and kept for
 // the visit. The address says what is shown, so it can be shared:
 //   #<platform>/<popular|trending|upcoming>    a list
+//   #<platform>/browse?<facet>=<value>&…&sort=<key>
+//                                              the games with every value picked, a page at a time
 //   #<platform>/search/<words>                 the games whose name has them
 //   #<platform>/game/<id>                      a game's sheet
 // The texts are the page's (#x-strings, the catalog's x_ keys).
@@ -23,6 +25,8 @@
     xbox: "Xbox", gog: "GOG", epic: "Epic Games" };
   const status = $("x-status"), results = $("x-results"), sheet = $("x-sheet");
   const search = $("x-search"), machine = $("x-machine");
+  const panel = $("x-browse"), facetBox = $("x-facets"), sortBox = $("x-sort");
+  const more = $("x-more"), loadAll = $("x-loadall");
   const cache = new Map();
   let read = 0;
 
@@ -75,10 +79,11 @@
 
   // The address, read and written.
   function route() {
-    const parts = decodeURIComponent(location.hash.slice(1)).split("/");
+    const raw = location.hash.slice(1), q = raw.indexOf("?");
+    const parts = decodeURIComponent(q < 0 ? raw : raw.slice(0, q)).split("/");
     const platform = PLATFORMS.includes(parts[0]) ? parts[0] : PLATFORMS[0];
-    const view = ["popular", "trending", "upcoming", "search", "game"].includes(parts[1]) ? parts[1] : "popular";
-    return { platform, view, arg: parts.slice(2).join("/") };
+    const view = ["browse", "popular", "trending", "upcoming", "search", "game"].includes(parts[1]) ? parts[1] : "popular";
+    return { platform, view, arg: parts.slice(2).join("/"), query: new URLSearchParams(q < 0 ? "" : raw.slice(q + 1)) };
   }
   const go = (hash) => { if (location.hash !== hash) location.hash = hash; else show(); };
 
@@ -116,6 +121,7 @@
   }
 
   async function list(platform, view) {
+    leaveBrowse();
     sheet.hidden = true;
     results.hidden = false;
     pressed("x-views", "view", view);
@@ -141,6 +147,7 @@
   }
 
   async function find(platform, words) {
+    leaveBrowse();
     sheet.hidden = true;
     results.hidden = false;
     pressed("x-views", "view", "");
@@ -166,6 +173,7 @@
   }
 
   async function game(platform, id) {
+    leaveBrowse();
     results.hidden = true;
     pressed("x-views", "view", "");
     setStatus(t("x_loading"));
@@ -174,7 +182,7 @@
     const g = part[id];
     sheet.replaceChildren();
     sheet.hidden = false;
-    const back = el("a", { class: "back", href: `#${platform}/popular` }, `← ${t("x_back")}`);
+    const back = el("a", { class: "back", href: lastBrowse.startsWith(`#${platform}/browse`) ? lastBrowse : `#${platform}/popular` }, `← ${t("x_back")}`);
     if (!g) {
       sheet.append(back, el("p", { text: t("x_not_found") }));
       setStatus("");
@@ -243,12 +251,251 @@
     window.scrollTo({ top: sheet.getBoundingClientRect().top + window.scrollY - 16 });
   }
 
+  // Browsing: facets.json gives the menus, then the pages of games, best known
+  // first, a page at a time. Every filter narrows (a game must have all the
+  // values picked); the rows are filtered here, in the browser.
+  const FACETS = ["genres", "modes", "series", "developers", "publishers", "themes", "perspectives", "tags", "year"];
+  const SORTS = ["popular", "trending", "critics", "year", "name"];
+  const STEP = 50;
+  let B = null;            // what is loaded of the platform being browsed
+  let V = null;            // the games the filters keep, and how they are shown
+  let limit = STEP;        // how many of them are listed
+  let last = "";           // the filters of the last view, to start again from a first screen when they change
+  let lastBrowse = "";     // where a sheet's back link goes
+  let run = 0;
+
+  function leaveBrowse() {
+    panel.hidden = true;
+    more.hidden = true;
+  }
+
+  async function browseState(platform) {
+    if (B && B.platform === platform) return B;
+    const f = await get(`x/${platform}/facets.json`);
+    B = { platform, f, rows: [], have: {}, index: {}, boxes: new Map(), loaded: 0, chain: Promise.resolve() };
+    for (const [kind, values] of Object.entries(f.facets)) {
+      B.have[kind] = values.map(() => []);
+      B.index[kind] = new Map(values.map(([v], i) => [v, i]));
+    }
+    buildFacets(B);
+    return B;
+  }
+
+  // The next page, after the ones already in (one at a time, in order).
+  function loadPage(b) {
+    const p = b.chain.then(async () => {
+      if (b.loaded >= b.f.pages) return;
+      const page = await get(`x/${b.platform}/browse/${b.loaded}.json`);
+      const offset = b.rows.length;
+      for (const r of page.games) b.rows.push(r);
+      for (const [kind, found] of Object.entries(page.facets)) {
+        for (const [number, gaps] of found) {
+          let at = offset;
+          const into = b.have[kind][number];
+          gaps.forEach((gap, i) => { at = i ? at + gap : offset + gap; into.push(at); });
+        }
+      }
+      b.loaded += 1;
+    });
+    b.chain = p.catch(() => {});
+    return p;
+  }
+
+  function buildFacets(b) {
+    facetBox.replaceChildren();
+    for (const kind of FACETS) {
+      const values = b.f.facets[kind];
+      if (!values) continue;
+      const options = [];
+      const list = el("ul", { class: "options" });
+      values.forEach(([value], i) => {
+        const input = el("input", { type: "checkbox", "data-kind": kind, "data-i": String(i) });
+        const n = el("small", { class: "n" });
+        const li = el("li", {}, el("label", {}, input, el("span", { text: value }), n));
+        options.push({ input, n, li, value, text: fold(value) });
+        list.append(li);
+      });
+      const find = el("input", { type: "search", autocomplete: "off", spellcheck: "false", placeholder: t("x_find_value"), "aria-label": `${t(`x_${kind}`)}: ${t("x_find_value")}` });
+      find.addEventListener("input", () => {
+        const q = fold(find.value.trim());
+        for (const o of options) o.li.hidden = !!q && !o.text.includes(q);
+      });
+      const summary = el("summary", { text: t(`x_${kind}`) });
+      const details = el("details", { class: "facet" }, summary, el("div", { class: "facet-body" }, find, list));
+      b.boxes.set(kind, { summary, details, options });
+      facetBox.append(details);
+    }
+  }
+
+  // The filters in the address, as [kind, number] (and how many values the data does not know).
+  function picked(b, query) {
+    const found = new Set();
+    let unknown = 0;
+    for (const kind of FACETS) {
+      for (const value of query.getAll(kind)) {
+        const n = b.index[kind] && b.index[kind].get(value);
+        if (n === undefined) unknown += 1; else found.add(`${kind}\t${n}`);
+      }
+    }
+    return { found: [...found].map((k) => { const [kind, n] = k.split("\t"); return [kind, +n]; }), unknown };
+  }
+
+  function sorted(b, ids, how) {
+    if (how === "popular") return ids;       // the rows come best known first
+    const R = b.rows;
+    if (how === "name") {
+      const c = new Intl.Collator(LANG);
+      return ids.slice().sort((x, y) => c.compare(R[x][1], R[y][1]) || x - y);
+    }
+    const col = { trending: 3, critics: 4, year: 5 }[how];
+    return ids.slice().sort((x, y) => (R[y][col] - R[x][col]) || x - y);
+  }
+
+  // The games (rows of what is loaded) with every value picked, in the order asked.
+  function compute(b, query) {
+    const { found, unknown } = picked(b, query);
+    const how = SORTS.includes(query.get("sort")) ? query.get("sort") : "popular";
+    const n = b.rows.length, mask = new Uint8Array(n), ids = [];
+    if (!unknown) {
+      if (!found.length) mask.fill(1);
+      else {
+        const hits = new Uint8Array(n);
+        for (const [kind, number] of found) for (const i of b.have[kind][number]) hits[i] += 1;
+        for (let i = 0; i < n; i++) if (hits[i] === found.length) mask[i] = 1;
+      }
+      for (let i = 0; i < n; i++) if (mask[i]) ids.push(i);
+    }
+    return { query, how, found, unknown, mask, ids: sorted(b, ids, how) };
+  }
+
+  const hashOf = (platform, params) => {
+    const q = params.toString();
+    return `#${platform}/browse${q ? `?${q}` : ""}`;
+  };
+
+  // The menus follow the address: boxes ticked, counts of what is left, values with no game left dimmed.
+  function syncFacets(b, v) {
+    const on = new Set(v.found.map(([kind, n]) => `${kind}\t${n}`));
+    const partial = b.loaded < b.f.pages;
+    sortBox.value = v.how;
+    for (const [kind, box] of b.boxes) {
+      let chosen = 0;
+      box.options.forEach((o, i) => {
+        const checked = on.has(`${kind}\t${i}`);
+        o.input.checked = checked;
+        chosen += checked ? 1 : 0;
+        let count = b.f.facets[kind][i][1];
+        if (v.found.length) {
+          count = 0;
+          for (const r of b.have[kind][i]) count += v.mask[r];
+        }
+        o.n.textContent = v.found.length && partial ? `≥ ${num(count)}` : num(count);
+        o.li.classList.toggle("empty", !count && !checked && !partial);
+        o.input.disabled = !count && !checked && !partial;
+      });
+      box.summary.textContent = chosen ? `${t(`x_${kind}`)} · ${chosen}` : t(`x_${kind}`);
+      if (chosen && !box.details.open) box.details.open = true;
+    }
+  }
+
+  function draw(b) {
+    const { ids, found, how } = V;
+    results.replaceChildren(...ids.slice(0, limit).map((i) => {
+      const [id, name, s, tr, critics, year] = b.rows[i];
+      return row(b.platform, id, name, [score(s), trend(tr),
+        critics ? el("span", { class: "dim", text: `${t("x_critics")} ${critics}` }) : null,
+        year ? el("span", { class: "dim", text: String(year) }) : null]);
+    }));
+    bars(results);
+    syncFacets(b, V);
+    const partial = b.loaded < b.f.pages;
+    const total = found.length ? (partial ? `≥ ${num(ids.length)}` : num(ids.length)) : num(b.f.games);
+    const parts = [ids.length || !partial ? t("x_count_of", { shown: num(Math.min(limit, ids.length)), n: total }) : ""];
+    if (partial && (found.length || how !== "popular")) parts.push(t("x_browse_partial", { loaded: num(b.rows.length), total: num(b.f.games) }));
+    parts.push(t("x_loaded", { size: kb(read) }));
+    setStatus(parts.filter(Boolean).join(" · "));
+    more.hidden = !(ids.length > limit || partial);
+    loadAll.hidden = !(partial && how !== "popular");
+    if (!ids.length && !partial) setStatus(`${t("x_nothing")} · ${t("x_loaded", { size: kb(read) })}`);
+  }
+
+  // Pages are fetched while the games kept are fewer than the list wants.
+  async function fill(b, mine) {
+    while (!V.unknown && V.ids.length < limit && b.loaded < b.f.pages) {
+      setStatus(t("x_loading"));
+      await loadPage(b);
+      if (mine !== run) return false;
+      V = compute(b, V.query);
+    }
+    return true;
+  }
+
+  async function browse(platform, query) {
+    const mine = ++run;
+    sheet.hidden = true;
+    results.hidden = false;
+    panel.hidden = false;
+    pressed("x-views", "view", "browse");
+    lastBrowse = location.hash;
+    setStatus(t("x_loading"));
+    const b = await browseState(platform);
+    if (mine !== run) return;
+    if (!b.f.pages) {
+      results.replaceChildren();
+      panel.hidden = true;
+      more.hidden = true;
+      setStatus(t("x_nothing"));
+      return;
+    }
+    const key = query.toString();
+    if (key !== last) { limit = STEP; last = key; }
+    if (!b.loaded) await loadPage(b);
+    if (mine !== run) return;
+    V = compute(b, query);
+    if (!(await fill(b, mine))) return;
+    draw(b);
+  }
+
+  // The filters ticked, as the address that shows them.
+  function address() {
+    const params = new URLSearchParams();
+    for (const [kind, box] of B.boxes) for (const o of box.options) if (o.input.checked) params.append(kind, o.value);
+    if (sortBox.value !== "popular") params.set("sort", sortBox.value);
+    return hashOf(B.platform, params);
+  }
+
+  async function guarded(work) {
+    try { await work(); } catch (e) { setStatus(t("x_error")); }
+  }
+
+  facetBox.addEventListener("change", (e) => { if (B && e.target.matches("input[type=checkbox]")) go(address()); });
+  sortBox.addEventListener("change", () => { if (B) go(address()); });
+  $("x-clear").addEventListener("click", () => { if (B) go(hashOf(B.platform, new URLSearchParams())); });
+  $("x-random").addEventListener("click", () => {
+    if (B && V && V.ids.length) go(`#${B.platform}/game/${encodeURIComponent(B.rows[V.ids[Math.floor(Math.random() * V.ids.length)]][0])}`);
+  });
+  more.addEventListener("click", () => guarded(async () => {
+    const mine = ++run;
+    limit += STEP;
+    if (!(await fill(B, mine))) return;
+    draw(B);
+  }));
+  loadAll.addEventListener("click", () => guarded(async () => {
+    const mine = ++run;
+    setStatus(t("x_loading"));
+    while (B.loaded < B.f.pages) await loadPage(B);
+    if (mine !== run) return;
+    V = compute(B, V.query);
+    draw(B);
+  }));
+
   async function show() {
-    const { platform, view, arg } = route();
+    const { platform, view, arg, query } = route();
     pressed("x-platforms", "platform", platform);
     machine.value = [...machine.options].some((o) => o.value === platform) ? platform : "";
     try {
-      if (view === "game") await game(platform, arg);
+      if (view === "browse") await browse(platform, query);
+      else if (view === "game") await game(platform, arg);
       else if (view === "search") { if (search.value !== arg) search.value = arg; await find(platform, arg); }
       else await list(platform, view);
     } catch (e) {
