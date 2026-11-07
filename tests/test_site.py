@@ -76,49 +76,87 @@ class SiteData(unittest.TestCase):
         self.assertEqual(self.sheet("switch", "0100F0F0F0F0F000")["edition_of"], ["0100A1B2C3D4E000", ""])
         self.assertEqual(self.sheet("steam", "900010")["traits"]["tags"], ["Action"])
 
-    def facet(self, platform, kind):
-        """{value: [row numbers]} of a browse index, the gaps added up."""
-        out = {}
-        for value, count, gaps in self.read(f"x/{platform}/browse.json")["facets"].get(kind, []):
-            at, last = [], 0
-            for gap in gaps:
-                last += gap
-                at.append(last)
-            self.assertEqual(len(at), count)
-            out[value] = at
-        return out
+    def facets(self, platform):
+        return self.read(f"x/{platform}/facets.json")
 
-    def test_browse(self):
+    def page(self, platform, n=0):
+        return self.read(f"x/{platform}/browse/{n}.json")
+
+    def rows_of(self, platform, kind, value, n=0):
+        """The rows of page n that have a facet value, the gaps added up."""
+        number = [v for v, _ in self.facets(platform)["facets"][kind]].index(value)
+        for found, gaps in self.page(platform, n)["facets"].get(kind, []):
+            if found == number:
+                at, last = [], 0
+                for gap in gaps:
+                    last += gap
+                    at.append(last)
+                return at
+        return []
+
+    def steam_games(self):
         put(self.data, "platforms/steam/games.json", {"schema": 1, "tags": {"19": "Action", "21": "Rare"}, "games": {
             "900010": {"name": "Amber Lantern", "tags": [19, 21], "release": 20240115, "genres": [["Q1", "Puzzle"], ["Q1", "Puzzle"]],
                        "something_new": {"a": 1}},
             "900020": {"name": "Moss & Märchen", "tags": [19], "release": 20240820},
             "900030": {"name": "Old Stone", "tags": [19], "release": 19991231}}})
+
+    def test_browse(self):
+        self.steam_games()
         summary = site_data.build(self.data, self.out)
-        browse = self.read("x/steam/browse.json")
-        self.assertEqual([r[:2] for r in browse["games"]], [["900010", "Amber Lantern"], ["900020", "Moss & Märchen"], ["900030", "Old Stone"]])
-        self.assertEqual(browse["games"][0], ["900010", "Amber Lantern", 70, 5, 0, 2024])
-        self.assertEqual(self.facet("steam", "tags"), {"Action": [0, 1, 2]})        # "Rare" has one game only
-        self.assertEqual(self.facet("steam", "year"), {"2024": [0, 1]})             # newest first, 1999 has one game
-        self.assertEqual(list(self.facet("steam", "year")), ["2024"])
-        self.assertNotIn("genres", browse["facets"])                                # one game, and listed once
-        self.assertEqual(summary["steam"]["browse"], 3)
+        page = self.page("steam")
+        self.assertEqual([r[:2] for r in page["games"]], [["900010", "Amber Lantern"], ["900020", "Moss & Märchen"], ["900030", "Old Stone"]])
+        self.assertEqual(page["games"][0], ["900010", "Amber Lantern", 70, 5, 0, 2024])
+        facets = self.facets("steam")
+        self.assertEqual((facets["pages"], facets["games"]), (1, 3))
+        self.assertEqual(facets["facets"]["tags"], [["Action", 3]])               # "Rare" has one game only
+        self.assertEqual(facets["facets"]["year"], [["2024", 2]])                 # 1999 has one game
+        self.assertNotIn("genres", facets["facets"])                              # one game, and listed once
+        self.assertEqual(self.rows_of("steam", "tags", "Action"), [0, 1, 2])
+        self.assertEqual(self.rows_of("steam", "year", "2024"), [0, 1])
+        self.assertEqual((summary["steam"]["browse"], summary["steam"]["pages"]), (3, 1))
+
+    def test_browse_pages(self):
+        self.steam_games()
+        site_data.PAGE = 2
+        try:
+            site_data.build(self.data, self.out)
+        finally:
+            site_data.PAGE = 5000
+        facets = self.facets("steam")
+        self.assertEqual((facets["pages"], facets["page"], facets["games"]), (2, 2, 3))
+        self.assertEqual([len(self.page("steam", n)["games"]) for n in (0, 1)], [2, 1])
+        self.assertEqual(self.rows_of("steam", "tags", "Action", 0), [0, 1])
+        self.assertEqual(self.rows_of("steam", "tags", "Action", 1), [0])           # numbered in its page
+        self.assertEqual(self.rows_of("steam", "year", "2024", 1), [])
+        self.assertEqual(self.page("steam", 1)["games"][0][1], "Old Stone")
+        import check_site
+        from pathlib import Path
+        site = Path(self.out)
+        self.assertEqual(check_site.browse_errors(site / "x" / "steam", site), [])
 
     def test_browse_without_traits(self):
-        browse = self.read("x/switch/browse.json")
-        self.assertEqual(browse["facets"], {})
-        self.assertEqual(browse["games"], [])          # no Switch game of the sample has a name
+        self.assertEqual(self.facets("switch")["facets"], {})
+        self.assertEqual((self.facets("switch")["pages"], self.facets("switch")["games"]), (0, 0))   # no Switch game of the sample has a name
+        self.assertEqual(os.listdir(os.path.join(self.out, "x", "switch", "browse")), [])
 
     def test_browse_check(self):
         import check_site
         from pathlib import Path
+        self.steam_games()
+        site_data.build(self.data, self.out)
         site = Path(self.out)
-        self.assertEqual(check_site.browse_errors(site / "x" / "steam" / "browse.json", site), [])
-        broken = self.read("x/steam/browse.json")
-        broken["facets"] = {"tags": [["Action", 2, [1, 9]]]}
-        put(self.out, "x/steam/browse.json", broken)
-        self.assertEqual(len(check_site.browse_errors(site / "x" / "steam" / "browse.json", site)), 1)
-        self.assertEqual(len(check_site.browse_errors(site / "x" / "gog" / "browse.json", site)), 1)
+        folder = site / "x" / "steam"
+        self.assertEqual(check_site.browse_errors(folder, site), [])
+        page = self.page("steam")
+        page["facets"]["tags"] = [[0, [1, 9]], [7, [0]]]
+        put(self.out, "x/steam/browse/0.json", page)
+        errors = check_site.browse_errors(folder, site)
+        self.assertEqual(len([e for e in errors if "points at nothing" in e]), 2)
+        self.assertTrue(any("adds up" in e for e in errors))
+        os.remove(folder / "browse" / "0.json")
+        self.assertTrue(any("0.json" in e for e in check_site.browse_errors(folder, site)))
+        self.assertEqual(len(check_site.browse_errors(site / "x" / "gog", site)), 1)
 
     def test_no_prices(self):
         # A prices/ folder or a history/ left on the data branch (until the one-time cleanup) is not read.
@@ -130,7 +168,7 @@ class SiteData(unittest.TestCase):
         self.assertNotIn("countries", lists)
         self.assertNotIn("history_shards", lists)
         self.assertNotIn("prices", self.sheet("switch", "0100A1B2C3D4E000"))
-        self.assertEqual(sorted(os.listdir(os.path.join(self.out, "x", "switch"))), ["browse.json", "g", "lists.json", "names.json"])
+        self.assertEqual(sorted(os.listdir(os.path.join(self.out, "x", "switch"))), ["browse", "facets.json", "g", "lists.json", "names.json"])
 
     def test_names(self):
         names = self.read("x/steam/names.json")
