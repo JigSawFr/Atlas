@@ -438,6 +438,26 @@ left as it was), and skips the fields it does not know.
 | [Nlib API](https://api.nlib.cc/ctr/) (3DS, no key; asked as `Atlas/1.0 (+https://atlas.boreale.dev)`, two requests at a time) | The 3DS's titles: names, regions, publishers, product codes, first days on the eShop; their updates', add-ons' and demos' title ids | as published there (no terms stated) |
 | [IGDB](https://www.igdb.com/) (only with its keys) | Themes, keywords, player perspectives, popularity and hype of the Switch's games, the consoles' missing traits and every game's players' rating, for the games Wikidata links to it ([P5794](https://www.wikidata.org/wiki/Property:P5794)) | [IGDB's API terms](https://api-docs.igdb.com/#about); data from IGDB.com |
 
+## Manners with the services
+
+Every request goes through `common.fetch`, which keeps a service's requests apart and does what the service
+asks when it refuses (`PACING` in `tools/common.py`; the workflows share one concurrency group, so a build and
+a daily run never ask at the same time):
+
+| Host | Between two requests | Why |
+|---|---|---|
+| `query.wikidata.org`, `qlever.dev` | 5 s, and as long as the last answer took | Wikidata's query service allows about a minute of compute for each minute, one query at a time: a 20-second query is followed by 20 seconds of quiet |
+| `api.steampowered.com` | 0.4 s | the store API refuses a burst; the terms allow 100 000 calls a day, a run asks some 200 |
+| `steamspy.com` | 1.05 s | a request a second |
+| `catalog.gog.com`, `displaycatalog.mp.microsoft.com`, `catalog.gamepass.com`, `api.nlib.cc` | 0.2 to 0.25 s | no limit published: a few a second, a few at a time |
+| `wikimedia.org` (pageviews) | 0.1 s | far below its limit |
+
+IGDB keeps its own pace (4 requests a second, its limit). A **429** waits what `Retry-After` says, a minute
+at least, and is raised at once when it would be longer than half an hour; a **502, 503 or 504** waits what it
+says, or 5, 10, 20 seconds with some jitter. All the waits for one host in a run stop at 45 minutes: past
+that its refusals are raised, and the caller keeps the last run's file (see below), so a service that will not
+answer cannot hold the run. The requests say who asks (`Atlas/1.0 (https://github.com/JigSawFr/Atlas)`).
+
 ## When a source fails
 
 A file that comes out with fewer than 70 % of the games (or, for a source's

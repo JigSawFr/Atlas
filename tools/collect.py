@@ -100,15 +100,11 @@ def collect_wikidata(what, out_dir, previous_dir, fresh, today, report):
             best = trends.top(common.previous_file(previous_dir, f"platforms/{platform}/popular.json"))
             rows = []
             for i in range(0, len(best), trends.BATCH):
-                if i:
-                    time.sleep(5)
                 rows += common.sparql(trends.pages_query(best[i:i + trends.BATCH], prop))
             return rows
         asked = [(f"{platform}-pages", lambda platform=platform, prop=prop: pages(platform, prop))
                  for platform, prop, _ in trends.PLATFORMS]
-    for i, (name, ask) in enumerate(asked):
-        if i:
-            time.sleep(5)   # Wikidata's service may allow one query a minute: spaced
+    for name, ask in asked:       # the queries are spaced by common.PACING (Wikidata's own manners)
         try:
             rows = common.rows_of(ask())
         except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as e:
