@@ -5,109 +5,206 @@ video game", the Microsoft Store "Role-playing (RPG)", Steam's players' tags
 "RPG" and IGDB's "Role-playing (RPG)" again. The explorer shows one notion for
 all of them, with its icon and its name in the page's language:
 
-- CONCEPTS: the notions (genre, theme, mode, perspective), each with its icon
+- CONCEPTS: the notions (genre, theme, mode, perspective, and the ones the stores' players' tags
+  say: visual style, mood, gameplay, content, access), each with its icon
   (Lucide's, site/icons/) and the words the sources use for it;
 - find(): the notion a source's word stands for, whatever the kind it came in
   (Steam's "Singleplayer" tag is a mode, IGDB's "Action" theme a genre);
 - clean_title(): a game's name without the trademark signs, the stray spaces
   and the other noise the stores put around it.
 
-The names shown are the site's catalogs' (x_g_<key>, x_t_<key>, x_m_<key>,
-x_p_<key>: genres, themes, modes, perspectives). Python's standard library only.
+The names shown are the site's catalogs' (x_<letter>_<key>: g genres, t themes, m modes, p perspectives,
+y styles, o moods, h gameplay, c content, a access). Python's standard library only.
 """
 import re
 import unicodedata
 
 # Letter of a notion's catalog keys and the kind its games are filed under.
-KINDS = {"g": "genres", "t": "themes", "m": "modes", "p": "perspectives"}
+KINDS = {"g": "genres", "t": "themes", "m": "modes", "p": "perspectives", "y": "styles", "o": "moods",
+         "h": "gameplay", "c": "content", "a": "access"}
 # The icon of each kind of facet, for the menus (the notions have their own).
 KIND_ICONS = {"genres": "shapes", "themes": "palette", "modes": "users-round", "perspectives": "scan-eye",
-              "series": "library", "developers": "building-2", "publishers": "megaphone", "tags": "tag",
-              "year": "calendar"}
+              "styles": "paintbrush", "moods": "smile", "gameplay": "joystick", "content": "triangle-alert",
+              "access": "ticket", "series": "library", "developers": "building-2", "publishers": "megaphone",
+              "tags": "tag", "year": "calendar"}
+# A genre inside others: filtering by the larger one takes the smaller's games too (the facets, not the sheets).
+PARENTS = {"platformer": ("action",), "shooter": ("action",), "shmup": ("action",), "fighting": ("action",),
+           "beat_em_up": ("action",), "stealth": ("action",), "action_rpg": ("action", "rpg"), "jrpg": ("rpg",),
+           "action_adventure": ("action", "adventure"), "metroidvania": ("action", "adventure"),
+           "point_click": ("adventure",), "visual_novel": ("adventure",), "walking_sim": ("adventure",),
+           "turn_based": ("strategy",), "real_time": ("strategy",), "tactics": ("strategy", "rpg"),
+           "tower_defense": ("strategy",), "moba": ("strategy",), "management": ("simulation",),
+           "life_sim": ("simulation",)}
 
 # (kind letter, key, Lucide icon, the words sources use, folded by fold()).
 CONCEPTS = [
-    ("g", "action", "zap", "action|action game|action video game"),
-    ("g", "adventure", "compass", "adventure|adventure video game|adventure game|graphic adventure game"),
-    ("g", "action_adventure", "footprints", "action adventure|action adventure game|walking simulator"),
-    ("g", "rpg", "scroll-text", "rpg|role playing|role playing rpg|role playing video game|role playing game|jrpg"
-     "|japanese role playing video game|turn based japanese role playing game|turn based role playing game"
-     "|tactical role playing game|strategy rpg|party based rpg|dungeon crawl|dungeon crawler|massively multiplayer online role playing game"),
-    ("g", "action_rpg", "wand-sparkles", "action role playing game|action rpg|soulslike"),
-    ("g", "strategy", "chess-knight", "strategy|strategy video game|strategy game|tactical|tactics|4x|4x explore expand exploit and exterminate"
-     "|grand strategy|wargame|computer wargame|tower defense|tower defence|god game|multi player online battle arena|moba"),
-    ("g", "turn_based", "hourglass", "turn based|turn based strategy|turn based strategy video game|turn based strategy tbs"
-     "|turn based tactics|turn based combat"),
-    ("g", "real_time", "timer", "real time|real time strategy|real time strategy rts|rts|real time tactics"),
-    ("g", "simulation", "cog", "simulation|simulation video game|simulator|life simulation game|life sim|vehicle simulation game"
-     "|virtual life|social simulation game|flight simulation video game|combat flight simulator game"
-     "|space flight simulation game|biological simulation video game|automobile sim|farming simulator"),
-    ("g", "management", "briefcase", "management|managerial|economic|economy|business|business simulation game"
-     "|construction and management simulation|city building game|city builder|resource management|time management"),
-    ("g", "sports", "trophy", "sports|sport|sports video game|association football video game|association football management game"
-     "|basketball video game|baseball video game|american football video game|tennis video game|golf video game"
-     "|ice hockey video game|boxing video game|professional wrestling video game|skateboarding video game"
-     "|athletics video game|bowling video game|fitness video game|cricket video game|snowboarding video game"),
-    ("g", "racing", "car", "racing|racing video game|racing flying|sim racing|kart racing game|rally|driving|mascot racer"
-     "|vehicular combat game|naval|off road"),
-    ("g", "fighting", "hand-fist", "fighting|fighting game|2d fighting game|3d fighting game|combat"),
-    ("g", "beat_em_up", "sword", "beat em up|side scrolling beat em up|hack and slash|hack and slash beat em up"
-     "|character action video game|crowd combat video game"),
-    ("g", "shooter", "crosshair", "shooter|shooter game|first person shooter|fps|third person shooter|tactical shooter"
-     "|hero shooter|light gun shooter|rail shooter|run and gun|multidirectional shooter|looter shooter"),
-    ("g", "shmup", "rocket", "shoot em up|shmup|bullet hell|scrolling shooter|vertically scrolling shooter"
-     "|horizontally scrolling shooter|fixed shooter"),
-    ("g", "platformer", "mountain", "platformer|platform|platform game|2d platform game|3d platform game|puzzle platformer"
-     "|isometric platformer|collect a thon platformer"),
-    ("g", "puzzle", "puzzle", "puzzle|puzzle video game|puzzle trivia|falling block puzzle game|logic|nonogram video game"
-     "|maze video game|breakout clone|hidden object|hidden object game|tile matching video game"),
-    ("g", "horror", "ghost", "horror|horror video game|survival horror|psychological horror|psychological horror fiction"),
-    ("g", "survival", "tent", "survival|survival game"),
-    ("g", "stealth", "eye-off", "stealth|stealth game"),
-    ("g", "roguelike", "dices", "roguelike|roguelite|action roguelike"),
-    ("g", "metroidvania", "map", "metroidvania|metroidbrainia|soulsvania"),
-    ("g", "visual_novel", "book-open", "visual novel|interactive fiction|dating sim|otome game|eroge|bishojo game|romance adventure game"
-     "|choose your own adventure|text adventure|interactive film|narrative|harem"),
-    ("g", "music", "music", "music|music video game|rhythm game|rhythm|dance video game|karaoke video game"),
-    ("g", "party", "party-popper", "party|party video game|party game|mini games|minigame"),
-    ("g", "arcade", "gamepad-2", "arcade|pinball|pinball video game|pinball machine game|traditional video game|classics|classic"),
-    ("g", "card_board", "layers", "card board|card board game|card game|board game|board video game|card video game"
-     "|collectible card video game|card battle video game|deckbuilding|chess video game|mahjong video game"),
-    ("g", "point_click", "mouse-pointer-click", "point and click|point and click adventure"),
-    ("g", "casual", "coffee", "casual|casual game"),
-    ("g", "family", "baby", "family kids|family friendly|kids|children|family"),
-    ("g", "educational", "graduation-cap", "educational|educational video game|education"),
-    ("g", "sandbox", "box", "sandbox|sandbox game"),
-    ("g", "open_world", "tree-pine", "open world"),
-    ("t", "fantasy", "castle", "fantasy|fantasy video game|dark fantasy|dark fantasy video game|magic|medieval"),
-    ("t", "scifi", "orbit", "science fiction|science fiction video game|sci fi|space|space opera video game|cyberpunk"
-     "|cyberpunk video game|mecha video game"),
-    ("t", "comedy", "laugh", "comedy|funny|humor"),
-    ("t", "mystery", "search", "mystery|detective|detective mystery|mystery video game|espionage|neo noir video game"),
-    ("t", "historical", "landmark", "historical|historical video game|history|modern"),
-    ("t", "warfare", "flag", "warfare|war|military"),
-    ("t", "romance", "heart", "romance|romance video game"),
-    ("t", "mature", "flame", "erotic|erotic video game|sexual content|nudity|hentai"),
-    ("t", "post_apocalyptic", "skull", "post apocalyptic|post apocalyptic video game|zombies|zombie apocalyptic video game"),
-    ("m", "single", "user", "single player|singleplayer|single player video game"),
-    ("m", "multiplayer", "users", "multiplayer|multiplayer video game|multi player|massively multiplayer online game"
-     "|bot multiplayer|asymmetrical multiplayer"),
-    ("m", "coop", "handshake", "co operative|co op|co op mode|coop|cooperative|online co op"),
-    ("m", "local", "monitor-smartphone", "split screen|shared splitscreen multiplayer|local multiplayer|local co op|hotseat"
-     "|two player video game|shared screen"),
-    ("m", "online", "wifi", "online|multiplayer online game|online multiplayer"),
-    ("m", "mmo", "globe", "massively multiplayer online mmo|massively multiplayer|mmo"),
-    ("m", "pvp", "swords", "pvp|player versus player"),
-    ("m", "battle_royale", "target", "battle royale|battle royale game"),
-    ("p", "first", "eye", "first person|fpp|first person view"),
-    ("p", "third", "person-standing", "third person|tpp|third person view"),
-    ("p", "side", "move-horizontal", "side view|side scroller|side scrolling video game"),
-    ("p", "isometric", "box", "bird view isometric|isometric|top down|top down view"),
-    ("p", "text", "type", "text|text based"),
-    ("p", "vr", "glasses", "virtual reality|vr"),
-    ("p", "auditory", "ear", "auditory"),
+    ("g", "action", "zap", 'action|action game|action video game'),
+    ("g", "adventure", "compass", 'adventure|adventure video game|adventure game|graphic adventure game'),
+    ("g", "action_adventure", "binoculars", 'action adventure|action adventure game'
+     '|immersive sim'),
+    ("g", "rpg", "scroll-text", 'rpg|role playing|role playing rpg|role playing video game|role playing game'
+     '|turn based role playing game|dungeon crawl|dungeon crawler'
+     '|massively multiplayer online role playing game|crpg|mmorpg|creature collector'),
+    ("g", "action_rpg", "wand-sparkles", 'action role playing game|action rpg|soulslike|souls like'),
+    ("g", "strategy", "chess-knight", 'strategy|strategy video game|strategy game|4x|4x explore expand exploit and exterminate'
+     '|grand strategy|wargame|computer wargame|god game'),
+    ("g", "turn_based", "hourglass", 'turn based|turn based strategy|turn based strategy video game|turn based strategy tbs'
+     '|turn based combat'),
+    ("g", "real_time", "timer", 'real time|real time strategy|real time strategy rts|rts'
+     '|action rts'),
+    ("g", "simulation", "cog", 'simulation|simulation video game|simulator|vehicle simulation game'
+     '|flight simulation video game|combat flight simulator game|space flight simulation game'
+     '|biological simulation video game|automobile sim|hunting video game|fishing video game'
+     '|submarine simulator|ship simulation game|train simulator|tank simulation game|space sim'
+     '|trains|flight|photography game'
+     '|fishing'),
+    ("g", "management", "briefcase", 'management|managerial|economic|economy|business|business simulation game'
+     '|construction and management simulation|city building game|city builder|resource management'
+     '|time management|colony sim|base building|automation|trading|capitalism|inventory management'
+     '|political sim|government simulation game'
+     '|building'),
+    ("g", "sports", "trophy", 'sports|sport|sports video game|association football video game'
+     '|association football management game|basketball video game|baseball video game'
+     '|american football video game|tennis video game|golf video game|ice hockey video game'
+     '|boxing video game|professional wrestling video game|skateboarding video game'
+     '|athletics video game|bowling video game|fitness video game|cricket video game'
+     '|snowboarding video game|soccer|pool|snooker|winter sports|extreme sports|handball'
+     '|miniature golf|olympic|esports'
+     '|football soccer'),
+    ("g", "racing", "car", 'racing|racing video game|racing flying|sim racing|kart racing game|rally|driving'
+     '|mascot racer|vehicular combat game|naval|off road|combat racing|arcade racing game'
+     '|horse racing'
+     '|vehicular combat'),
+    ("g", "fighting", "hand-fist", 'fighting|fighting game|2d fighting game|3d fighting game|combat|2d fighter|3d fighter'
+     '|spectacle fighter|platform fighter|arena fighter|martial arts|swordplay'),
+    ("g", "beat_em_up", "sword", 'beat em up|side scrolling beat em up|hack and slash|hack and slash beat em up'
+     '|character action video game|crowd combat video game'
+     '|character action'),
+    ("g", "shooter", "crosshair", 'shooter|shooter game|first person shooter|fps|third person shooter|tactical shooter'
+     '|hero shooter|light gun shooter|rail shooter|run and gun|multidirectional shooter'
+     '|looter shooter|twin stick shooter|top down shooter|arena shooter|boomer shooter'
+     '|horde shooter|tube shooter'),
+    ("g", "shmup", "rocket", 'shoot em up|shmup|bullet hell|scrolling shooter|vertically scrolling shooter'
+     '|horizontally scrolling shooter|fixed shooter'
+     '|bullet heaven'),
+    ("g", "platformer", "mountain", 'platformer|platform|platform game|2d platform game|3d platform game|puzzle platformer'
+     '|isometric platformer|collect a thon platformer|2d platformer|3d platformer'
+     '|precision platformer|collectathon|cinematic platformer|runner|endless runner game|parkour'),
+    ("g", "puzzle", "puzzle", 'puzzle|puzzle video game|puzzle trivia|falling block puzzle game|logic|nonogram video game'
+     '|maze video game|breakout clone|hidden object|hidden object game|tile matching video game'
+     '|word game|word|sudoku|match 3|escape room|casino game'
+     '|sokoban|solitaire'),
+    ("g", "horror", "ghost", 'horror|horror video game|survival horror|psychological horror|psychological horror fiction'
+     '|lovecraftian|science fiction horror'),
+    ("g", "survival", "tent", 'survival|survival game|open world survival craft'),
+    ("g", "stealth", "eye-off", 'stealth|stealth game'),
+    ("g", "roguelike", "dices", 'roguelike|roguelite|action roguelike|roguelike deckbuilder|roguelike deck building game'
+     '|mystery dungeon'),
+    ("g", "metroidvania", "map", 'metroidvania|metroidbrainia|soulsvania'),
+    ("g", "visual_novel", "book-open", 'visual novel|interactive fiction|dating sim|otome game|eroge|bishojo game'
+     '|romance adventure game|choose your own adventure|text adventure|interactive film|narrative'
+     '|harem|fmv|full motion video'
+     '|otome'),
+    ("g", "music", "music", 'music|music video game|rhythm game|rhythm|dance video game|karaoke video game'),
+    ("g", "party", "party-popper", 'party|party video game|party game|mini games|minigame'),
+    ("g", "arcade", "gamepad-2", 'arcade|pinball|pinball video game|pinball machine game|traditional video game|classics'
+     '|classic|score attack'),
+    ("g", "card_board", "layers", 'card board|card board game|card game|board game|board video game|card video game'
+     '|collectible card video game|card battle video game|deckbuilding|chess video game'
+     '|mahjong video game|card battler|trading card game|tabletop|auto battler'),
+    ("g", "point_click", "mouse-pointer-click", 'point and click|point and click adventure'),
+    ("g", "casual", "coffee", 'casual|casual game'),
+    ("g", "family", "baby", 'family kids|family friendly|kids|children|family'),
+    ("g", "educational", "graduation-cap", 'educational|educational video game|education'),
+    ("g", "sandbox", "box", 'sandbox|sandbox game'),
+    ("g", "open_world", "tree-pine", 'open world'),
+    ("t", "fantasy", "castle", 'fantasy|fantasy video game|dark fantasy|dark fantasy video game|magic|medieval|demons'),
+    ("t", "scifi", "orbit", 'science fiction|science fiction video game|sci fi|space|space opera video game|cyberpunk'
+     '|cyberpunk video game|mecha video game|aliens|robots|mechs|futuristic|time travel'),
+    ("t", "comedy", "laugh", 'comedy|funny|humor|dark humor|dark comedy|parody|memes'),
+    ("t", "mystery", "search", 'mystery|detective|detective mystery|mystery video game|espionage|neo noir video game'
+     '|investigation'),
+    ("t", "historical", "landmark", 'historical|historical video game|history|modern|alternate history'),
+    ("t", "warfare", "flag", 'warfare|war|military'),
+    ("t", "romance", "heart", 'romance|romance video game'),
+    ("t", "post_apocalyptic", "skull", 'post apocalyptic|post apocalyptic video game|zombies|zombie apocalyptic video game'),
+    ("m", "single", "user", 'single player|singleplayer|single player video game'),
+    ("m", "multiplayer", "users", 'multiplayer|multiplayer video game|multi player|massively multiplayer online game'
+     '|bot multiplayer|asymmetrical multiplayer'),
+    ("m", "coop", "handshake", 'co operative|co op|co op mode|coop|cooperative|online co op'),
+    ("m", "local", "monitor-smartphone", 'split screen|shared splitscreen multiplayer|local multiplayer|local co op|hotseat'
+     '|two player video game|shared screen|4 player local'),
+    ("m", "online", "wifi", 'online|multiplayer online game|online multiplayer'),
+    ("m", "mmo", "globe", 'massively multiplayer online mmo|massively multiplayer|mmo'),
+    ("m", "pvp", "swords", 'pvp|player versus player|competitive|team based'),
+    ("m", "battle_royale", "target", 'battle royale|battle royale game'),
+    ("p", "first", "eye", 'first person|fpp|first person view'),
+    ("p", "third", "person-standing", 'third person|tpp|third person view'),
+    ("p", "side", "move-horizontal", 'side view|side scroller|side scrolling video game'),
+    ("p", "isometric", "box", 'bird view isometric|isometric|top down|top down view'),
+    ("p", "text", "type", 'text|text based'),
+    ("p", "vr", "glasses", 'virtual reality|vr'),
+    ("p", "auditory", "ear", 'auditory'),
+    ("g", "jrpg", "sparkles", 'jrpg|japanese role playing video game|turn based japanese role playing game'),
+    ("g", "tactics", "grid-3x3", 'tactical|tactics|tactical rpg|tactical role playing game|turn based tactics'
+     '|real time tactics|hex grid|grid based movement|strategy rpg|party based rpg'),
+    ("g", "moba", "radar", 'moba|multiplayer online battle arena|multi player online battle arena'),
+    ("g", "tower_defense", "shield", 'tower defense|tower defence'),
+    ("g", "walking_sim", "footprints", 'walking simulator|walking sim'),
+    ("g", "idle", "clock", 'idle|idler|incremental|clicker'),
+    ("g", "life_sim", "sprout", 'life simulation game|life sim|virtual life|social simulation game|farming sim'
+     '|farming simulation game|farming simulator|agriculture|cooking|virtual pet'),
+    ("t", "western", "tent", 'western|wild west'),
+    ("t", "ww2", "flag", 'world war ii|world war 2|ww2'),
+    ("t", "crime", "briefcase", 'crime|noir|gangster'),
+    ("t", "mythology", "gem", 'mythology|norse|greek mythology'),
+    ("t", "pirates", "anchor", 'pirates|pirate'),
+    ("t", "steampunk", "cog", 'steampunk'),
+    ("t", "dystopian", "skull", 'dystopian'),
+    ("t", "supernatural", "ghost", 'supernatural|vampire|vampire video game|occult'),
+    ("t", "animals", "cat", 'cats|dinosaurs|dogs|animals'),
+    ("t", "nature", "tree-deciduous", 'nature|underwater'),
+    ("t", "drama", "drama", 'drama|drama anime and manga'),
+    ("t", "thriller", "triangle-alert", 'thriller|psychological|psychological thriller'),
+    ("y", "pixel_art", "grip", 'pixel graphics|pixel art|8 bit|16 bit'),
+    ("y", "flat_2d", "square", '2d|2 5d|side on'),
+    ("y", "model_3d", "cuboid", '3d'),
+    ("y", "hand_drawn", "pencil", 'hand drawn|hand painted|watercolor'),
+    ("y", "cartoon", "paintbrush", 'cartoony|cartoon|comic book|cel shaded'),
+    ("y", "anime", "sparkles", 'anime|manga'),
+    ("y", "realistic", "eye", 'realistic|photorealistic'),
+    ("y", "stylized", "wand-sparkles", 'stylized|abstract|low poly'),
+    ("y", "minimalist", "square", 'minimalist|minimalism'),
+    ("y", "colorful", "rainbow", 'colorful|colourful|psychedelic'),
+    ("y", "retro", "gamepad-2", 'retro|old school|1980s|1990s|1990 s|1980 s'),
+    ("y", "voxel", "box", 'voxel'),
+    ("o", "atmospheric", "wind", 'atmospheric|cinematic'),
+    ("o", "relaxing", "coffee", 'relaxing|chill'),
+    ("o", "cozy", "sun-snow", 'cozy|wholesome|cosy'),
+    ("o", "dark", "moon", 'dark|gloomy'),
+    ("o", "emotional", "heart", 'emotional|touching'),
+    ("o", "cute", "smile", 'cute|kawaii'),
+    ("o", "difficult", "mountain-snow", 'difficult|challenging|hard|punishing'),
+    ("o", "fast_paced", "zap", 'fast paced'),
+    ("o", "surreal", "brain-circuit", 'surreal|experimental'),
+    ("h", "story_rich", "book-open", 'story rich|lore rich|dialogue heavy|narration'),
+    ("h", "choices", "shuffle", 'choices matter|multiple endings|nonlinear'),
+    ("h", "exploration", "compass", 'exploration'),
+    ("h", "crafting", "hammer", 'crafting'),
+    ("h", "customization", "palette", 'character customization|customization'),
+    ("h", "procedural", "dices", 'procedural generation|roguelike elements'),
+    ("h", "permadeath", "skull", 'perma death|permadeath'),
+    ("h", "physics", "orbit", 'physics|destruction'),
+    ("h", "replayable", "clock", 'replay value'),
+    ("h", "moddable", "wrench", 'moddable|level editor|mod support'),
+    ("c", "mature", "flame", 'erotic|erotic video game|sexual content|nudity|hentai|mature'),
+    ("c", "violence", "triangle-alert", 'violent|violence'),
+    ("c", "gore", "droplet", 'gore|blood'),
+    ("c", "lgbtq", "rainbow", 'lgbtq|video game with lgbt character|lgbt themed video game|lgbt themed'),
+    ("a", "indie", "sprout", 'indie'),
+    ("a", "free_to_play", "ticket", 'free to play|f2p'),
+    ("a", "early_access", "flask-conical", 'early access'),
 ]
-
 
 def fold(text: str) -> str:
     """A word as the aliases are written: no accents, lower case, the apostrophes dropped
@@ -130,9 +227,40 @@ def _aliases() -> dict:
 ALIASES = _aliases()
 
 
+def with_parents(genres) -> list:
+    """The genres and the larger ones they are in (each once, in order): a platformer is also an action game."""
+    out = []
+    for g in genres:
+        for key in (g, *PARENTS.get(g, ())):
+            if key not in out:
+                out.append(key)
+    return out
+
+
 def find(value: str):
     """(kind letter, key) of the notion a source's word stands for, None when it is none of them."""
-    return ALIASES.get(fold(value))
+    word = fold(value)
+    found = ALIASES.get(word)
+    for suffix in (" video game", " game"):
+        if not found and word.endswith(suffix):
+            found = ALIASES.get(word[:-len(suffix)])      # "horse racing video game" is "horse racing"
+    return found
+
+
+# The words a company's name ends with by law, not by name.
+LEGAL = {"inc", "incorporated", "ltd", "limited", "llc", "llp", "lp", "plc", "co", "corp", "corporation", "company",
+         "gmbh", "ag", "sa", "sas", "sarl", "srl", "spa", "bv", "nv", "ab", "as", "oy", "aps", "kk", "pty", "sp", "zoo", "ou"}
+
+
+def company_key(name: str) -> str:
+    """What two spellings of a studio or a publisher share ("Nintendo Co., Ltd." and "NINTENDO" are
+    "nintendo"): the name folded, without its leading "the" and the legal words it ends with."""
+    words = fold(name).split()
+    if words[:1] == ["the"] and len(words) > 1:
+        words = words[1:]
+    while len(words) > 1 and words[-1] in LEGAL:
+        words.pop()
+    return " ".join(words)
 
 
 _MARKS = re.compile(r"[™®©℠]")
