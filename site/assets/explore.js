@@ -682,6 +682,7 @@
     }));
     bars(results);
     syncFacets(b, V);
+    renderSaved();
     const partial = b.loaded < b.f.pages;
     const total = found.length ? (partial ? `≥ ${num(ids.length)}` : num(ids.length)) : num(b.f.games);
     const parts = [ids.length || !partial ? t("x_count_of", { shown: num(Math.min(limit, ids.length)), n: total }) : ""];
@@ -744,6 +745,36 @@
 
   facetBox.addEventListener("change", (e) => { if (B && e.target.matches("input[type=checkbox]")) go(address()); });
   sortBox.addEventListener("change", () => { if (B) go(address()); });
+  // Saved views: a name for a list's filters and sort, kept in this browser only (nothing leaves it).
+  const VIEWS = "atlas-views";
+  const savedViews = () => {
+    try {
+      const list = JSON.parse(localStorage.getItem(VIEWS) || "[]");
+      return Array.isArray(list) ? list.filter((v) => v && typeof v.name === "string" && typeof v.p === "string" && typeof v.q === "string") : [];
+    } catch (e) { return []; }
+  };
+  const keepViews = (list) => { try { localStorage.setItem(VIEWS, JSON.stringify(list.slice(-50))); } catch (e) { /* no storage: nothing kept */ } };
+  function renderSaved() {
+    const box = $("x-saved"), ul = box.querySelector("ul");
+    const mine = savedViews().filter((v) => B && v.p === B.platform);
+    ul.replaceChildren(...mine.map((v) => {
+      const remove = el("button", { type: "button", class: "x", "aria-label": t("x_remove_view", { name: v.name }), text: "×" });
+      remove.addEventListener("click", () => {
+        keepViews(savedViews().filter((w) => !(w.p === v.p && w.q === v.q && w.name === v.name)));
+        renderSaved();
+      });
+      return el("li", {}, el("a", { class: "chip", href: `#${v.p}/browse${v.q ? `?${v.q}` : ""}`, text: v.name }), remove);
+    }));
+    box.hidden = !mine.length;
+  }
+  $("x-save").addEventListener("click", () => {
+    if (!B) return;
+    const name = (window.prompt(t("x_view_name")) || "").trim().slice(0, 60);
+    if (!name) return;
+    const q = address().split("?")[1] || "";
+    keepViews(savedViews().filter((v) => !(v.p === B.platform && v.name === name)).concat({ name, p: B.platform, q }));
+    renderSaved();
+  });
   $("x-clear").addEventListener("click", () => { if (B) go(hashOf(B.platform, new URLSearchParams())); });
   $("x-random").addEventListener("click", () => {
     if (B && V && V.ids.length) go(`#${B.platform}/game/${encodeURIComponent(B.rows[V.ids[Math.floor(Math.random() * V.ids.length)]][0])}`);
