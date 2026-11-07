@@ -376,6 +376,19 @@ a.chip:hover, a.chip:focus-visible { background: rgb(51 187 255 / 0.2); }
 .viewer-btn.next { right: 16px; top: 50%; translate: 0 -50%; }
 .viewer-btn.close { right: 16px; top: 16px; }
 
+/* Cards: the similar games and editions of a sheet, and the lists when asked. */
+.cardgrid { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); }
+.results.cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+a.card { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; align-content: start; gap: 6px; padding: 0 0 10px; overflow: hidden; border-radius: 14px; background: var(--night); border: 1px solid var(--night-line); color: var(--snow); text-decoration: none; transition: transform 0.15s ease, border-color 0.15s ease; }
+a.card:hover, a.card:focus-visible { border-color: var(--mist); transform: translateY(-2px); }
+a.card > .name, a.card > .meta { padding-inline: 12px; }
+a.card .cover { border: 0; border-radius: 0; width: 100%; aspect-ratio: 460 / 215; }
+.cover.tile figcaption { display: none; }
+.results.cards a.card::before { content: none; }
+.results.cards li { counter-increment: none; }
+button.layout { margin-inline-start: auto; }
+@media (prefers-reduced-motion: reduce) { a.card { transition: none; } a.card:hover, a.card:focus-visible { transform: none; } }
+
 /* Grid items keep to their column: a wide table scrolls in its box. */
 .explorer, .explorer > *, .sheet > * { min-width: 0; }
 .explorer, .sheet { grid-template-columns: minmax(0, 1fr); }

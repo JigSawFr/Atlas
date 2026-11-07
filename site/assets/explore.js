@@ -113,7 +113,7 @@
   const go = (hash) => { if (location.hash !== hash) location.hash = hash; else show(); };
 
   function pressed(group, attr, value) {
-    for (const b of document.querySelectorAll(`#${group} button`)) b.setAttribute("aria-pressed", String(b.dataset[attr] === value));
+    for (const b of document.querySelectorAll(`#${group} button:not(.layout)`)) b.setAttribute("aria-pressed", String(b.dataset[attr] === value));
   }
 
   function setStatus(text) {
@@ -125,7 +125,28 @@
       : el("span", { class: "name none" }, el("code", { text: id }), el("small", { text: t("x_no_name") }));
   }
 
+  // A tile for a game: Steam's header where the id is a Steam app's (a fixed name on the store's server, through
+  // wsrv.nl), else a cover drawn by the page. No sheet is fetched for it: a shard of sheets is some 160 kB.
+  function tile(kind, ref, name) {
+    const draw = () => drawnCover({ id: ref, name }, "tile");
+    if (kind !== "steam" || !/^\d+$/.test(ref)) return draw();
+    const img = el("img", { src: proxied(STORE_PICTURES.steam(ref, "header.jpg"), 320, 150), alt: "", loading: "lazy", decoding: "async",
+      referrerpolicy: "no-referrer", width: "320", height: "150" });
+    const figure = el("figure", { class: "cover tile" }, img);
+    img.addEventListener("error", () => figure.replaceWith(draw()));
+    return figure;
+  }
+
+  let cards = false;           // lists as cards with a picture rather than rows (kept in the browser)
+  try { cards = localStorage.getItem("atlas-cards") === "1"; } catch (e) { /* no storage: rows */ }
+
+  // A game as a card: its picture, its name, its figures.
+  function card(href, kind, ref, name, meta) {
+    return el("a", { class: "card", href }, tile(kind, ref, name), nameOf(ref, name), el("span", { class: "meta" }, ...meta));
+  }
+
   function row(platform, id, name, meta, extra) {
+    if (cards) return el("li", {}, card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, meta));
     return el("li", {}, el("a", { href: `#${platform}/game/${encodeURIComponent(id)}` },
       nameOf(id, name, platform), el("span", { class: "meta" }, ...meta), extra || null));
   }
@@ -534,17 +555,17 @@
     }
 
     if (m.similar && m.similar.length) {
-      main.append(section(t("x_similar"), el("ol", { class: "similar" }, ...m.similar.map(([kind, ref, name, s]) =>
-        el("li", {}, el("a", { href: gameHref(kind, ref) }, nameOf(ref, name)), el("span", { class: "dim", text: `${s}` }))))));
+      main.append(section(t("x_similar"), el("ul", { class: "cardgrid" }, ...m.similar.map(([kind, ref, name, s]) =>
+        el("li", {}, card(gameHref(kind, ref), kind, ref, name, [score(s)]))))));
     }
     for (const e of es) {
       if (e.edition_of) {
         const [o, name] = e.edition_of;
-        main.append(section(t("x_edition_of"), el("p", {}, el("a", { href: gameHref(e.p, o) }, nameOf(o, name)))));
+        main.append(section(t("x_edition_of"), el("ul", { class: "cardgrid" }, el("li", {}, card(gameHref(e.p, o), e.p, o, name, [])))));
       }
       if (e.editions) {
-        main.append(section(t("x_editions"), el("ul", { class: "similar" }, ...e.editions.map(([o, name]) =>
-          el("li", {}, el("a", { href: gameHref(e.p, o) }, nameOf(o, name)))))));
+        main.append(section(t("x_editions"), el("ul", { class: "cardgrid" }, ...e.editions.map(([o, name]) =>
+          el("li", {}, card(gameHref(e.p, o), e.p, o, name, []))))));
       }
     }
     const wd = m.wd || {};
@@ -916,6 +937,23 @@
       setStatus(t("x_error"));
     }
   }
+
+  const layout = document.getElementById("x-layout");
+  function syncLayout() {
+    results.classList.toggle("cards", cards);
+    layout.setAttribute("aria-pressed", String(cards));
+    layout.textContent = cards ? "☰" : "▦";
+    const label = t(cards ? "x_as_list" : "x_as_cards");
+    layout.title = label;
+    layout.setAttribute("aria-label", label);
+  }
+  layout.addEventListener("click", () => {
+    cards = !cards;
+    try { localStorage.setItem("atlas-cards", cards ? "1" : "0"); } catch (e) { /* not kept */ }
+    syncLayout();
+    show();
+  });
+  syncLayout();
 
   document.getElementById("x-platforms").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-platform]");
