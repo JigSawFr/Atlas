@@ -13,8 +13,8 @@ def src_of(files):
 class Queries(unittest.TestCase):
     def test_a_query_for_each_group(self):
         names = [n for n, _ in wdfacts.queries()]
-        self.assertEqual(names, list(wdfacts.GROUPS) + ["facts-wiki"])
-        self.assertEqual(len(names), 7)
+        self.assertEqual(names, list(wdfacts.GROUPS) + ["facts-wiki", "facts-awards"])
+        self.assertEqual(len(names), 8)
 
     def test_labels_only_where_the_value_is_an_item(self):
         with_labels = wdfacts.query(("P908",), True)
@@ -46,6 +46,11 @@ class Facts(unittest.TestCase):
                                         {"qid": "Q2", "v": "javascript:alert(1)"}, {"qid": "Q3", "v": "http://example.org/with space"},
                                         {"qid": "not a qid", "v": "https://example.org/x"}],
         "wikidata/facts-pcgw.json": [{"qid": "Q1", "v": "Amber_Lantern"}, {"qid": "Q2", "v": "bad/id"}],
+        "wikidata/facts-awards.json": [{"qid": "Q1", "p": "award", "label": "Golden Lantern Game of the Year", "v": "2021"},
+                                       {"qid": "Q1", "p": "award", "label": "Marsh Award for Best Game", "v": ""},
+                                       {"qid": "Q1", "p": "award", "label": "Golden Lantern Game of the Year", "v": "2021"},
+                                       {"qid": "Q1", "p": "award", "label": "Q12345", "v": "2020"},
+                                       {"qid": "Q1", "p": "award", "label": "Old Award for Best Game", "v": "1999"}],
         "wikidata/facts-wiki.json": [{"qid": "Q1", "p": "wiki", "lang": "fr", "v": "Lanterne_d%27ambre"},
                                      {"qid": "Q1", "p": "wiki", "lang": "en", "v": "Amber_Lantern"},
                                      {"qid": "Q1", "p": "wiki", "lang": "xx", "v": "Other"},
@@ -67,6 +72,9 @@ class Facts(unittest.TestCase):
         self.assertEqual(got["Q1"]["web"], "https://example.org/a")          # the first, in a fixed order
         self.assertEqual(got["Q1"]["pcgw"], "Amber_Lantern")
         self.assertEqual(got["Q1"]["wiki"], {"en": "Amber_Lantern", "fr": "Lanterne_d%27ambre"})   # the site's languages, a clean address
+        self.assertEqual(got["Q1"]["awards"], [["Golden Lantern Game of the Year", 2021], ["Old Award for Best Game", 1999],
+                                               ["Marsh Award for Best Game", 0]])      # newest first, a year or none, no bare item
+        self.assertIn("P166", wdfacts.awards_query())
         self.assertIn("schema:about", wdfacts.wiki_query())
         self.assertIn("facts-wiki", [n for n, _ in wdfacts.queries()])
         self.assertEqual(len(got["Q1"]["yt"]), wdfacts.VIDEOS)                # 11 characters, three at most

@@ -11,9 +11,10 @@ Each query gives {qid, p, label or v} for the games with a platform (P400):
     sources/wikidata/facts-website.json  P856 official website
     sources/wikidata/facts-pcgw.json     P6337 PCGamingWiki id
     sources/wikidata/facts-youtube.json  P1651 YouTube video id
+    sources/wikidata/facts-awards.json   P166 the awards a game won, those for the game of the year or the best game ({qid, p: "award", label, v: year})
     sources/wikidata/facts-wiki.json     the game's Wikipedia pages in the site's languages ({qid, p: "wiki", lang, v: title})
 
-facts() reduces them to {qid: {"web": url, "pcgw": id, "yt": [ids], "wiki": {lang: title}, "age": [[system, value]],
+facts() reduces them to {qid: {"web": url, "pcgw": id, "yt": [ids], "wiki": {lang: title}, "awards": [[label, year]], "age": [[system, value]],
 "team": {"director": [names], "composer": […], "writer": […]}, "engine": [names]}}, a key left out
 when there is nothing. Python's standard library only.
 """
@@ -35,6 +36,8 @@ GROUPS = {
     "facts-youtube": (("P1651",), False),
 }
 WIKIS = ("de", "en", "es", "fr", "it", "ja", "ko", "nl", "pt", "ru", "zh")     # the site's languages
+YEAR = re.compile(r"^(19|20)[0-9]{2}$")
+AWARDS_KEPT = 6
 TEAM = {"P57": "director", "P86": "composer", "P58": "writer"}
 NAMES = 3          # people kept for each role
 VIDEOS = 3
@@ -70,11 +73,31 @@ def wiki_query():
 }}"""
 
 
+AWARDS = "game of the (year|decade)|best game|best (indie|debut|new) "
+
+
+def awards_query():
+    """The query of the awards: {qid, p, label, v} of the games with a platform that won an award whose name
+    says it is the best game (AWARDS), v the year it was won (empty when Wikidata does not say). The awards are
+    chosen by their name before anything else is joined, to keep the answer small."""
+    return PREFIXES + f"""SELECT ?qid ?p ?label ?v WHERE {{
+  ?item wdt:P400 [] .
+  ?item p:P166 ?st .
+  ?st ps:P166 ?award .
+  ?award rdfs:label ?label .
+  FILTER(LANG(?label) = "en" && REGEX(?label, "{AWARDS}", "i"))
+  OPTIONAL {{ ?st pq:P585 ?when }}
+  BIND(STRAFTER(STR(?item), "/entity/") AS ?qid)
+  BIND("award" AS ?p)
+  BIND(STR(YEAR(?when)) AS ?v)
+}}"""
+
+
 def queries():
     """[(file, ask)] of the group queries, for the weekly collection."""
     out = [(name, lambda props=props, labels=labels: common.sparql(query(props, labels)))
            for name, (props, labels) in GROUPS.items()]
-    return out + [("facts-wiki", lambda: common.sparql(wiki_query()))]
+    return out + [("facts-wiki", lambda: common.sparql(wiki_query())), ("facts-awards", lambda: common.sparql(awards_query()))]
 
 
 QID = re.compile(r"^Q[0-9]+$")
@@ -139,6 +162,14 @@ def facts(src) -> dict:
         title = str(r.get("v") or "")
         if r.get("lang") in WIKIS and TITLE.match(title):
             put(r["qid"], "wiki", title, sub=r["lang"])
+    won = {}
+    for r in rows(src, "wikidata/facts-awards.json"):
+        label, year = str(r.get("label") or "").strip(), str(r.get("v") or "")
+        if label and len(label) <= 120 and not QID.match(label):
+            won.setdefault(r["qid"], set()).add((label, int(year) if YEAR.match(year) else 0))
+    for qid, found in won.items():
+        newest = sorted(found, key=lambda a: (-a[1], a[0]))[:AWARDS_KEPT]
+        out.setdefault(qid, {})["awards"] = [[label, year] for label, year in newest]
     for r in rows(src, "wikidata/facts-youtube.json"):
         if VIDEO.match(str(r.get("v") or "")):
             put(r["qid"], "yt", r["v"], many=VIDEOS)
