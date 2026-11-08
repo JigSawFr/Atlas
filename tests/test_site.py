@@ -191,6 +191,24 @@ class SiteData(unittest.TestCase):
         self.assertEqual(site_data.picture("gog", "a", {}, ("Q1", {"steam": ["7"]}), {"img": {"h": "f00.png"}}, True), "gf00.png")
         self.assertEqual(site_data.picture("gog", "a", {}, ("Q1", {"steam": ["7"]}), {"img": {"h": "f00.png"}}, False), "s7")
 
+    def test_stats(self):
+        self.steam_games()
+        put(self.data, "platforms/steam/popular.json", {"schema": 1, "generated": "2026-11-02",
+                                              "games": {"900010": [70, 5, 92], "900020": [40, -3, 86], "900030": [10, 0, 0]}})
+        site_data.build(self.data, self.out)
+        st = self.read("x/steam/stats.json")
+        self.assertEqual(st["games"], 3)
+        self.assertEqual(st["critics"], {"n": 2, "mean": 89.0, "median": 89.0, "hist": [0] * 8 + [1, 1]})
+        self.assertEqual(st["renown"]["mean"], 40.0)
+        self.assertEqual((len(st["renown"]["q"]), st["renown"]["q"][0], st["renown"]["q"][50], st["renown"]["q"][100]), (101, 10, 40, 70))
+        self.assertEqual(st["genres"][0][:3], ["action", 3, 89.0])                        # its games' critics' average
+        self.assertEqual([g[0] for g in st["best"]], ["900010"])                            # the best known quarter; unrated left out
+        self.assertEqual([g[0] for g in st["gems"]], ["900020"])                            # 85 or more, known less than most
+        self.assertEqual(st["years"][-1][:2], [2024, 2])
+        every = self.read("x/stats.json")["platforms"]
+        self.assertEqual(every[0][:4], ["steam", 3, 2, 89.0])
+        self.assertEqual((site_data.mean([]), site_data.median([3, 1, 2]), site_data.median([1, 2])), (None, 2, 1.5))
+
     def test_browse(self):
         self.steam_games()
         summary = site_data.build(self.data, self.out)
@@ -284,7 +302,7 @@ class SiteData(unittest.TestCase):
         self.assertNotIn("countries", lists)
         self.assertNotIn("history_shards", lists)
         self.assertNotIn("prices", self.sheet("switch", "0100A1B2C3D4E000"))
-        self.assertEqual(sorted(os.listdir(os.path.join(self.out, "x", "switch"))), ["browse", "facets.json", "g", "lists.json", "names.json"])
+        self.assertEqual(sorted(os.listdir(os.path.join(self.out, "x", "switch"))), ["browse", "facets.json", "g", "lists.json", "names.json", "stats.json"])
 
     def test_names(self):
         names = self.read("x/steam/names.json")

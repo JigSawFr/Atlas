@@ -6,6 +6,7 @@
 //                                              the games with every value picked, a page at a time
 //   #<platform>/search/<words>                 the games whose name has them
 //   #<platform>/game/<id>                      a game's sheet
+//   #<platform>/stats                          the platform's figures (x/<platform>/stats.json)
 // The texts are the page's (#x-strings, the catalog's x_ keys).
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -111,7 +112,7 @@
     if (parts[0] === "game" && parts[1]) return { platform: from || PLATFORMS[0], view: "ugame", arg: parts.slice(1).join("/"), query };
     const platform = PLATFORMS.includes(parts[0]) ? parts[0] : PLATFORMS[0];
     from = platform;
-    const view = ["browse", "popular", "trending", "upcoming", "search", "game"].includes(parts[1]) ? parts[1] : "popular";
+    const view = ["browse", "popular", "trending", "upcoming", "search", "game", "stats"].includes(parts[1]) ? parts[1] : "popular";
     return { platform, view, arg: parts.slice(2).join("/"), query };
   }
   const go = (hash) => { if (location.hash !== hash) location.hash = hash; else show(); };
@@ -191,8 +192,46 @@
 
   // Bars drawn without style attributes (the Content-Security-Policy): a
   // width from data-w, set by script, which the CSP allows.
+  // Set two frames after the bars are in the page, so they grow from nothing (site.css's transition; none when the
+  // visitor asks for less motion). Columns take a height (data-h) the same way.
   function bars(root) {
-    for (const i of root.querySelectorAll("i[data-w]")) i.style.width = `${Math.max(2, Math.min(100, +i.dataset.w))}%`;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      for (const i of root.querySelectorAll("i[data-w]")) i.style.width = `${Math.max(2, Math.min(100, +i.dataset.w))}%`;
+      for (const i of root.querySelectorAll("i[data-h]")) i.style.height = `${Math.max(0, Math.min(100, +i.dataset.h))}%`;
+    }));
+    stagger(root);
+  }
+
+  // The first rows of a list come in one after the other (a delay each, as a custom property the CSP allows).
+  function stagger(root) {
+    const items = root.matches && root.matches(".results") ? root.children : [];
+    for (let i = 0; i < Math.min(items.length, 40); i++) items[i].style.setProperty("--i", String(i));
+  }
+
+  const MOTION = window.matchMedia("(prefers-reduced-motion: no-preference)");
+  // A figure counts up to its value (the value at once when the visitor asks for less motion).
+  function countUp(root) {
+    for (const e of root.querySelectorAll("[data-count]")) {
+      const to = +e.dataset.count, digits = +(e.dataset.digits || 0);
+      const fmt = new Intl.NumberFormat(LANG, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+      if (!MOTION.matches) { e.textContent = fmt.format(to); continue; }
+      const start = performance.now(), span = 900;
+      const step = (now) => {
+        const k = Math.min(1, (now - start) / span), eased = 1 - Math.pow(1 - k, 3);
+        e.textContent = fmt.format(to * eased);
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+  }
+
+  // A sheet's or the figures' sections rise into view as they are scrolled to (with motion only).
+  const seen = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
+    for (const en of entries) if (en.isIntersecting) { en.target.classList.add("seen"); seen.unobserve(en.target); }
+  }, { rootMargin: "0px 0px -8% 0px" }) : null;
+  function reveal(root) {
+    if (!seen || !MOTION.matches) return;
+    for (const e of root.querySelectorAll(":scope section, :scope .cols > * > section")) { e.classList.add("reveal"); seen.observe(e); }
   }
 
   async function list(platform, view) {
@@ -563,6 +602,26 @@
     if (out.length) stat(t("x_release"), ymd(Math.min(...out)));
     else if (soon.length) stat(t("x_release"), t("x_coming", { date: ymd(Math.min(...soon)) }));
     if (stats.childElementCount) sheet.append(stats);
+    // Where the game stands on its best known platform (its stats.json, a few kB, asked after the sheet is drawn).
+    if (best) {
+      const where = el("p", { class: "insights", hidden: "" });
+      sheet.append(where);
+      get(`x/${best.p}/stats.json`).then((st) => {
+        const plat = S._names[best.p] || best.p, items = [];
+        const q = (st.renown && st.renown.q) || [];
+        if (q.length) {
+          const p = Math.round((q.filter((x) => x < best.popular[0]).length / q.length) * 100);
+          if (p >= 50) items.push(el("span", { class: "chip insight" }, t("x_rank", { p: num(p), platform: plat })));
+        }
+        const c = best.popular[2], avg = st.critics && st.critics.mean;
+        if (c && avg) {
+          const d = Math.round(c - avg);
+          if (d) items.push(el("span", { class: `chip insight ${d > 0 ? "above" : "below"}` }, t(d > 0 ? "x_vs_above" : "x_vs_below", { d: num(Math.abs(d)), platform: plat, avg: fmt1.format(avg) })));
+        }
+        where.replaceChildren(...items);
+        where.hidden = !items.length;
+      }, () => where.remove());
+    }
     for (const e of es) {
       if (e.steam && (e.steam.owners || e.steam.ccu)) {
         sheet.append(el("p", { class: "dim figures", text: t("x_steam_figures", { owners: num(e.steam.owners || 0), ccu: num(e.steam.ccu || 0) }) }));
@@ -688,6 +747,7 @@
       if (items.length) side.append(section(t("x_other_platforms"), el("ul", { class: "links" }, ...items)));
     }
     bars(sheet);
+    reveal(sheet);
     fitSide();
     setStatus(t("x_loaded", { size: kb(read) }));
     head.querySelector("h2").focus({ preventScroll: true });
@@ -703,6 +763,107 @@
   window.addEventListener("resize", () => { if (!sheet.hidden) fitSide(); });
 
   const backTo = (platform) => (lastBrowse.startsWith(`#${platform}/browse`) ? lastBrowse : `#${platform}/popular`);
+
+  // The platform's figures: stats.json, condensed at the build (tools/site_data.py `stats()`), and x/stats.json,
+  // every platform's headline figures side by side. One hue for every series (Boréale's ice): one measure a chart.
+  const statsBox = $("x-stats"), tipBox = $("x-tip");
+  const fmt1 = new Intl.NumberFormat(LANG, { maximumFractionDigits: 1 });
+
+  function figure(label, value, digits, i) {
+    if (value === null || value === undefined) return null;
+    const b = el("b", { "data-count": String(value), "data-digits": String(digits || 0), text: digits ? fmt1.format(value) : num(value) });
+    const d = el("div", { class: "fig" }, b, el("span", { text: label }));
+    d.style.setProperty("--i", String(i || 0));
+    return d;
+  }
+
+  // Columns: [label, value, tip], the tallest full height. The marks are a picture (aria-hidden); the same figures
+  // are a table under it for screen readers and for reading the numbers.
+  function columns(items, every, head) {
+    const top = Math.max(1, ...items.map((x) => x[1]));
+    const chart = el("div", { class: "colchart", "aria-hidden": "true" }, ...items.map(([label, value, tip], i) =>
+      el("div", { class: "col", "data-tip": tip }, el("span", { class: "colbar" }, el("i", { "data-h": String((value / top) * 100) })),
+        el("small", { text: i % every === 0 || i === items.length - 1 ? label : "" }))));
+    const table = el("details", { class: "as-table" }, el("summary", { text: t("x_st_table") }),
+      el("table", {}, el("thead", {}, el("tr", {}, el("th", { scope: "col", text: head }), el("th", { scope: "col", class: "num", text: t("x_st_games") }))),
+        el("tbody", {}, ...items.map(([label, value]) => el("tr", {}, el("th", { scope: "row", text: label }), el("td", { class: "num", text: num(value) }))))));
+    return [chart, table];
+  }
+
+  // Horizontal bars: [label, value, aside, href, icon], each a row of text a screen reader reads as it is.
+  // (`scale`, the value of a full bar, when several lists share one.)
+  function hbars(items, scale) {
+    const top = scale || Math.max(1, ...items.map((x) => x[1]));
+    return el("ol", { class: "hbars" }, ...items.map(([label, value, aside, href, ico]) => {
+      const inner = [el("span", { class: "hb-name" }, ico || null, el("span", { text: label })),
+        el("span", { class: "hb-bar" }, el("i", { "data-w": String((value / top) * 100) })),
+        el("span", { class: "hb-n", text: num(value) }), aside ? el("span", { class: "hb-aside", text: aside }) : el("span", { class: "hb-aside" })];
+      return el("li", {}, href ? el("a", { href }, ...inner) : el("div", {}, ...inner));
+    }));
+  }
+
+  async function statsView(platform) {
+    leaveBrowse();
+    sheet.hidden = true;
+    results.hidden = true;
+    pressed("x-views", "view", "stats");
+    setStatus(t("x_loading"));
+    const [st, every] = await Promise.all([get(`x/${platform}/stats.json`), get("x/stats.json").catch(() => null)]);
+    const avg = (v) => (v === null || v === undefined ? "" : t("x_st_avg", { n: fmt1.format(v) }));
+    const browseBy = (kind, value) => `#${platform}/browse?${new URLSearchParams([[kind, value]])}`;
+    const parts = [];
+    const share = st.games ? Math.round((st.critics.n / st.games) * 100) : 0;
+    const figs = el("div", { class: "figs" },
+      figure(t("x_st_games"), st.games, 0, 0), figure(t("x_st_mean"), st.critics.mean, 1, 1),
+      figure(`${t("x_st_rated")} (%)`, share, 0, 2), figure(t("x_score"), st.renown.mean, 1, 3));
+    parts.push(el("p", { class: "dim", text: t("x_st_note", { n: num(st.games), date: st.generated || "" }) }), figs);
+    if (st.critics.n) {
+      const bins = st.critics.hist.map((n, i) => [`${i * 10}`, n, t("x_st_tip_bin", { from: i * 10, to: i === 9 ? 100 : i * 10 + 9, n: num(n) })]);
+      parts.push(section(t("x_st_critics_dist"), ...columns(bins, 1, t("x_critics"))));
+    }
+    if (st.years.length > 2) {
+      const ys = st.years.map(([y, n, c]) => [String(y), n, `${t("x_st_tip_year", { year: y, n: num(n) })}${c ? ` · ${avg(c)}` : ""}`]);
+      parts.push(section(t("x_st_years"), ...columns(ys, 5, t("x_year"))));
+    }
+    const grid = el("div", { class: "fig-grid" });
+    if (st.genres.length) grid.append(section(t("x_st_genres"), hbars(st.genres.map(([g, n, c]) => [labelOf("genres", g), n, avg(c), browseBy("genres", g), iconOf("genres", g)]))));
+    if (st.modes && st.modes.length) grid.append(section(t("x_modes"), hbars(st.modes.map(([m, n]) => [labelOf("modes", m), n, "", browseBy("modes", m), iconOf("modes", m)]))));
+    if (st.developers.length) grid.append(section(t("x_st_developers"), hbars(st.developers.map(([d, n, c]) => [d, n, avg(c), browseBy("developers", d)]))));
+    if (st.publishers.length) grid.append(section(t("x_st_publishers"), hbars(st.publishers.map(([d, n, c]) => [d, n, avg(c), browseBy("publishers", d)]))));
+    if (grid.childElementCount) parts.push(grid);
+    const games = (list) => el("ul", { class: "cardgrid" }, ...list.map(([id, name, c, r, pic]) =>
+      el("li", {}, card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: `pct ${toneOf(c)}`, text: String(c) }), score(r)], pic))));
+    if (st.best.length) parts.push(section(t("x_st_best"), games(st.best)));
+    if (st.gems.length) parts.push(section(t("x_st_gems"), el("p", { class: "dim", text: t("x_st_gems_note") }), games(st.gems)));
+    if (every && every.platforms.length > 1) {
+      // The fifteen with the most games in view, the others behind one fold (the same scale for all).
+      const rowsOf = every.platforms.map(([p, n, , c]) => [S._names[p] || p, n, avg(c), `#${p}/stats`]);
+      const top = Math.max(1, ...rowsOf.map((r) => r[1]));
+      const rest = rowsOf.slice(15);
+      parts.push(section(t("x_st_platforms"), hbars(rowsOf.slice(0, 15), top),
+        rest.length ? el("details", { class: "as-table" }, el("summary", { text: `+${num(rest.length)}` }), hbars(rest, top)) : null));
+    }
+    statsBox.replaceChildren(...parts);
+    statsBox.hidden = false;
+    bars(statsBox);
+    countUp(statsBox);
+    reveal(statsBox);
+    setStatus(t("x_loaded", { size: kb(read) }));
+  }
+
+  // One tooltip for every chart's marks (data-tip), placed by the pointer; a mark's figures are in its table too.
+  document.addEventListener("pointerover", (e) => {
+    const m = e.target.closest && e.target.closest("[data-tip]");
+    if (!m) { tipBox.hidden = true; return; }
+    tipBox.textContent = m.dataset.tip;
+    tipBox.hidden = false;
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (tipBox.hidden) return;
+    const w = tipBox.offsetWidth, x = Math.min(window.innerWidth - w - 8, Math.max(8, e.clientX - w / 2));
+    tipBox.style.left = `${x}px`;
+    tipBox.style.top = `${Math.max(8, e.clientY - tipBox.offsetHeight - 14)}px`;
+  });
 
   // The sheet of a game on several platforms, by its Wikidata item.
   async function unified(qid) {
@@ -1057,12 +1218,15 @@
     const { platform, view, arg, query } = route();
     // On a sheet the page's own heading folds to a line: the sheet is what is read.
     document.body.classList.toggle("x-on-sheet", view === "game" || view === "ugame");
+    statsBox.hidden = view !== "stats";
+    tipBox.hidden = true;
     pressed("x-platforms", "platform", platform);
     machine.value = [...machine.options].some((o) => o.value === platform) ? platform : "";
     try {
       if (view === "browse") await browse(platform, query);
       else if (view === "ugame") await unified(arg);
       else if (view === "game") await game(platform, arg, query);
+      else if (view === "stats") await statsView(platform);
       else if (view === "searchall") { if (search.value !== arg) search.value = arg; await findAll(arg); }
       else if (view === "search") { if (search.value !== arg) search.value = arg; await find(platform, arg); }
       else await list(platform, view);
