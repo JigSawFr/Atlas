@@ -580,3 +580,40 @@ button.ring[aria-expanded="true"] small { color: var(--snow); }
 .chip.insight.above { background: rgb(0 255 204 / 0.1); border-color: rgb(0 255 204 / 0.35); }
 .chip.insight.below { background: rgb(255 200 87 / 0.08); border-color: rgb(255 200 87 / 0.35); }
 @media (prefers-reduced-motion: no-preference) { .insights:not([hidden]) { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both 0.15s; } }
+
+/* ---- A platform's tile on a sheet: a tint of its own, its short name large and faint behind it, with a computer
+   or a console drawn beside. */
+.byplat li.plat {
+  position: relative; overflow: hidden; isolation: isolate;
+  background: linear-gradient(115deg, hsl(var(--hue, 210) 55% 22% / 0.55), var(--abyss) 72%);
+}
+.plat .wm {
+  position: absolute; z-index: -1; right: -8px; bottom: -14px; display: flex; align-items: center; gap: 6px;
+  color: var(--snow); opacity: 0.08; pointer-events: none; white-space: nowrap;
+}
+.plat .wm b { font: 800 3.25rem/1 var(--display); letter-spacing: -0.04em; }
+.plat .wm .ico { width: 3.25rem; height: 3.25rem; stroke-width: 1.5; }
+.byplat li.plat:hover .wm { opacity: 0.13; }
+
+/* ---- The cards of a sheet and of the figures (alike games, editions, best rated, gems): one size each, the picture
+   filling the card under a shade, the name and the figures laid over it. */
+.cardgrid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
+.cardgrid a.card { position: relative; display: block; aspect-ratio: 3 / 2; padding: 0; isolation: isolate; box-shadow: 0 6px 18px rgb(0 0 0 / 0.35); }
+.cardgrid a.card .cover { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; aspect-ratio: auto; }
+.cardgrid a.card::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(to top, rgb(5 10 22 / 0.96) 0%, rgb(5 10 22 / 0.7) 38%, rgb(5 10 22 / 0.05) 78%);
+}
+.cardgrid a.card > .name {
+  position: absolute; inset: auto 0 32px 0; padding: 0 12px; line-height: 1.25; text-shadow: 0 1px 8px rgb(0 0 0 / 0.8);
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.cardgrid a.card > .meta { position: absolute; inset: auto 0 10px 0; padding: 0 12px; flex-wrap: nowrap; }
+.cardgrid a.card > .meta .bar { width: 56px; }
+.cardgrid a.card:hover, .cardgrid a.card:focus-visible { box-shadow: 0 14px 34px rgb(0 0 0 / 0.55), 0 0 0 1px var(--mist); }
+@media (max-width: 600px) {
+  .cardgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .cardgrid a.card { aspect-ratio: 4 / 3; }
+  .rings { gap: 8px; }
+  .ring { width: 60px; }
+}

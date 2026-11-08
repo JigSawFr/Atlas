@@ -145,6 +145,8 @@
   "x_remove_filter": "フィルター「{name}」を外す",
   "x_score_help": "ゲームの知名度（100点満点）：Wikipediaのページと閲覧数、批評家のレビュー、ストアのレビューを、最も有名なゲームと比べたもの。",
   "x_critics_help": "批評家の平均点（100点満点）。Wikidataによる。",
+  "x_players_help": "IGDBでのプレイヤー評価（100点満点、{n}件の評価から）。",
+  "x_store_help": "{store}のレビュー{n}件のうち{p}%が好評。",
   "x_stats": "統計",
   "x_st_note": "名前のある{n}本のゲームの数値。ビルドごとにファイルから算出（{date}）。",
   "x_st_games": "ゲーム",

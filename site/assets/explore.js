@@ -550,6 +550,19 @@
   const gameHref = (kind, ref) => (kind === "u" ? `#game/${encodeURIComponent(ref)}` : `#${kind}/game/${encodeURIComponent(ref)}`);
   const storeName = (p) => (p === "steam" ? "Steam" : STORE_NAMES[p] || S._names[p] || p);
 
+  // A platform's tile on a sheet: its short name large and faint behind it, with a computer or a console drawn
+  // beside, and a tint of its own (no brand's logo: the platforms' owners keep theirs).
+  const SHORT = { switch: "Switch", steam: "Steam", gog: "GOG", xbox: "Xbox", ps4: "PS4", ps5: "PS5", ps3: "PS3", ps2: "PS2", ps1: "PS1",
+    psp: "PSP", psv: "Vita", "3ds": "3DS", nds: "DS", wiiu: "Wii U", wii: "Wii", gamecube: "GameCube", n64: "N64", snes: "SNES", nes: "NES",
+    "xbox-og": "Xbox", xbox360: "360", genesis: "Mega Drive", dreamcast: "Dreamcast", saturn: "Saturn", gb: "Game Boy", gbc: "GBC", gba: "GBA" };
+  const PC = new Set(["steam", "gog", "dos", "amiga", "atarist", "c64", "msx", "zxspectrum", "amstradcpc", "apple2"]);
+  function platTile(p, link) {
+    const li = el("li", { class: "plat" }, el("span", { class: "wm", "aria-hidden": "true" },
+      icon(PC.has(p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[p] || p.toUpperCase() })), link);
+    li.style.setProperty("--hue", String(hueOf(p)));
+    return li;
+  }
+
   function renderSheet(m, backHref) {
     sheet.replaceChildren();
     sheet.hidden = false;
@@ -566,6 +579,14 @@
     const ringHelp = el("p", { class: "ring-help", "aria-live": "polite", hidden: "" });
     if (best) rings.append(ring(best.popular[0], t("x_score"), t("x_score_help"), ringHelp));
     if (critics) rings.append(ring(critics, t("x_critics"), t("x_critics_help"), ringHelp));
+    // The players' rating (IGDB, from 20 ratings) and each store's share of good reviews are rings too.
+    const voters = es.filter((e) => e.igdb_rating && e.igdb_rating[1] >= 20).sort((x, y) => y.igdb_rating[1] - x.igdb_rating[1])[0];
+    if (voters) rings.append(ring(voters.igdb_rating[0], t("x_players_rating"), t("x_players_help", { n: num(voters.igdb_rating[1]) }), ringHelp));
+    for (const e of es) {
+      for (const r of [e.reviews, e.rating]) {
+        if (r && r[0]) rings.append(ring(r[1], storeName(e.p), t("x_store_help", { p: r[1], n: num(r[0]), store: storeName(e.p) }), ringHelp));
+      }
+    }
     const info = el("div", { class: "info" }, logo, title,
       // On a sheet of several platforms each badge opens that platform's own sheet.
       el("p", { class: "ids" }, ...es.map((e) => (es.length > 1
@@ -588,15 +609,11 @@
     const stats = el("dl", { class: "stats" });
     const stat = (label, value) => { if (value !== null && value !== undefined && value !== "") stats.append(el("div", {}, el("dt", { text: label }), el("dd", {}, value))); };
     // A store's reviews: the share of good ones large, in the rings' colours, how many under it.
-    const reviewed = (label, [n, p]) => stats.append(el("div", { class: "rev" }, el("dt", { text: label }),
-      el("dd", {}, el("b", { class: `pct ${toneOf(p)}`, text: `${p} %` }), el("small", { text: t("x_review_count", { n: num(n) }) }))));
+    // (The stores' shares of good reviews and the players' rating are rings in the head; their counts here.)
     if (best && best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
     for (const e of es) {
-      if (e.reviews) reviewed(storeName(e.p), e.reviews);
-      if (e.rating) reviewed(storeName(e.p), e.rating);
+      for (const r of [e.reviews, e.rating]) if (r && r[0]) stat(storeName(e.p), t("x_review_count", { n: num(r[0]) }));
     }
-    const players = es.filter((e) => e.igdb_rating && e.igdb_rating[1] >= 20).sort((x, y) => y.igdb_rating[1] - x.igdb_rating[1])[0];
-    if (players) stat(t("x_players_rating"), `${players.igdb_rating[0]} / 100`);
     const out = es.map((e) => e.release).filter(Boolean);
     const soon = es.map((e) => e.upcoming).filter(Boolean);
     if (out.length) stat(t("x_release"), ymd(Math.min(...out)));
@@ -649,7 +666,7 @@
     if (technical) side.append(technical);
 
     if (es.length > 1) {
-      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => el("li", {}, el("a", { href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
+      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => platTile(e.p, el("a", { href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
         el("span", { class: "badge", text: S._names[e.p] || e.p }),
         e.popular ? score(e.popular[0]) : null,
         e.release ? el("span", { class: "date", text: ymd(e.release) }) : (e.upcoming ? el("span", { class: "date", text: t("x_coming", { date: ymd(e.upcoming) }) }) : null),
