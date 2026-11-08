@@ -25,7 +25,7 @@ import os
 from bisect import bisect_left
 
 from common import SCHEMA
-from taxonomy import KINDS, clean_title, company_key, find, fold, tidy_label, with_parents
+from taxonomy import KINDS, clean_title, company_key, company_merges, drop_note, split_company, find, fold, tidy_label, with_parents
 import common
 import extracts
 import tech
@@ -98,6 +98,12 @@ NOTIONS = ("genres", "themes", "modes", "perspectives", "tags")     # whose word
 COMPANIES = ("developers", "publishers")                              # whose names are one by company_key
 
 
+def tidy(kind: str, name: str) -> str:
+    """A trait's name as a sheet shows it: cleaned, and a company's without the note in brackets at its end."""
+    name = clean_title(name)
+    return clean_title(drop_note(name)) if kind in COMPANIES else name
+
+
 def same(kind: str, name: str) -> str:
     """What makes two spellings of a trait one: a company's name without its legal words, else the name folded."""
     return company_key(name) if kind in COMPANIES else fold(name)
@@ -108,6 +114,8 @@ def raw_traits(game: dict, tags: dict) -> dict:
     out = {}
     for kind in ("series", "developers", "publishers", "genres", "modes", "themes", "keywords", "perspectives"):
         names = [t[1] for t in game.get(kind) or [] if isinstance(t, list) and len(t) > 1 and t[1]]
+        if kind in COMPANIES:
+            names = [part for name in names for part in split_company(name)]      # "A / B" is two companies
         if names:
             out[kind] = names
     if game.get("tags"):
@@ -115,15 +123,14 @@ def raw_traits(game: dict, tags: dict) -> dict:
     return out
 
 
-def spellings(games: dict, tags: dict) -> dict:
-    """{folded name: the spelling most games use} of the traits the taxonomy does not name
-    ("SEGA" and "Sega" are one developer)."""
-    seen = {}
+def tally(games: dict, tags: dict, seen: dict = None) -> dict:
+    """{(is a company, same name): {spelling: games}} of the traits the taxonomy does not name, added to `seen`."""
+    seen = {} if seen is None else seen
     for game in games.values():
         if isinstance(game, dict):
             for kind, names in raw_traits(game, tags).items():
                 for name in names:
-                    name = clean_title(name)
+                    name = tidy(kind, name)
                     if kind not in NOTIONS:
                         count = seen.setdefault((kind in COMPANIES, same(kind, name)), {})
                         count[name] = count.get(name, 0) + 1
@@ -131,7 +138,23 @@ def spellings(games: dict, tags: dict) -> dict:
                         name = tidy_label(name)
                         count = seen.setdefault((False, fold(name)), {})
                         count[name] = count.get(name, 0) + 1
-    return {k: min(c, key=lambda n: (-c[n], n)) for k, c in seen.items()}
+    return seen
+
+
+def spelled_of(seen: dict) -> dict:
+    """{(is a company, same name): the spelling most games use} from tally(): "SEGA" and "Sega" are one
+    developer, and a company with descriptors added to a name the data has ("Konami Digital Entertainment")
+    is written as that name ("Konami")."""
+    spelled = {k: min(c, key=lambda n: (-c[n], n)) for k, c in seen.items()}
+    uses = {k[1]: sum(c.values()) for k, c in seen.items() if k[0]}
+    for key, base in company_merges(uses).items():
+        spelled[(True, key)] = spelled[(True, base)]
+    return spelled
+
+
+def spellings(games: dict, tags: dict) -> dict:
+    """spelled_of(tally()) for one set of games."""
+    return spelled_of(tally(games, tags))
 
 
 def trait_names(game: dict, tags: dict, spelled: dict = None) -> dict:
@@ -142,7 +165,7 @@ def trait_names(game: dict, tags: dict, spelled: dict = None) -> dict:
     out = {}
     for kind, names in raw_traits(game, tags).items():
         for name in names:
-            name = clean_title(name)
+            name = tidy(kind, name)
             found = find(name) if kind in NOTIONS else None
             if kind in NOTIONS and not found:
                 name = tidy_label(name)
@@ -307,6 +330,11 @@ def build(data_dir: str, out_dir: str) -> dict:
         if about and wdfacts.QID.match(str(qid)):
             wd.setdefault(qid, {})["about"] = about            # Wikipedia's first lines (tools/extracts.py)
     curves = trends.curves(common.reader(data_dir))  # the best known games' Wikipedia views a week
+    seen = {}      # the names of studios and publishers of every platform, so a company is written one way on all
+    for platform in plats:
+        found = read(os.path.join(data_dir, "platforms", platform, "games.json")) or {}
+        tally(found.get("games") or {}, found.get("tags") or {}, seen)
+    spelled = spelled_of(seen)
     for platform in plats:
         files = platform_files(data_dir, platform)
         scores = files["popular"].get("games") or {}
@@ -332,7 +360,6 @@ def build(data_dir: str, out_dir: str) -> dict:
         write(os.path.join(base, "names.json"),
               sorted(([g, n, (scores.get(g) or [0])[0]] for g, n in names.items()), key=lambda x: (-x[2], x[1])))
 
-        spelled = spellings(games, tags)
         facets, pages = browse(best, games, names, tags, spelled)
         generated = files["popular"].get("generated")
         os.makedirs(os.path.join(base, "browse"), exist_ok=True)

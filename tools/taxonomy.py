@@ -16,6 +16,7 @@ all of them, with its icon and its name in the page's language:
 The names shown are the site's catalogs' (x_<letter>_<key>: g genres, t themes, m modes, p perspectives,
 y styles, o moods, h gameplay, c content, a access). Python's standard library only.
 """
+import html
 import re
 import unicodedata
 
@@ -250,17 +251,186 @@ def find(value: str):
 # The words a company's name ends with by law, not by name.
 LEGAL = {"inc", "incorporated", "ltd", "limited", "llc", "llp", "lp", "plc", "co", "corp", "corporation", "company",
          "gmbh", "ag", "sa", "sas", "sarl", "srl", "spa", "bv", "nv", "ab", "as", "oy", "aps", "kk", "pty", "sp", "zoo", "ou"}
+# The same, written in the scripts that glue it to the name ("株式会社カプコン").
+LEGAL_CJK = ("株式会社", "有限会社", "合同会社", "有限公司", "股份有限公司", "(株)", "（株）")
+# The places a branch of a company is named after ("Atlus USA", "Nintendo of America"): the company's own name without them.
+REGIONS = {"usa", "america", "americas", "europe", "uk", "japan", "germany", "france", "italy", "spain", "asia", "australia", "canada"}
+# One company under the names its branches and its legal entities go by; {key: the key it shares}, curated:
+# a name is added when it is plainly the same company, not when it only starts alike ("Avalanche Software"
+# and "Avalanche Studios" are two studios, "Atari Games" an arcade maker apart from "Atari").
+COMPANY_ALIASES = {
+    "ubisoft entertainment": "ubisoft",
+    "konami digital entertainment": "konami",
+    "activision publishing": "activision",
+    "sega interactive": "sega",
+    "sega enterprises": "sega",
+    "sega games": "sega",
+    "capcom entertainment": "capcom",
+    "bandai namco entertainment": "bandai namco",
+    "bandai namco games": "bandai namco",
+    "koei tecmo games": "koei tecmo",
+    "team17 digital": "team17",
+    "team17 software": "team17",
+    "microprose software": "microprose",
+    "tinybuild games": "tinybuild",
+    "interplay entertainment": "interplay",
+    "interplay productions": "interplay",
+    "sierra entertainment": "sierra",
+    "midway games": "midway",
+    "acclaim entertainment": "acclaim",
+    "acclaim games": "acclaim",
+    "telltale games": "telltale",
+    "headup games": "headup",
+    "kalypso media digital": "kalypso media",
+    "kalypso media group": "kalypso media",
+    "ziggurat interactive": "ziggurat",
+    "eidos interactive": "eidos",
+    "infogrames studios": "infogrames",
+    "virgin interactive entertainment": "virgin interactive",
+    "warner bros interactive entertainment": "warner bros games",
+    "warner bros interactive": "warner bros games",
+    "warner bros": "warner bros games",
+    "sony computer entertainment": "sony interactive entertainment",
+    "codemasters software": "codemasters",
+    "slitherine software": "slitherine",
+    "ocean software": "ocean",
+    "lucasfilm games": "lucasfilm",
+    "mindscape international": "mindscape",
+    "jaleco entertainment": "jaleco",
+    # More names of the same company, found in the published data (2026-11):
+    "sega studios": "sega", "sega entertainment": "sega", "atari interactive": "atari",
+    "bandai namco studio": "bandai namco studios", "namco bandai games": "bandai namco",
+    "namco bandai studios": "bandai namco studios", "snk games": "snk", "thq studio": "thq",
+    "thq digital studios": "thq", "codemasters digital": "codemasters", "xbox games studios": "xbox game studios",
+    "microsoft studios": "xbox game studios", "microsoft game studios": "xbox game studios",
+    "acclaim studios": "acclaim", "infogrames entertainment": "infogrames", "2k games": "2k",
+    "gremlin": "gremlin interactive", "gremlin graphics": "gremlin graphics software",
+    "virgin games": "virgin interactive", "marvelous entertainment": "marvelous",
+    "marvelous interactive": "marvelous", "marvelous games": "marvelous",
+    "ubisoft montreal studio": "ubisoft montreal", "ubisoft paris studio": "ubisoft paris",
+    "ubisoft paris studios": "ubisoft paris", "visual concepts entertainment": "visual concepts",
+    "headup publishing": "headup", "mastertronic group": "mastertronic", "rockstar studios": "rockstar games",
+    "majesco": "majesco entertainment", "aspyr media": "aspyr", "aspyr studios": "aspyr",
+    "titus": "titus interactive", "titus software": "titus interactive", "gamersky": "gamersky games",
+    "maximum entertainment": "maximum games", "crave": "crave entertainment", "gearbox": "gearbox software",
+    "double fine": "double fine productions", "system 3 software": "system 3",
+    "qubyte game studio": "qubyte interactive", "cyanide": "cyanide studio", "cyanide studios": "cyanide studio",
+    "saber software": "saber interactive", "alawar entertainment": "alawar", "popcap": "popcap games",
+    "domark": "domark software", "empire software": "empire interactive", "empire games": "empire interactive",
+    "empire interactive entertainment": "empire interactive", "maxis software": "maxis",
+    "high voltage": "high voltage software", "zoo digital": "zoo", "zoo digital publishing": "zoo",
+    "zoo publishing": "zoo", "zoo games": "zoo", "grabthegames studios": "grabthegames",
+    "dinamic games": "dinamic software", "goblinz studio": "goblinz publishing", "goblinz": "goblinz publishing",
+    "goblinz digital": "goblinz publishing", "gamemill publishing": "gamemill entertainment",
+    "gamemill": "gamemill entertainment", "vivendi": "vivendi games", "eurocom entertainment software": "eurocom",
+    "blitz games studios": "blitz games", "toplitz": "toplitz productions", "raven studio": "raven software",
+    "big ant": "big ant studios", "apogee software": "apogee entertainment", "epic games publishing": "epic games",
+    "techland publishing": "techland", "firebird games": "firebird software", "firebird": "firebird software",
+    "deck13 interactive": "deck13", "3d realms entertainment": "3d realms", "soedesco publishing": "soedesco",
+    "armor games": "armor games studios", "tt games publishing": "tt games", "tt studios": "tt games",
+    "crytek studios": "crytek", "pid publishing": "pid games", "neversoft entertainment": "neversoft",
+    "medibang": "medibang games", "cave interactive": "cave", "five bn": "five bn games",
+    "gsc world publishing": "gsc game world", "whitethorn digital": "whitethorn games",
+    "sting entertainment": "sting", "8floor games": "8floor", "larian studios games": "larian studios",
+    "octo games studio": "octo games", "funbox": "funbox media", "funbox games": "funbox media",
+    "stardock": "stardock entertainment", "astragon": "astragon entertainment", "pm entertainment": "pm studios",
+    "pm studio": "pm studios", "eko": "eko software", "asmik ace": "asmik ace entertainment",
+    "merge publishing": "merge games", "cryo studios": "cryo interactive", "ravenscourt games": "ravenscourt",
+    "martech": "martech games", "skybound entertainment": "skybound games", "remedy games": "remedy entertainment",
+    "remedy": "remedy entertainment", "softstar": "softstar entertainment", "sammy studios": "sammy",
+    "zeppelin studio": "zeppelin games", "visceral": "visceral games", "kadokawa": "kadokawa games",
+    "electric dreams": "electric dreams software", "croteam publishing": "croteam",
+    "application systems heidelberg software": "application systems heidelberg",
+    "utv ignition entertainment": "utv ignition games", "starbyte software": "starbyte", "firaxis": "firaxis games",
+    "criterion software": "criterion games", "aldorlea": "aldorlea games", "palace game": "palace software",
+    "asobo": "asobo studio", "starbreeze entertainment": "starbreeze studios",
+    "starbreeze publishing": "starbreeze studios", "starbreeze": "starbreeze studios",
+    "chorus worldwide": "chorus worldwide games", "gray matter interactive": "gray matter",
+    "gray matter studios": "gray matter",
+}
+
+# The words a studio's or a publisher's name adds to the company's own ("Konami Digital Entertainment").
+DESCRIPTORS = {"entertainment", "games", "game", "studios", "studio", "software", "interactive", "publishing", "digital",
+               "productions", "production", "group", "media", "labs", "works", "international", "holdings",
+               "technologies", "technology", "network"}
+# Names that look like another company's with a descriptor added, and are not.
+NOT_THE_SAME = {"atari games"}          # the arcade maker, apart from Atari
+MAX_ABSORBED = 4                        # a base name that absorbs more than this many is a common word ("Phoenix")
+
+
+def company_core(key: str) -> str:
+    """A company key without the descriptors it ends with ("konami digital entertainment" is "konami")."""
+    words = key.split()
+    while len(words) > 1 and words[-1] in DESCRIPTORS:
+        words.pop()
+    return " ".join(words)
+
+
+def company_merges(uses: dict) -> dict:
+    """{key: the key of the company it adds descriptors to} from {company key: games that name it}.
+    Only a name the data has itself is a base ("Konami" is there, so "Konami Digital Entertainment" is
+    Konami; "Avalanche Software" and "Avalanche Studios" stay two when there is no "Avalanche"), and a base that
+    would take in many names, or is a descriptor, is left alone."""
+    merges = {}
+    for key in uses:
+        core = company_core(key)
+        if core != key and len(core) >= 3 and core in uses and core not in DESCRIPTORS and key not in NOT_THE_SAME:
+            merges[key] = core
+    taken = {}
+    for base in merges.values():
+        taken[base] = taken.get(base, 0) + 1
+    return {k: b for k, b in merges.items() if taken[b] <= MAX_ABSORBED}
+
+
+_SEPARATORS = re.compile(r"\s*;\s*|\s+/\s+|\s+\+\s+")
+
+
+def split_company(name: str) -> list:
+    """The companies a credit names when it lists several ("id Software / Nightdive Studios", "A; B")."""
+    return [part for part in _SEPARATORS.split(str(name)) if part.strip()]
+
+
+_NOTE = re.compile(r"\s*[(（][^()（）]*[)）]\s*$")
+
+
+def drop_note(name: str) -> str:
+    """A company's name without the note in brackets at its end ("Feral Interactive (Mac)", "Atlus (Japan)"),
+    unless nothing else is left."""
+    while True:
+        short = _NOTE.sub("", name)
+        if not short.strip() or short == name:
+            return name
+        name = short
 
 
 def company_key(name: str) -> str:
     """What two spellings of a studio or a publisher share ("Nintendo Co., Ltd." and "NINTENDO" are
-    "nintendo"): the name folded, without its leading "the" and the legal words it ends with."""
-    words = fold(name).split()
+    "nintendo", "Atlus USA" and "ATLUS" are "atlus"): the name folded (in any script, not only the
+    Latin one), without its note in brackets, its leading "the", the legal words it ends with, the
+    place of a branch, and its other names in COMPANY_ALIASES."""
+    text = unicodedata.normalize("NFKC", html.unescape(str(name)))
+    text = drop_note(text)
+    for word in LEGAL_CJK:
+        text = text.replace(word, " ")
+    text = unicodedata.normalize("NFD", text.casefold())
+    text = unicodedata.normalize("NFC", "".join(c for c in text if not "\u0300" <= c <= "\u036f"))   # accents, not kana's marks
+    text = re.sub(r"['’`]", "", text)
+    words = re.sub(r"[\W_]+", " ", text).split()
+    kept = list(words)
+
+    def strip(until):
+        while len(words) > 1 and until():
+            words.pop()
+
     if words[:1] == ["the"] and len(words) > 1:
         words = words[1:]
-    while len(words) > 1 and words[-1] in LEGAL:
-        words.pop()
-    return " ".join(words)
+    strip(lambda: words[-1] in LEGAL)
+    if len(words) > 2 and words[-2] == "of" and words[-1] in REGIONS:
+        words = words[:-2]
+    strip(lambda: words[-1] in REGIONS)
+    strip(lambda: words[-1] in LEGAL)
+    key = " ".join(words) or " ".join(kept)
+    return COMPANY_ALIASES.get(key, key)
 
 
 _MARKS = re.compile(r"[™®©℠]")
@@ -270,7 +440,7 @@ _SPACES = re.compile(r"[\s ​‌‍﻿]+")
 def clean_title(name: str) -> str:
     """A name as the games' own: the trademark signs gone, one space between words, Unicode
     in its composed form, no dash or colon left at the ends."""
-    name = unicodedata.normalize("NFC", str(name))
+    name = unicodedata.normalize("NFC", html.unescape(str(name)))
     name = _MARKS.sub("", name)
     name = _SPACES.sub(" ", name).strip()
     return name.strip(" :-–—,").strip()

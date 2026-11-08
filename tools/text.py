@@ -11,6 +11,8 @@ of who has each word.
 import math
 import re
 
+from taxonomy import company_key
+
 TERMS = 24            # a game's weightiest words kept
 MAX_SHARED = 250      # games a word may be shared by, at most, to count
 KEEP = 10             # the games kept as like each one, by its words
@@ -57,7 +59,7 @@ def terms_of(entry):
             add("category:" + c.lower(), 3)
     publisher = entry.get("publisher")
     if isinstance(publisher, str) and publisher and publisher != "None":
-        add("publisher:" + publisher.lower(), 2)
+        add("publisher:" + company_key(publisher), 2)
     return counts
 
 
