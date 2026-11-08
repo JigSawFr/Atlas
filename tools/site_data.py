@@ -25,7 +25,7 @@ import os
 from bisect import bisect_left
 
 from common import SCHEMA
-from taxonomy import KINDS, clean_title, company_key, company_merges, drop_note, split_company, find, fold, tidy_label, with_parents
+from taxonomy import KINDS, clean_title, game_title, company_key, company_merges, drop_note, split_company, find, fold, tidy_label, with_parents
 import common
 import extracts
 import tech
@@ -237,7 +237,10 @@ def unify(entries: dict, similar_of: dict) -> dict:
         if name:
             count[name] = count.get(name, 0) + 1
     if count:
-        out["name"] = max(count, key=lambda n: (count[n], -min(i for i, p in enumerate(order) if entries[p][1].get("name") == n)))
+        # Spellings that differ by case only are one name: its mixed case form wins over a shouting one.
+        def weight(n):
+            return (sum(c for m, c in count.items() if m.casefold() == n.casefold()), n != n.upper() and n != n.lower(), count[n])
+        out["name"] = max(count, key=lambda n: (weight(n), -min(i for i, p in enumerate(order) if entries[p][1].get("name") == n)))
     for p in order:
         if entries[p][1].get("wd"):
             out["wd"] = entries[p][1]["wd"]          # the game's, the same on every platform
@@ -292,7 +295,7 @@ def names_of(files: dict) -> dict:
     for gid, game in (files["games"].get("games") or {}).items():
         if isinstance(game, dict) and game.get("name"):
             names[gid] = game["name"]
-    cleaned = {gid: clean_title(n) for gid, n in names.items()}
+    cleaned = {gid: game_title(n) for gid, n in names.items()}
     return {gid: n for gid, n in cleaned.items() if n}
 
 

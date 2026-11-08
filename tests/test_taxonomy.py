@@ -163,3 +163,20 @@ class Assets(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GameTitles(unittest.TestCase):
+    def test_shouting_titles_get_their_case(self):
+        for shouted, title in (
+            ("THE WITCHER 3: WILD HUNT", "The Witcher 3: Wild Hunt"),
+            ("FINAL FANTASY XIV", "Final Fantasy XIV"),
+            ("CALL OF DUTY: MODERN WARFARE II", "Call of Duty: Modern Warfare II"),
+            ("THE LEGEND OF ZELDA™", "The Legend of Zelda"),
+            ("ASTRO'S PLAYROOM", "Astro's Playroom"),
+            ("PAC-MAN WORLD RE-PUZZLE", "Pac-Man World Re-Puzzle"),
+        ):
+            self.assertEqual(taxonomy.game_title(shouted), title)
+
+    def test_acronyms_and_mixed_case_stay(self):
+        for name in ("DOOM", "LEGO", "NBA 2K24", "Hades", "Mario Kart 8 Deluxe", "A", "X", "It Takes Two"):
+            self.assertEqual(taxonomy.game_title(name), name)

@@ -446,6 +446,38 @@ def clean_title(name: str) -> str:
     return name.strip(" :-–—,").strip()
 
 
+# Words a shouted title keeps as they are: acronyms and brands the games write in capitals.
+GAME_KEEP = frozenset({"DOOM", "LEGO", "FIFA", "UEFA", "NASCAR", "NHL", "NFL", "NBA", "MLB", "WWE", "UFC", "PGA",
+                       "GTA", "RPG", "FPS", "VR", "HD", "DX", "EX", "XL", "DLC", "FAQ", "BMX", "ATV", "SD",
+                       "PES", "TNT", "TV", "DJ", "MC", "AI", "OK", "ZX", "ARK", "RAGE", "LIMBO", "INSIDE"})
+_SMALL_WORDS = frozenset({"of", "the", "and", "a", "an", "in", "on", "to", "for", "at", "by", "vs", "or", "with"})
+_ROMAN = re.compile(r"^(?=[IVXLCDM]+$)M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})$")
+_LETTERS = re.compile(r"[^\W\d_]")
+
+
+def game_title(name: str) -> str:
+    """A game's name as clean_title leaves it, and a shouting one (two letters or more, every one a
+    capital: "THE WITCHER 3: WILD HUNT") in the case of a title ("The Witcher 3: Wild Hunt"). The
+    acronyms of GAME_KEEP, the Roman numerals and the words without a vowel ("NBA") stay as written;
+    a name with any lower case letter is never touched."""
+    name = clean_title(name)
+    letters = _LETTERS.findall(name)
+    if len(letters) < 2 or any(c != c.upper() for c in letters):
+        return name
+    out, start = [], True
+    for word in name.split(" "):
+        core = re.sub(r"[^\w]", "", word)
+        if not core or core.isdigit() or core in GAME_KEEP or _ROMAN.match(core) or not re.search(r"[AEIOUY]", core.upper()) \
+                or (re.search(r"\d", core) and core[0].isdigit() and core.upper() == core):
+            out.append(word)
+        elif not start and core.lower() in _SMALL_WORDS:
+            out.append(word.lower())
+        else:
+            out.append(re.sub(r"(?<![\w'’])[^\W\d_]+", lambda m: m.group(0).capitalize(), word.lower()))
+        start = word.endswith(":")
+    return " ".join(out)
+
+
 _VIDEO_GAME = re.compile(r"\s+video\s+game$", re.I)
 
 
