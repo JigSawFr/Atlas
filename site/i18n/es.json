@@ -180,8 +180,8 @@
   "x_gallery": "Capturas de pantalla",
   "x_screenshot": "Captura de pantalla {n}",
   "x_close": "Cerrar",
-  "x_prev": "Captura anterior",
-  "x_next": "Captura siguiente",
+  "x_prev": "Anterior en la lista",
+  "x_next": "Siguiente en la lista",
   "x_official_site": "Sitio oficial",
   "x_runs_on": "Funciona en",
   "x_deck_3": "Verificado",
@@ -379,5 +379,15 @@
   "x_sections": "Secciones de la ficha",
   "x_trait_count": "{n} juegos en {platform}",
   "x_dist_title": "Dónde se sitúa entre los juegos de {platform}",
-  "x_dist_help": "Cada barra es un tramo de popularidad; la línea marca este juego: más conocido que el {p} % de los juegos."
+  "x_dist_help": "Cada barra es un tramo de popularidad; la línea marca este juego: más conocido que el {p} % de los juegos.",
+  "x_timeline": "Fechas de lanzamiento",
+  "x_favorites": "Favoritos",
+  "x_fav_add": "Añadir a favoritos",
+  "x_fav_remove": "Quitar de favoritos",
+  "x_fav_empty": "Aún no hay favoritos. Abre un juego y pulsa el corazón.",
+  "x_fav_note": "Se guardan solo en este navegador, nunca se envían.",
+  "x_compare": "Comparar",
+  "x_compare_n": "Comparar {n} juegos",
+  "x_compare_pick": "Marca 2 o 3 juegos para compararlos.",
+  "x_highest": "El más alto"
 }

@@ -112,7 +112,7 @@
     if (parts[0] === "game" && parts[1]) return { platform: from || PLATFORMS[0], view: "ugame", arg: parts.slice(1).join("/"), query };
     const platform = PLATFORMS.includes(parts[0]) ? parts[0] : PLATFORMS[0];
     from = platform;
-    const view = ["browse", "popular", "trending", "upcoming", "search", "game", "stats"].includes(parts[1]) ? parts[1] : "popular";
+    const view = ["browse", "popular", "trending", "upcoming", "search", "game", "stats", "favorites", "compare"].includes(parts[1]) ? parts[1] : "popular";
     return { platform, view, arg: parts.slice(2).join("/"), query };
   }
   const go = (hash) => { if (location.hash !== hash) location.hash = hash; else show(); };
@@ -243,7 +243,7 @@
   }, { rootMargin: "0px 0px -8% 0px" }) : null;
   function reveal(root) {
     if (!seen || !MOTION.matches) return;
-    for (const e of root.querySelectorAll(":scope section, :scope .cols > * > section")) { e.classList.add("reveal"); seen.observe(e); }
+    for (const e of root.querySelectorAll(":scope section, :scope .cols > * > section")) { e.classList.add("unveil"); seen.observe(e); }
   }
 
   async function list(platform, view) {
@@ -594,9 +594,9 @@
   }
 
   // The time between two releases, in the visitor's language and the unit that reads best ("11 months").
+  const dayOf = (n) => { const x = String(n); return Date.UTC(+x.slice(0, 4), +x.slice(4, 6) - 1, +x.slice(6, 8)) / 86400000; };
   function gap(from, to) {
-    const day = (n) => { const x = String(n); return Date.UTC(+x.slice(0, 4), +x.slice(4, 6) - 1, +x.slice(6, 8)) / 86400000; };
-    const d = Math.round(day(to) - day(from));
+    const d = Math.round(dayOf(to) - dayOf(from));
     const [unit, n] = d < 60 ? ["day", d] : d < 730 ? ["month", Math.round(d / 30.4)] : ["year", Math.round(d / 36.5) / 10];
     return new Intl.NumberFormat(LANG, { style: "unit", unit, unitDisplay: "long", maximumFractionDigits: 1 }).format(n);
   }
@@ -631,6 +631,21 @@
       if (top === e && es.filter((x) => x.popular).length > 1) li.classList.add("best");
       return li;
     });
+  }
+
+  // The release dates of a game on several platforms on one axis: a row a platform (name, a dot where its date falls
+  // between the first and the last, the date); the dot is for the eye, the names and dates are the text.
+  function timeline(es) {
+    const dated = es.filter((e) => e.release).sort((x, y) => x.release - y.release || x.p.localeCompare(y.p));
+    if (dated.length < 2 || dated[0].release === dated[dated.length - 1].release) return null;
+    const a = dayOf(dated[0].release), span = dayOf(dated[dated.length - 1].release) - a;
+    return el("figure", { class: "timeline" }, el("figcaption", { text: t("x_timeline") }),
+      el("ol", {}, ...dated.map((e) => {
+        const dot = el("i", {});
+        dot.style.setProperty("left", `${(((dayOf(e.release) - a) / span) * 100).toFixed(1)}%`);
+        dot.style.setProperty("--tint", TINTS[e.p] || `hsl(${hueOf(e.p)} 60% 50%)`);
+        return el("li", {}, el("span", { class: "tl-name", text: S._names[e.p] || e.p }), el("span", { class: "tl-track", "aria-hidden": "true" }, dot), el("span", { class: "tl-date", text: ymd(e.release) }));
+      })));
   }
 
   // Where a score falls among the platform's: its 101 cut points counted in bands of 5, one bar a band, one line for
@@ -696,6 +711,60 @@
     return bar;
   }
 
+  // Where a sheet was opened from (kept for the tab): the list's address, how far it was scrolled, how many rows it
+  // showed and its games in order. The sheet steps to the one before and after (arrows too), and the list comes
+  // back as it was.
+  const TRAIL = "atlas-trail";
+  const trail = () => { try { return JSON.parse(sessionStorage.getItem(TRAIL) || "null"); } catch (e) { return null; } };
+  let pagerNow = null;
+  function pager(es) {
+    pagerNow = null;
+    const tr = trail();
+    if (!tr || !Array.isArray(tr.rows)) return null;
+    const mine = new Set([location.hash.split("?")[0], ...es.map((e) => `#${e.p}/game/${encodeURIComponent(e.id)}`)]);
+    const at = tr.rows.findIndex(([h]) => mine.has(h));
+    if (at < 0) return null;
+    const step = (r, key, label, sign) => (r
+      ? el("a", { class: `step ${key}`, href: r[0], rel: key, title: `${label}: ${r[1]}`, "aria-label": `${label}: ${r[1]}`, text: sign })
+      : el("span", { class: `step ${key} off`, "aria-hidden": "true", text: sign }));
+    const prev = tr.rows[at - 1], next = tr.rows[at + 1];
+    pagerNow = { prev: prev && prev[0], next: next && next[0] };
+    return el("span", { class: "pager" }, step(prev, "prev", t("x_prev"), "‹"), el("span", { class: "dim", text: `${num(at + 1)} / ${num(tr.rows.length)}` }), step(next, "next", t("x_next"), "›"));
+  }
+
+  // Favourites: games marked with a heart, kept in this browser only (a key "<platform>/<id>", or "u/<Wikidata item>"
+  // for a game on several platforms, and its name).
+  const FAVS = "atlas-favs";
+  const favs = () => {
+    try {
+      const list = JSON.parse(localStorage.getItem(FAVS) || "[]");
+      return Array.isArray(list) ? list.filter((f) => f && typeof f.k === "string" && f.k.includes("/")) : [];
+    } catch (e) { return []; }
+  };
+  const keepFavs = (list) => { try { localStorage.setItem(FAVS, JSON.stringify(list.slice(-60))); } catch (e) { /* no storage: nothing kept */ } };
+  const favHref = (k) => { const at = k.indexOf("/"); return gameHref(k.slice(0, at), k.slice(at + 1)); };
+  const favButton = $("x-fav");
+  const countFavs = () => { const n = favs().length; favButton.textContent = n ? `${t("x_favorites")} · ${num(n)}` : t("x_favorites"); };
+  function heart(m, es) {
+    if (es.length > 1 && !m.qid) return null;
+    const k = es.length > 1 ? `u/${m.qid}` : `${es[0].p}/${es[0].id}`;
+    const b = el("button", { type: "button", class: "fav" });
+    const draw = () => {
+      const on = favs().some((f) => f.k === k), label = t(on ? "x_fav_remove" : "x_fav_add");
+      b.classList.toggle("on", on);
+      b.textContent = on ? "♥" : "♡";
+      b.title = label;
+      b.setAttribute("aria-label", label);
+    };
+    b.addEventListener("click", () => {
+      keepFavs(favs().some((f) => f.k === k) ? favs().filter((f) => f.k !== k) : favs().concat({ k, name: m.name || m.id || "" }));
+      draw();
+      countFavs();
+    });
+    draw();
+    return b;
+  }
+
   function renderSheet(m, backHref) {
     if (barOff) barOff();
     sheet.replaceChildren();
@@ -730,7 +799,8 @@
         /^Q\d+$/.test(m.qid || "") ? el("a", { href: `https://www.wikidata.org/wiki/${m.qid}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: m.qid }) : null,
         !m.name ? el("small", { text: t("x_no_name") }) : null),
       rings.childElementCount ? rings : null, rings.childElementCount ? ringHelp : null);
-    const head = el("header", { class: wide ? "masthead" : "" }, back, cover,
+    const top = el("div", { class: "topline" }, back, el("span", { class: "tools" }, pager(es), heart(m, es)));
+    const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
       wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
     if (logo) {
       logo.addEventListener("load", () => head.classList.add("has-logo"));
@@ -818,7 +888,7 @@
     if (technical) side.append(technical);
 
     if (es.length > 1) {
-      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...platformTiles(es))));
+      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...platformTiles(es)), timeline(es)));
     }
 
     // The first lines of the Wikipedia page, in the visitor's language else English, with its credit (CC BY-SA 4.0).
@@ -864,6 +934,16 @@
         if (team[role] && team[role].length) dl.append(el("div", {}, el("dt", { text: t(key) }), el("dd", {}, ...team[role].map((n) => el("span", { class: "chip", text: n })))));
       }
       if (dl.childElementCount) side.append(section(t("x_team"), dl));
+    }
+
+    // The games of its series, oldest first (the build's `family`): the one on this sheet marked.
+    if (m.family && m.family[1].length > 1) {
+      main.append(section(`${t("x_series")} · ${labelOf("series", m.family[0])}`, el("ul", { class: "cardgrid family carousel" }, ...m.family[1].map(([kind, ref, name, when, pic]) => {
+        const here = es.some((e) => e.p === kind && e.id === ref);
+        const c = card(gameHref(kind, ref), kind, ref, name, when ? [el("span", { class: "dim", text: String(Math.floor(when / 10000)) })] : [], pic);
+        if (here) { c.setAttribute("aria-current", "page"); c.classList.add("here"); }
+        return el("li", {}, c);
+      }))));
     }
 
     // Not the game itself (a platform's list can name the sheet of all its platforms, or one of them).
@@ -1077,10 +1157,108 @@
       setStatus("");
       return;
     }
+    renderSheet(platformSheet(platform, id, g), backTo(platform));
+  }
+
+  // The sheet of one platform's game, as renderSheet and the comparison take it.
+  function platformSheet(platform, id, g) {
     const entry = { p: platform, id };
     for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
-    renderSheet({ name: g.name, id, qid: g.qid, wd: g.wd, platforms: [entry], traits: g.traits,
-      similar: (g.similar || []).map(([o, name, s, pic, shared]) => [platform, o, name, s, pic, shared]), links: g.links }, backTo(platform));
+    return { name: g.name, id, qid: g.qid, wd: g.wd, platforms: [entry], traits: g.traits,
+      similar: (g.similar || []).map(([o, name, s, pic, shared]) => [platform, o, name, s, pic, shared]),
+      family: g.family ? [g.family[0], g.family[1].map((r) => [platform, ...r])] : null, links: g.links };
+  }
+
+  // The favourites as a list, each with a box: two or three ticked are compared.
+  async function favoritesView() {
+    leaveBrowse();
+    sheet.hidden = true;
+    results.hidden = false;
+    pressed("x-views", "view", "favorites");
+    const list = favs();
+    if (!list.length) {
+      results.replaceChildren();
+      setStatus(t("x_fav_empty"));
+      return;
+    }
+    const picked = new Set(), boxes = [];
+    const compare = el("button", { type: "button", class: "compare", disabled: "", text: t("x_compare_pick") });
+    const sync = () => {
+      compare.disabled = picked.size < 2;
+      compare.textContent = picked.size >= 2 ? t("x_compare_n", { n: num(picked.size) }) : t("x_compare_pick");
+      for (const b of boxes) b.disabled = picked.size >= 3 && !b.checked;
+    };
+    compare.addEventListener("click", () => go(`#${route().platform}/compare?${new URLSearchParams([...picked].map((k) => ["g", k]))}`));
+    const items = list.slice().reverse().map((f) => {
+      const at = f.k.indexOf("/"), kind = f.k.slice(0, at), ref = f.k.slice(at + 1);
+      const box = el("input", { type: "checkbox", "aria-label": `${t("x_compare")}: ${f.name || ref}` });
+      box.addEventListener("change", () => { if (box.checked) picked.add(f.k); else picked.delete(f.k); sync(); });
+      boxes.push(box);
+      const drop = el("button", { type: "button", class: "unfav", title: t("x_fav_remove"), "aria-label": `${t("x_fav_remove")}: ${f.name || ref}`, text: "×" });
+      drop.addEventListener("click", () => { keepFavs(favs().filter((x) => x.k !== f.k)); countFavs(); favoritesView(); });
+      return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), drop);
+    });
+    results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), compare), ...items);
+    setStatus(`${t("x_favorites")} · ${num(list.length)}`);
+  }
+
+  // A game's sheet from a favourite's key.
+  async function sheetOfKey(k) {
+    const at = k.indexOf("/"), kind = k.slice(0, at), ref = k.slice(at + 1);
+    if (kind === "u") {
+      const meta = await get("x/u/meta.json");
+      const u = (await get(`x/u/${shard(ref, meta.shards)}.json`))[ref];
+      return u ? Object.assign({ qid: ref }, u) : null;
+    }
+    if (!PLATFORMS.includes(kind)) return null;
+    const lists = await get(`x/${kind}/lists.json`);
+    const g = (await get(`x/${kind}/g/${shard(ref, lists.shards)}.json`))[ref];
+    return g ? platformSheet(kind, ref, g) : null;
+  }
+
+  // Two or three games side by side: a table, a game a column, the figures as small rings, the highest marked.
+  async function compareView(query) {
+    leaveBrowse();
+    results.hidden = true;
+    pressed("x-views", "view", "favorites");
+    setStatus(t("x_loading"));
+    const got = (await Promise.all(query.getAll("g").slice(0, 3).map((k) => sheetOfKey(k).catch(() => null)))).filter(Boolean);
+    const back = el("a", { class: "back", href: `#${route().platform}/favorites` }, `← ${t("x_favorites")}`);
+    sheet.hidden = false;
+    sheet.classList.remove("with-backdrop");
+    if (got.length < 2) {
+      sheet.replaceChildren(back, el("p", { text: t("x_not_found") }));
+      setStatus("");
+      return;
+    }
+    const facts = got.map((m) => {
+      const es = m.platforms, top = es.filter((e) => e.popular).sort((x, y) => y.popular[0] - x.popular[0])[0];
+      const voters = es.filter((e) => e.igdb_rating && e.igdb_rating[1] >= 20).sort((x, y) => y.igdb_rating[1] - x.igdb_rating[1])[0];
+      const out = es.map((e) => e.release).filter(Boolean);
+      return { score: top ? top.popular[0] : 0, critics: Math.max(0, ...es.map((e) => (e.popular ? e.popular[2] : 0))), players: voters ? voters.igdb_rating[0] : 0,
+        release: out.length ? Math.min(...out) : 0 };
+    });
+    const figure = (key, label) => {
+      const values = facts.map((f) => f[key]), best = Math.max(...values);
+      return [label, values.map((v) => (v ? el("span", { class: "cv" }, miniRing(v, label),
+        best > 0 && v === best && values.some((x) => x !== best) ? el("span", { class: "lead", title: t("x_highest"), "aria-label": t("x_highest"), text: "★" }) : null) : el("span", { class: "dim", text: "–" })))];
+    };
+    const names = (m) => m.platforms.map((e) => S._names[e.p] || e.p).join(", ");
+    const rows = [figure("score", t("x_score")), figure("critics", t("x_critics")), figure("players", t("x_players_rating")),
+      [t("x_release"), facts.map((f) => (f.release ? el("span", { text: ymd(f.release) }) : el("span", { class: "dim", text: "–" })))],
+      [t("x_by_platform"), got.map((m) => el("span", { text: names(m) }))],
+      [t("x_genres"), got.map((m) => el("span", { class: "chips" }, ...((m.traits && m.traits.genres) || []).slice(0, 4).map((n) => chip("genres", n))))],
+      [t("x_series"), got.map((m) => ((m.traits && m.traits.series) ? el("span", { text: labelOf("series", m.traits.series[0]) }) : el("span", { class: "dim", text: "–" })))]];
+    const heads = got.map((m) => {
+      const e = m.platforms[0], cover = (m.platforms.find((x) => x.igdb_cover) || {}).igdb_cover;
+      return el("th", { scope: "col" }, el("a", { href: m.platforms.length > 1 ? gameHref("u", m.qid) : gameHref(e.p, e.id) },
+        tile(e.p, e.id, m.name, false, cover ? `i${cover}` : ""), el("span", { class: "name", text: m.name || e.id })));
+    });
+    const table = el("table", { class: "compare" }, el("thead", {}, el("tr", {}, el("th", { scope: "col", class: "corner", text: t("x_compare") }), ...heads)),
+      el("tbody", {}, ...rows.map(([label, cells]) => el("tr", {}, el("th", { scope: "row", text: label }), ...cells.map((c) => el("td", {}, c))))));
+    sheet.replaceChildren(back, el("h2", { tabindex: "-1", text: t("x_compare_n", { n: num(got.length) }) }), el("div", { class: "compare-wrap" }, table));
+    setStatus("");
+    window.scrollTo({ top: sheet.getBoundingClientRect().top + window.scrollY - 16 });
   }
 
   // Browsing: facets.json gives the menus, then the pages of games, best known
@@ -1094,6 +1272,7 @@
   let limit = STEP;        // how many of them are listed
   let last = "";           // the filters of the last view, to start again from a first screen when they change
   let lastBrowse = "";     // where a sheet's back link goes
+  let restore = null;      // the trail of the list being shown again, to put it back as it was
   let run = 0;
 
   function leaveBrowse() {
@@ -1311,6 +1490,7 @@
     }
     const key = query.toString();
     if (key !== last) { limit = STEP; last = key; }
+    if (restore && restore.n > limit) limit = restore.n;
     if (!b.loaded) await loadPage(b);
     if (mine !== run) return;
     V = compute(b, query);
@@ -1384,7 +1564,10 @@
   async function show() {
     const { platform, view, arg, query } = route();
     // On a sheet the page's own heading folds to a line: the sheet is what is read.
-    document.body.classList.toggle("x-on-sheet", view === "game" || view === "ugame");
+    document.body.classList.toggle("x-on-sheet", view === "game" || view === "ugame" || view === "compare");
+    if (barOff && view !== "game" && view !== "ugame") barOff();
+    const tr = trail();
+    restore = tr && tr.hash === location.hash && !["game", "ugame", "compare", "favorites"].includes(view) ? tr : null;
     statsBox.hidden = view !== "stats";
     tipBox.hidden = true;
     pressed("x-platforms", "platform", platform);
@@ -1394,9 +1577,13 @@
       else if (view === "ugame") await unified(arg);
       else if (view === "game") await game(platform, arg, query);
       else if (view === "stats") await statsView(platform);
+      else if (view === "favorites") await favoritesView();
+      else if (view === "compare") await compareView(query);
       else if (view === "searchall") { if (search.value !== arg) search.value = arg; await findAll(arg); }
       else if (view === "search") { if (search.value !== arg) search.value = arg; await find(platform, arg); }
       else await list(platform, view);
+      // Back to a list a sheet was opened from: where it was scrolled.
+      if (restore) { const y = restore.y; requestAnimationFrame(() => window.scrollTo(0, y)); }
     } catch (e) {
       setStatus(t("x_error"));
     }
@@ -1465,6 +1652,20 @@
     if (c && !c.contains(e.relatedTarget)) for (const v of ["--rx", "--ry", "--mx", "--my"]) c.style.removeProperty(v);
   });
 
+  results.addEventListener("click", (e) => {
+    const a = e.target.closest && e.target.closest("a[href^='#']");
+    if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || !/^#(game|[\w-]+\/game)\//.test(a.getAttribute("href"))) return;
+    const rows = [...results.querySelectorAll("a[href^='#']")].filter((x) => /^#(game|[\w-]+\/game)\//.test(x.getAttribute("href"))).slice(0, 400)
+      .map((x) => [x.getAttribute("href"), ((x.querySelector(".name") || x).textContent || "").trim()]);
+    try { sessionStorage.setItem(TRAIL, JSON.stringify({ hash: location.hash, y: Math.round(window.scrollY), n: results.children.length, rows })); } catch (err) { /* no storage: no trail */ }
+  });
+  // The arrows step through the list a sheet was opened from.
+  document.addEventListener("keydown", (e) => {
+    if (!pagerNow || sheet.hidden || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || !["ArrowLeft", "ArrowRight"].includes(e.key)
+      || (e.target.closest && e.target.closest("input, select, textarea, [contenteditable], dialog"))) return;
+    const to = e.key === "ArrowLeft" ? pagerNow.prev : pagerNow.next;
+    if (to) { e.preventDefault(); go(to); }
+  });
   // "/" goes to the search box, as on most sites with one; Escape in it empties it.
   document.addEventListener("keydown", (e) => {
     if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || e.target.closest("input, select, textarea, [contenteditable], dialog")) return;
@@ -1475,5 +1676,6 @@
     if (e.key === "Escape" && search.value) { e.preventDefault(); search.value = ""; search.dispatchEvent(new Event("input")); }
   });
   window.addEventListener("hashchange", show);
+  countFavs();
   show();
 })();

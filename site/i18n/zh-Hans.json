@@ -180,8 +180,8 @@
   "x_gallery": "截图",
   "x_screenshot": "截图 {n}",
   "x_close": "关闭",
-  "x_prev": "上一张截图",
-  "x_next": "下一张截图",
+  "x_prev": "列表中的上一款",
+  "x_next": "列表中的下一款",
   "x_official_site": "官方网站",
   "x_runs_on": "运行平台",
   "x_deck_3": "已验证",
@@ -379,5 +379,15 @@
   "x_sections": "本页分区",
   "x_trait_count": "{platform}上有 {n} 款游戏",
   "x_dist_title": "在{platform}游戏中的位置",
-  "x_dist_help": "每根柱子是一个知名度区间，竖线标出这款游戏：比 {p} % 的游戏更知名。"
+  "x_dist_help": "每根柱子是一个知名度区间，竖线标出这款游戏：比 {p} % 的游戏更知名。",
+  "x_timeline": "发售日期",
+  "x_favorites": "收藏",
+  "x_fav_add": "加入收藏",
+  "x_fav_remove": "取消收藏",
+  "x_fav_empty": "还没有收藏。打开一款游戏并点按心形。",
+  "x_fav_note": "仅保存在此浏览器中，不会发送。",
+  "x_compare": "比较",
+  "x_compare_n": "比较 {n} 款游戏",
+  "x_compare_pick": "勾选 2 或 3 款游戏进行比较。",
+  "x_highest": "最高"
 }

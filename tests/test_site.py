@@ -192,6 +192,26 @@ class SiteData(unittest.TestCase):
         self.assertEqual(site_data.similar_row("a", "A", 70, "", ["g:farm"]), ["a", "A", 70, "", ["g:farm"]])
         self.assertEqual(site_data.similar_row("a", "A", 70, "s9", []), ["a", "A", 70, "s9"])
 
+    def test_the_games_of_a_series(self):
+        sheets = {k: {"name": k.upper(), "release": r, "traits": {"series": ["Quest"]}} for k, r in (("a", 20100101), ("b", 20050101), ("c", 0))}
+        sheets["z"] = {"name": "Z", "traits": {"series": ["Alone"]}}
+        sheets["y"] = {"traits": {"series": ["Quest"]}}                       # no name: not listed
+        got = site_data.families(sheets, lambda g: "s9" if g == "a" else "")
+        self.assertEqual(got["a"], ["Quest", [["b", "B", 20050101], ["a", "A", 20100101, "s9"], ["c", "C", 0]]])
+        self.assertEqual(got["b"], got["a"])
+        self.assertNotIn("z", got)
+        self.assertNotIn("y", got)
+        site_data.FAMILY, old = 2, site_data.FAMILY
+        try:
+            self.assertEqual(site_data.families(sheets, lambda g: "")["c"], ["Quest", [["b", "B", 20050101], ["c", "C", 0]]])   # the game itself kept
+        finally:
+            site_data.FAMILY = old
+        site_data.SERIES_MAX, old = 2, site_data.SERIES_MAX
+        try:
+            self.assertEqual(site_data.families(sheets, lambda g: ""), {})       # three games: a label, not a series
+        finally:
+            site_data.SERIES_MAX = old
+
     def test_a_rows_picture(self):
         lists = self.read("x/switch/lists.json")
         self.assertEqual(lists["popular"][0], ["0100A1B2C3D4E000", "", 80, 12, 90, "s900010"])   # Steam's header of the same game

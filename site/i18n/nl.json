@@ -180,8 +180,8 @@
   "x_gallery": "Schermafbeeldingen",
   "x_screenshot": "Schermafbeelding {n}",
   "x_close": "Sluiten",
-  "x_prev": "Vorige schermafbeelding",
-  "x_next": "Volgende schermafbeelding",
+  "x_prev": "Vorige in de lijst",
+  "x_next": "Volgende in de lijst",
   "x_official_site": "Officiële website",
   "x_runs_on": "Draait op",
   "x_deck_3": "Geverifieerd",
@@ -379,5 +379,15 @@
   "x_sections": "Onderdelen van deze pagina",
   "x_trait_count": "{n} games op {platform}",
   "x_dist_title": "Waar het staat onder de games op {platform}",
-  "x_dist_help": "Elke balk is een bekendheidsklasse; de lijn markeert deze game: bekender dan {p} % van de games."
+  "x_dist_help": "Elke balk is een bekendheidsklasse; de lijn markeert deze game: bekender dan {p} % van de games.",
+  "x_timeline": "Releasedata",
+  "x_favorites": "Favorieten",
+  "x_fav_add": "Aan favorieten toevoegen",
+  "x_fav_remove": "Uit favorieten verwijderen",
+  "x_fav_empty": "Nog geen favorieten. Open een game en druk op het hart.",
+  "x_fav_note": "Alleen in deze browser bewaard, nooit verstuurd.",
+  "x_compare": "Vergelijken",
+  "x_compare_n": "{n} games vergelijken",
+  "x_compare_pick": "Vink 2 of 3 games aan om te vergelijken.",
+  "x_highest": "Hoogste"
 }

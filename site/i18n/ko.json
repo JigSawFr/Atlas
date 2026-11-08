@@ -180,8 +180,8 @@
   "x_gallery": "스크린샷",
   "x_screenshot": "스크린샷 {n}",
   "x_close": "닫기",
-  "x_prev": "이전 스크린샷",
-  "x_next": "다음 스크린샷",
+  "x_prev": "목록의 이전 게임",
+  "x_next": "목록의 다음 게임",
   "x_official_site": "공식 사이트",
   "x_runs_on": "지원 플랫폼",
   "x_deck_3": "인증됨",
@@ -379,5 +379,15 @@
   "x_sections": "이 페이지의 섹션",
   "x_trait_count": "{platform}의 게임 {n}개",
   "x_dist_title": "{platform} 게임 중 위치",
-  "x_dist_help": "각 막대는 인지도 구간이며, 선이 이 게임의 위치입니다. 게임의 {p} %보다 유명합니다."
+  "x_dist_help": "각 막대는 인지도 구간이며, 선이 이 게임의 위치입니다. 게임의 {p} %보다 유명합니다.",
+  "x_timeline": "출시일",
+  "x_favorites": "즐겨찾기",
+  "x_fav_add": "즐겨찾기에 추가",
+  "x_fav_remove": "즐겨찾기에서 제거",
+  "x_fav_empty": "아직 즐겨찾기가 없습니다. 게임을 열고 하트를 누르세요.",
+  "x_fav_note": "이 브라우저에만 저장되며 전송되지 않습니다.",
+  "x_compare": "비교",
+  "x_compare_n": "게임 {n}개 비교",
+  "x_compare_pick": "비교할 게임을 2~3개 선택하세요.",
+  "x_highest": "가장 높음"
 }
