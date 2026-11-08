@@ -89,7 +89,7 @@ class Igdb(unittest.TestCase):
 
     def test_without_keys(self):
         # Nothing collected from IGDB (no keys): nothing from it.
-        self.assertEqual(build.igdb_found(lambda name: {}), {"traits": {}, "popularity": {}, "hypes": {}, "ratings": {}, "covers": {}})
+        self.assertEqual(build.igdb_found(lambda name: {}), {"traits": {}, "popularity": {}, "hypes": {}, "ratings": {}, "covers": {}, "arts": {}})
 
     def test_build_uses_it(self):
         known = {A: (10, None), B: (10, None)}
@@ -173,6 +173,19 @@ class Others(unittest.TestCase):
         games = {"Q1": {"name": "Lantern Tale"}}
         igdb.complete(games, igdb.read_others([game], by_slug))
         self.assertEqual(games["Q1"]["igdb_cover"], "co1abc")
+
+    def test_artworks(self):
+        game = dict(LANTERN, artworks=[{"id": 1, "image_id": "../bad"}, {"id": 2, "image_id": "ar2xyz"}, {"id": 3, "image_id": "ar3xyz"}])
+        by_slug = {"lantern-tale": ["Q1", "Q2"]}
+        self.assertEqual(igdb.read_art([game, POND, dict(LANTERN, slug="x", artworks=[{"image_id": "no/pe"}, "x", None])], by_slug),
+                         {"Q1": "ar2xyz", "Q2": "ar2xyz"})        # the first valid one; none valid, none
+        self.assertEqual(igdb.read_others([game], by_slug)["Q1"]["igdb_art"], "ar2xyz")
+        self.assertIn("artworks.image_id", igdb.others_games_query(["a"]))
+        self.assertIn("artworks.image_id", igdb.games_query(["a"]))
+        games = {"Q1": {"name": "Lantern Tale", "igdb_art": "kept1234"}, "CTR-LNT": {"name": "x", "qid": "Q1"}}
+        igdb.complete(games, igdb.read_others([game], by_slug))
+        self.assertEqual(games["Q1"]["igdb_art"], "kept1234")     # a value the file has is never replaced
+        self.assertEqual(games["CTR-LNT"]["igdb_art"], "ar2xyz")
 
     def test_complete(self):
         found = igdb.read_others([LANTERN], {"lantern-tale": ["Q1"]})

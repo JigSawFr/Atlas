@@ -69,7 +69,7 @@ def others_query(items):
 def others_games_query(batch):
     fields = ["slug", "rating", "rating_count", "collections.name", "franchises.name", "genres.name",
               "game_modes.name", "involved_companies.company.name", "involved_companies.developer",
-              "involved_companies.publisher", "cover.image_id"]
+              "involved_companies.publisher", "cover.image_id", "artworks.image_id"]
     return f"fields {','.join(fields)}; where slug = ({quoted(batch)}); limit {BATCH};"
 
 
@@ -81,6 +81,27 @@ def cover_of(game):
     cover = game.get("cover")
     name = cover.get("image_id") if isinstance(cover, dict) else None
     return name if isinstance(name, str) and COVER.match(name) else None
+
+
+def art_of(game):
+    """The name of a game's first artwork on IGDB's image service (`artworks.image_id`), None when it has none:
+    a wide picture the sheet draws behind its head."""
+    for a in game.get("artworks") or []:
+        name = a.get("image_id") if isinstance(a, dict) else None
+        if isinstance(name, str) and COVER.match(name):
+            return name
+    return None
+
+
+def read_art(records, by_slug):
+    """{title id: artwork name} from IGDB's games."""
+    out = {}
+    for g in records:
+        name = art_of(g)
+        if name:
+            for tid in by_slug.get(g.get("slug")) or []:
+                out[tid] = name
+    return out
 
 
 def read_covers(records, by_slug):
@@ -124,6 +145,8 @@ def read_others(records, by_slug):
             found["igdb_rating"] = [max(0, min(100, round(rating))), count]
         if cover_of(g):
             found["igdb_cover"] = cover_of(g)
+        if art_of(g):
+            found["igdb_art"] = art_of(g)
         if found:
             for qid in qids:
                 out[qid] = found
@@ -155,6 +178,8 @@ def complete(games, found, kinds=tuple(OTHER_KINDS)):
             entry["igdb_rating"] = record["igdb_rating"]
         if record.get("igdb_cover") and "igdb_cover" not in entry:
             entry["igdb_cover"] = record["igdb_cover"]
+        if record.get("igdb_art") and "igdb_art" not in entry:
+            entry["igdb_art"] = record["igdb_art"]
         added += len(entry) > before
     return added
 
@@ -177,7 +202,7 @@ def quoted(values):
 
 
 def games_query(batch):
-    fields = ",".join(["slug", "hypes", "rating", "rating_count", "cover.image_id"] + [f"{f}.name" for f in KINDS.values()])
+    fields = ",".join(["slug", "hypes", "rating", "rating_count", "cover.image_id", "artworks.image_id"] + [f"{f}.name" for f in KINDS.values()])
     return f"fields {fields}; where slug = ({quoted(batch)}); limit {BATCH};"
 
 
