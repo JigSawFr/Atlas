@@ -4,7 +4,7 @@ holds them cut for a phone, one platform a folder:
 
 - x/<platform>/lists.json: the lists the explorer opens on (the best known,
   the trending, the coming soon), each game with its name;
-- x/<platform>/names.json: every game with a name, for the search;
+- x/<platform>/names.json: every game with a name, for the search (an edition is found by its name and opens its game);
 - x/<platform>/facets.json: for each facet (genres, modes, series,
   developers, publishers, themes, perspectives, tags, year) its values with
   the number of named games that have them, for the explorer's menus;
@@ -27,6 +27,7 @@ from bisect import bisect_left
 from common import SCHEMA
 from taxonomy import KINDS, clean_title, game_title, company_key, company_merges, drop_note, split_company, find, fold, tidy_label, with_parents
 import common
+from editions import by_name as editions_by_name
 import extracts
 import tech
 import trends
@@ -284,6 +285,33 @@ STAT_LIST = 10          # games in its best rated and hidden gems
 STAT_YEARS = 30         # years of releases it counts, the latest
 
 
+def edition_map(names: dict, games: dict, known: dict) -> dict:
+    """{edition's id: the game's id}: the editions a source lists, and those the names give."""
+    def keys(gid):
+        game = games.get(gid)
+        found = set()
+        for kind in ("developers", "publishers"):
+            for c in (game.get(kind) or []) if isinstance(game, dict) else []:
+                found.add(str(c[0] if isinstance(c, (list, tuple)) and c else c).casefold())
+        return found
+    companies = {g: keys(g) for g in names}
+    order = {g: (games.get(g) or {}).get("release") or 99999999 if isinstance(games.get(g), dict) else 99999999 for g in names}
+    out = editions_by_name(names, companies, order)
+    out.update(known)
+    return out
+
+
+def alike(gid: str, pairs: list, editions: dict) -> list:
+    """A game's alike list with each edition replaced by its game, the game itself (and its own editions) out, once each."""
+    mine = editions.get(gid, gid)
+    seen = {}
+    for o, s in pairs:
+        o = editions.get(o, o)
+        if o != gid and o != mine:
+            seen[o] = max(s, seen.get(o, s))
+    return list(seen.items())
+
+
 FAMILY = 12
 SERIES_MAX = 30          # a "series" of more games than this is a publisher's or a store's label, not a series
 
@@ -515,7 +543,9 @@ def build(data_dir: str, out_dir: str) -> dict:
         names = names_of(files)
         upcoming = files["upcoming"].get("games") or {}
         similar = files["similar"].get("games") or {}
-        editions = files["editions"].get("games") or {}
+        # A game's other editions are one game with it, not games of their own: titledb's (the Switch) and the ones the
+        # names give (a name plus edition words, a company in common).
+        editions = edition_map(names, games, files["editions"].get("games") or {})
         base = os.path.join(out_dir, "x", platform)
         os.makedirs(base, exist_ok=True)
 
@@ -529,9 +559,10 @@ def build(data_dir: str, out_dir: str) -> dict:
             ref = pic(gid, long_ok)
             return row + [ref] if ref else row
 
-        best = sorted(scores.items(), key=lambda kv: (-kv[1][0], kv[0]))
-        trending = sorted(((g, s) for g, s in scores.items() if s[1] > 0), key=lambda kv: (-kv[1][1], -kv[1][0], kv[0]))
-        soon = sorted(upcoming.items(), key=lambda kv: (kv[1][0], kv[0]))
+        # Not in the lists nor the browse view (nor the figures): they are on their game's sheet.
+        best = sorted(((g, s) for g, s in scores.items() if g not in editions), key=lambda kv: (-kv[1][0], kv[0]))
+        trending = sorted(((g, s) for g, s in scores.items() if s[1] > 0 and g not in editions), key=lambda kv: (-kv[1][1], -kv[1][0], kv[0]))
+        soon = sorted(((g, r) for g, r in upcoming.items() if g not in editions), key=lambda kv: (kv[1][0], kv[0]))
         lists = {
             "platform": platform,
             "generated": files["popular"].get("generated"),
@@ -540,7 +571,8 @@ def build(data_dir: str, out_dir: str) -> dict:
             "upcoming": [with_pic([g, names.get(g, ""), r[0], r[2] if len(r) > 2 else 0], g) for g, r in soon[:LIST]],
         }
         write(os.path.join(base, "names.json"),
-              sorted(([g, n, (scores.get(g) or [0])[0]] for g, n in names.items()), key=lambda x: (-x[2], x[1])))
+              # (an edition is found by its name, and opens its game)
+              sorted(([editions.get(g, g), n, (scores.get(editions.get(g, g)) or [0])[0]] for g, n in names.items()), key=lambda x: (-x[2], x[1])))
 
         facets, pages = browse(best, games, names, tags, spelled, pic)
         rarity = {(kind, v): n for kind, values in facets.items() for v, n in values}
@@ -587,7 +619,7 @@ def build(data_dir: str, out_dir: str) -> dict:
                 mine = sheet.get("traits") or {}
                 sheet["similar"] = [similar_row(o, names.get(o, ""), s, pic(o, False),
                                                 shared_traits(mine, trait_names(games.get(o), tags, spelled) if isinstance(games.get(o), dict) else {}, rarity))
-                                    for o, s in similar[gid]]
+                                    for o, s in alike(gid, similar[gid], editions)]
             if gid in editions:
                 sheet["edition_of"] = [editions[gid], names.get(editions[gid], "")]
             if gid in of_edition:
@@ -598,7 +630,7 @@ def build(data_dir: str, out_dir: str) -> dict:
                 sheet["links"] = {p: ids for p, ids in link[1].items() if p != platform or ids != [gid]}
             if sheet.get("qid") in wd:
                 sheet["wd"] = wd[sheet["qid"]]
-            if sheet.get("qid") in multi:
+            if sheet.get("qid") in multi and gid not in editions:
                 sheet["unified"] = True
                 kept.setdefault(sheet["qid"], {})[platform] = (gid, sheet)
                 refs = []
@@ -614,7 +646,7 @@ def build(data_dir: str, out_dir: str) -> dict:
                         refs.append([platform, o, name, score, *ref])
                 similar_refs.setdefault(sheet["qid"], {})[platform] = refs
             sheets[gid] = sheet
-        for gid, family in families(sheets, lambda g: pic(g, False)).items():
+        for gid, family in families({g: x for g, x in sheets.items() if g not in editions}, lambda g: pic(g, False)).items():
             sheets[gid]["family"] = family
         shards = sharded(base, "g", sheets)
         lists["shards"] = shards

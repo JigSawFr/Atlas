@@ -69,3 +69,31 @@ def apart(similar, of):
         if kept:
             out[tid] = kept
     return out
+
+
+def by_name(names: dict, companies: dict, order: dict) -> dict:
+    """{edition's id: the game's id} for any platform, from the names alone: a game whose name is another's plus edition
+    words ("X - Gold Edition" next to "X"), put out by a company the two share (a developer or a publisher). The game is
+    the one with no edition word in its name: a game that has none is never an edition (two "Resident Evil 4" from
+    different years are two games), and an edition with no such game to belong to stays apart. When several games
+    qualify, the one out first (`order`: id -> sortable) is it.
+    companies: id -> set of company keys; order: id -> release (yyyymmdd, large when unknown)."""
+    groups = collections.defaultdict(list)
+    for gid, name in names.items():
+        key = core(name)
+        if key:
+            groups[key].append(gid)
+    plain_of = lambda name: re.sub(r"[^a-z0-9]+", " ", re.sub(r"[™®©]", "", name or "").lower()).strip()
+    out = {}
+    for key, ids in groups.items():
+        if len(ids) < 2:
+            continue
+        plain = [g for g in ids if plain_of(names[g]) == key]
+        for gid in ids:
+            if plain_of(names[gid]) == key:
+                continue
+            mine = companies.get(gid) or set()
+            found = [g for g in plain if mine & (companies.get(g) or set())]
+            if found:
+                out[gid] = min(found, key=lambda g: (order.get(g, 99999999), g))
+    return out

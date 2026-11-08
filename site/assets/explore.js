@@ -284,9 +284,10 @@
     }
     setStatus(t("x_loading"));
     const names = await get(`x/${platform}/names.json`);
-    const found = [];
+    // A game once, under the first name that matches (an edition's name opens its game: the rows share its id).
+    const found = [], once = new Set();
     for (const [id, name, s] of names) {
-      if (fold(name).includes(q)) found.push([id, name, s]);
+      if (fold(name).includes(q) && !once.has(id)) { once.add(id); found.push([id, name, s]); }
       if (found.length >= 200) break;
     }
     results.replaceChildren(...found.map(([id, name, s]) => row(platform, id, name, [score(s)])));
@@ -307,7 +308,7 @@
     const found = [];
     for (const [p, names] of lists) for (const [id, name, s] of names) if (fold(name).includes(q)) found.push([p, id, name, s]);
     found.sort((a, b) => (b[3] - a[3]) || a[2].localeCompare(b[2]));
-    const shown = found.slice(0, 200);
+    const once = new Set(), shown = found.filter(([p, id]) => !once.has(`${p}/${id}`) && once.add(`${p}/${id}`)).slice(0, 200);
     results.replaceChildren(...shown.map(([p, id, name, s]) => row(p, id, name, [el("span", { class: "badge", text: S._names[p] || p }), score(s)])));
     bars(results);
     setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + ` · ${t("x_loaded", { size: kb(read) })}`);

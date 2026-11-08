@@ -6,6 +6,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
+import editions
 import site_data  # noqa: E402
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
@@ -21,7 +22,7 @@ def put(base, path, body):
 def sample(base):
     """A data branch of made-up games: two Switch games, three Steam ones."""
     put(base, "platforms/switch/popular.json", {"schema": 1, "generated": "2026-11-02",
-                                      "games": {"0100A1B2C3D4E000": [80, 12, 90], "0100F0F0F0F0F000": [20, 0, 0]}})
+                                      "games": {"0100A1B2C3D4E000": [80, 12, 90], "0100F0F0F0F0F000": [20, 0, 0], "0100D0D0D0D0D000": [30, 0, 0]}})
     put(base, "platforms/switch/games.json", {"schema": 1, "games": {"0100A1B2C3D4E000": {
         "series": [["Q900100", "Amber Saga"]], "developers": [["Q900200", "Tiny Owl"]], "steam": {"app": 900010, "owners": 5000}}}})
     put(base, "platforms/switch/upcoming.json", {"schema": 1, "games": {"0100C0C0C0C0C000": [20261204, "Frost Harbor"]}})
@@ -192,6 +193,21 @@ class SiteData(unittest.TestCase):
         self.assertEqual(site_data.similar_row("a", "A", 70, "", ["g:farm"]), ["a", "A", 70, "", ["g:farm"]])
         self.assertEqual(site_data.similar_row("a", "A", 70, "s9", []), ["a", "A", 70, "s9"])
 
+    def test_an_edition_is_one_game_with_its_game(self):
+        names = {"a": "Venetica", "b": "Venetica - Gold Edition", "c": "Venetica: Deluxe Edition", "d": "Other - Gold Edition",
+                 "e": "Resident Evil 4", "f": "Resident Evil 4", "g": "Resident Evil 4 Deluxe Edition", "h": "Venetica Gold"}
+        companies = {"a": {"deck"}, "b": {"deck"}, "c": {"other studio"}, "d": {"deck"}, "e": {"capcom"}, "f": {"capcom"}, "g": {"capcom"}, "h": {"deck"}}
+        order = {"a": 20090101, "e": 20050101, "f": 20230101}
+        got = editions.by_name(names, companies, order)
+        self.assertEqual(got["b"], "a")
+        self.assertEqual(got["h"], "a")
+        self.assertNotIn("c", got)                      # another company: another game
+        self.assertNotIn("d", got)                      # no game of that name to belong to
+        self.assertEqual(got["g"], "e")                 # two games of that name: the one out first
+        self.assertNotIn("f", got)                      # a plain name is never an edition
+        self.assertEqual(site_data.alike("x", [("b", 80), ("a", 70), ("y", 60), ("x", 99)], {"b": "a"}), [("a", 80), ("y", 60)])
+        self.assertEqual(site_data.alike("a", [("b", 80), ("y", 60)], {"b": "a"}), [("y", 60)])      # its own edition is not a game like it
+
     def test_the_games_of_a_series(self):
         sheets = {k: {"name": k.upper(), "release": r, "traits": {"series": ["Quest"]}} for k, r in (("a", 20100101), ("b", 20050101), ("c", 0))}
         sheets["z"] = {"name": "Z", "traits": {"series": ["Alone"]}}
@@ -216,6 +232,8 @@ class SiteData(unittest.TestCase):
         lists = self.read("x/switch/lists.json")
         self.assertEqual(lists["popular"][0], ["0100A1B2C3D4E000", "", 80, 12, 90, "s900010"])   # Steam's header of the same game
         self.assertEqual(len(lists["popular"][1]), 5)                                             # none known: no column
+        self.assertEqual([r[0] for r in lists["popular"]], ["0100A1B2C3D4E000", "0100D0D0D0D0D000"])   # the edition is not a game of the list
+        self.assertEqual([r[0] for r in lists["trending"]], ["0100A1B2C3D4E000"])
         self.assertEqual([len(r) for r in self.read("x/steam/lists.json")["popular"]], [5, 5, 5])   # Steam's id is the app
         self.assertEqual(site_data.picture("switch", "a", {"igdb_cover": "co1abc"}, None, {}, False), "ico1abc")
         self.assertEqual(site_data.picture("gog", "a", {}, ("Q1", {"steam": ["7"]}), {"img": {"h": "f00.png"}}, True), "gf00.png")
