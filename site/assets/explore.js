@@ -550,6 +550,29 @@
   const gameHref = (kind, ref) => (kind === "u" ? `#game/${encodeURIComponent(ref)}` : `#${kind}/game/${encodeURIComponent(ref)}`);
   const storeName = (p) => (p === "steam" ? "Steam" : STORE_NAMES[p] || S._names[p] || p);
 
+  // A platform's tile on a sheet: its short name large and faint behind it, with a computer or a console drawn
+  // beside, and a tint of its own (no brand's logo: the platforms' owners keep theirs).
+  const SHORT = { switch: "Switch", steam: "Steam", gog: "GOG", xbox: "Xbox", ps4: "PS4", ps5: "PS5", ps3: "PS3", ps2: "PS2", ps1: "PS1",
+    psp: "PSP", psv: "Vita", "3ds": "3DS", nds: "DS", wiiu: "Wii U", wii: "Wii", gamecube: "GameCube", n64: "N64", snes: "SNES", nes: "NES",
+    "xbox-og": "Xbox", xbox360: "360", genesis: "Mega Drive", dreamcast: "Dreamcast", saturn: "Saturn", gb: "Game Boy", gbc: "GBC", gba: "GBA" };
+  const PC = new Set(["steam", "gog", "dos", "amiga", "atarist", "c64", "msx", "zxspectrum", "amstradcpc", "apple2"]);
+  // Each platform's own colour, the one its machines and stores are known by (a colour, not a mark); a hue from
+  // the id for the others.
+  const TINTS = { switch: "#e60012", "3ds": "#ce181e", nds: "#b8bcc6", wii: "#34bedd", wiiu: "#009ac7", gamecube: "#6a5acd",
+    n64: "#2c9a3c", snes: "#8f7fd0", nes: "#e60012", fds: "#e8b400", gb: "#8bac0f", gbc: "#f5b60a", gba: "#5a4fcf",
+    steam: "#1a9fff", gog: "#a649d6", xbox: "#107c10", "xbox-og": "#3fa535", xbox360: "#9bc848",
+    ps1: "#b7b7b7", ps2: "#2d50c8", ps3: "#5a6e8c", ps4: "#0070d1", ps5: "#2f6ff0", psp: "#6d7c95", psv: "#1f63c6",
+    genesis: "#0060a8", sms: "#e03a3e", gamegear: "#3a3d9c", saturn: "#4b5bb5", dreamcast: "#f26f22", segacd: "#2b6cc4",
+    neogeo: "#d8a71d", turbografx16: "#ff6a13", atari2600: "#c8102e", colecovision: "#e4572e", c64: "#6c5eb5",
+    amiga: "#ff5a1f", atarist: "#9a9a9a", msx: "#2f7ad8", zxspectrum: "#e8262e", amstradcpc: "#2fb34a", apple2: "#58b947",
+    dos: "#00a6a6", "3do": "#d4af37", cdi: "#3b6fd1", arcade: "#ff3cac" };
+  function platTile(p, link) {
+    const li = el("li", { class: "plat" }, el("span", { class: "wm", "aria-hidden": "true" },
+      icon(PC.has(p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[p] || p.toUpperCase() })), link);
+    li.style.setProperty("--tint", TINTS[p] || `hsl(${hueOf(p)} 60% 50%)`);
+    return li;
+  }
+
   function renderSheet(m, backHref) {
     sheet.replaceChildren();
     sheet.hidden = false;
@@ -566,6 +589,14 @@
     const ringHelp = el("p", { class: "ring-help", "aria-live": "polite", hidden: "" });
     if (best) rings.append(ring(best.popular[0], t("x_score"), t("x_score_help"), ringHelp));
     if (critics) rings.append(ring(critics, t("x_critics"), t("x_critics_help"), ringHelp));
+    // The players' rating (IGDB, from 20 ratings) and each store's share of good reviews are rings too.
+    const voters = es.filter((e) => e.igdb_rating && e.igdb_rating[1] >= 20).sort((x, y) => y.igdb_rating[1] - x.igdb_rating[1])[0];
+    if (voters) rings.append(ring(voters.igdb_rating[0], t("x_players_rating"), t("x_players_help", { n: num(voters.igdb_rating[1]) }), ringHelp));
+    for (const e of es) {
+      for (const r of [e.reviews, e.rating]) {
+        if (r && r[0]) rings.append(ring(r[1], storeName(e.p), t("x_store_help", { p: r[1], n: num(r[0]), store: storeName(e.p) }), ringHelp));
+      }
+    }
     const info = el("div", { class: "info" }, logo, title,
       // On a sheet of several platforms each badge opens that platform's own sheet.
       el("p", { class: "ids" }, ...es.map((e) => (es.length > 1
@@ -588,15 +619,11 @@
     const stats = el("dl", { class: "stats" });
     const stat = (label, value) => { if (value !== null && value !== undefined && value !== "") stats.append(el("div", {}, el("dt", { text: label }), el("dd", {}, value))); };
     // A store's reviews: the share of good ones large, in the rings' colours, how many under it.
-    const reviewed = (label, [n, p]) => stats.append(el("div", { class: "rev" }, el("dt", { text: label }),
-      el("dd", {}, el("b", { class: `pct ${toneOf(p)}`, text: `${p} %` }), el("small", { text: t("x_review_count", { n: num(n) }) }))));
+    // (The stores' shares of good reviews and the players' rating are rings in the head; their counts here.)
     if (best && best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
     for (const e of es) {
-      if (e.reviews) reviewed(storeName(e.p), e.reviews);
-      if (e.rating) reviewed(storeName(e.p), e.rating);
+      for (const r of [e.reviews, e.rating]) if (r && r[0]) stat(storeName(e.p), t("x_review_count", { n: num(r[0]) }));
     }
-    const players = es.filter((e) => e.igdb_rating && e.igdb_rating[1] >= 20).sort((x, y) => y.igdb_rating[1] - x.igdb_rating[1])[0];
-    if (players) stat(t("x_players_rating"), `${players.igdb_rating[0]} / 100`);
     const out = es.map((e) => e.release).filter(Boolean);
     const soon = es.map((e) => e.upcoming).filter(Boolean);
     if (out.length) stat(t("x_release"), ymd(Math.min(...out)));
@@ -649,7 +676,7 @@
     if (technical) side.append(technical);
 
     if (es.length > 1) {
-      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => el("li", {}, el("a", { href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
+      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => platTile(e.p, el("a", { href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
         el("span", { class: "badge", text: S._names[e.p] || e.p }),
         e.popular ? score(e.popular[0]) : null,
         e.release ? el("span", { class: "date", text: ymd(e.release) }) : (e.upcoming ? el("span", { class: "date", text: t("x_coming", { date: ymd(e.upcoming) }) }) : null),

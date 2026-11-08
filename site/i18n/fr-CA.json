@@ -145,6 +145,8 @@
   "x_remove_filter": "Retirer le filtre {name}",
   "x_score_help": "La notoriété du jeu, sur 100 : ses pages et vues Wikipédia, ses critiques et ses avis en boutique, rapportés aux jeux les plus connus.",
   "x_critics_help": "La moyenne des critiques, sur 100, telle que Wikidata la donne.",
+  "x_players_help": "La note des joueurs sur IGDB, sur 100, d'après {n} notes.",
+  "x_store_help": "{p} % des {n} avis sur {store} sont positifs.",
   "x_stats": "Stats",
   "x_st_note": "Chiffres des {n} jeux nommés, calculés à partir des fichiers à chaque construction ({date}).",
   "x_st_games": "Jeux",

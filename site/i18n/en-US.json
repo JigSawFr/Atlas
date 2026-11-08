@@ -145,6 +145,8 @@
   "x_remove_filter": "Remove the filter {name}",
   "x_score_help": "How well known the game is, out of 100: its Wikipedia pages and views, its critics' reviews and its store reviews, against the best known.",
   "x_critics_help": "The critics' average, out of 100, as Wikidata gives it.",
+  "x_players_help": "The players' rating on IGDB, out of 100, from {n} ratings.",
+  "x_store_help": "{p} % of the {n} reviews on {store} are positive.",
   "x_stats": "Stats",
   "x_st_note": "Figures of the {n} named games, worked out from the files at each build ({date}).",
   "x_st_games": "Games",

@@ -282,6 +282,8 @@ def icon_sprite() -> str:
 
     symbols = [(f"i-{letter}-{key}", icon) for letter, key, icon, _ in taxonomy.CONCEPTS]
     symbols += [(f"i-k-{kind}", icon) for kind, icon in taxonomy.KIND_ICONS.items()]
+    # A platform's kind, drawn faintly behind its tile on a sheet: a computer's stores and machines, else a console.
+    symbols += [("i-d-pc", "monitor"), ("i-d-console", "gamepad-2")]
     return "".join(f'<symbol id="{name}" viewBox="0 0 24 24">{drawing(icon)}</symbol>' for name, icon in symbols)
 
 

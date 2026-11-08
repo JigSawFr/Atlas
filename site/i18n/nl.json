@@ -145,6 +145,8 @@
   "x_remove_filter": "Filter {name} verwijderen",
   "x_score_help": "Hoe bekend het spel is, op 100: zijn Wikipedia-pagina's en -weergaven, recensies van critici en van winkels, vergeleken met de bekendste.",
   "x_critics_help": "Het gemiddelde van de critici, op 100, zoals Wikidata het geeft.",
+  "x_players_help": "De spelersscore op IGDB, op 100, uit {n} beoordelingen.",
+  "x_store_help": "{p} % van de {n} recensies op {store} is positief.",
   "x_stats": "Statistieken",
   "x_st_note": "Cijfers van de {n} benoemde spellen, bij elke build uit de bestanden berekend ({date}).",
   "x_st_games": "Spellen",
