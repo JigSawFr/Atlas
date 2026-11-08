@@ -389,5 +389,19 @@
   "x_compare": "Confronta",
   "x_compare_n": "Confronta {n} giochi",
   "x_compare_pick": "Seleziona 2 o 3 giochi da confrontare.",
-  "x_highest": "Il più alto"
+  "x_highest": "Il più alto",
+  "x_atlas_score": "Punteggio Atlas",
+  "x_atlas_help": "Un solo punteggio da critica, giocatori e notorietà, ciascuno pesato in base a ciò su cui poggia ({n} segnali).",
+  "x_atlas_how": "Come viene calcolato",
+  "x_atlas_note": "Le recensioni dei negozi e il voto dei giocatori vengono avvicinati a 70 quando sono poche. La portata è la radice quadrata della migliore notorietà, quindi pesa poco rispetto alla qualità. I pesi sono ricalcolati sui segnali presenti.",
+  "x_sig_store": "Recensioni dei negozi",
+  "x_sig_reach": "Portata",
+  "x_signal": "Segnale",
+  "x_weight": "Peso",
+  "x_pooled_label": "Recensioni, tutti i negozi",
+  "x_pooled_value": "{p} % positive su {n} recensioni",
+  "x_platforms_count": "Piattaforme",
+  "x_score_avg": "Notorietà media",
+  "x_global_sheet": "Scheda generale",
+  "x_value": "Valore"
 }

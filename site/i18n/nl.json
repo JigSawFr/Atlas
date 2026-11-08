@@ -389,5 +389,19 @@
   "x_compare": "Vergelijken",
   "x_compare_n": "{n} games vergelijken",
   "x_compare_pick": "Vink 2 of 3 games aan om te vergelijken.",
-  "x_highest": "Hoogste"
+  "x_highest": "Hoogste",
+  "x_atlas_score": "Atlas-score",
+  "x_atlas_help": "Eén score uit de kritiek, de spelers en de bekendheid, elk gewogen naar waarop het rust ({n} signalen).",
+  "x_atlas_how": "Zo wordt het berekend",
+  "x_atlas_note": "Winkelreviews en spelersscore worden bij weinig stemmen naar 70 getrokken. Bereik is de wortel van de hoogste bekendheid en telt dus weinig naast kwaliteit. De gewichten worden herberekend over de aanwezige signalen.",
+  "x_sig_store": "Winkelreviews",
+  "x_sig_reach": "Bereik",
+  "x_signal": "Signaal",
+  "x_weight": "Gewicht",
+  "x_pooled_label": "Reviews, alle winkels",
+  "x_pooled_value": "{p} % positief van {n} reviews",
+  "x_platforms_count": "Platforms",
+  "x_score_avg": "Gemiddelde bekendheid",
+  "x_global_sheet": "Overzichtspagina",
+  "x_value": "Waarde"
 }

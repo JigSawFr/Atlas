@@ -711,6 +711,44 @@
     return bar;
   }
 
+  // The Atlas score of a game on its platforms, worked out here from what the sheet already holds:
+  //   critics  35 %  the mean of the critics' scores of its platforms
+  //   store    30 %  the stores' shares of good reviews, pooled by how many reviews each has, pulled toward 70 as if
+  //                  40 more reviews at 70 had been read (few reviews cannot swing it), its weight growing with their number
+  //   players  15 %  IGDB's players' rating (20 ratings or more), the same way (30 ratings at 70, weight n / (n + 30))
+  //   reach    20 %  the square root of the best renown, back on 100 (renown is skewed: most games are little known)
+  // The weights are worked out again over the signals that exist; one of the three quality signals at least is needed.
+  // The result is the weighted mean, and `parts` says what each signal gave and how much it counted.
+  function atlasScore(es) {
+    const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const parts = [];
+    const critics = es.map((e) => (e.popular ? e.popular[2] : 0)).filter(Boolean);
+    if (critics.length) parts.push({ key: "critics", value: mean(critics), weight: 0.35 });
+    let n = 0, sum = 0;
+    for (const e of es) for (const r of [e.reviews, e.rating]) if (r && r[0]) { n += r[0]; sum += r[0] * r[1]; }
+    if (n) parts.push({ key: "store", value: (sum + 40 * 70) / (n + 40), weight: 0.3 * (n / (n + 100)), n });
+    let m2 = 0, sum2 = 0;
+    for (const e of es) if (e.igdb_rating && e.igdb_rating[1] >= 20) { m2 += e.igdb_rating[1]; sum2 += e.igdb_rating[1] * e.igdb_rating[0]; }
+    if (m2) parts.push({ key: "players", value: (sum2 + 30 * 70) / (m2 + 30), weight: 0.15 * (m2 / (m2 + 30)), n: m2 });
+    if (!parts.length) return null;
+    const renown = Math.max(0, ...es.map((e) => (e.popular ? e.popular[0] : 0)));
+    if (renown) parts.push({ key: "reach", value: 100 * Math.sqrt(renown / 100), weight: 0.2 });
+    const total = parts.reduce((a, x) => a + x.weight, 0);
+    for (const x of parts) x.share = x.weight / total;
+    return { score: Math.round(parts.reduce((a, x) => a + x.value * x.share, 0)), parts };
+  }
+
+  // How the Atlas score came out: a table, a signal a row (its value as a bar and a number, its weight, what it rests on).
+  function recipe(atlas) {
+    const label = { critics: "x_critics", store: "x_sig_store", players: "x_players_rating", reach: "x_sig_reach" };
+    return el("details", { class: "recipe" }, el("summary", { text: `${t("x_atlas_score")} · ${t("x_atlas_how")}` }),
+      el("table", {}, el("thead", {}, el("tr", {}, el("th", { scope: "col", text: t("x_signal") }), el("th", { scope: "col", text: t("x_value") }), el("th", { scope: "col", text: t("x_weight") }))),
+        el("tbody", {}, ...atlas.parts.map((x) => el("tr", {}, el("th", { scope: "row" }, t(label[x.key]), x.n ? el("small", { class: "dim", text: ` ${t("x_review_count", { n: num(x.n) })}` }) : null),
+          el("td", {}, el("span", { class: "score" }, el("span", { class: "bar" }, el("i", { "data-w": String(Math.round(x.value)) })), String(Math.round(x.value)))),
+          el("td", { text: `${Math.round(x.share * 100)} %` }))))),
+      el("p", { class: "dim", text: t("x_atlas_note") }));
+  }
+
   // Where a sheet was opened from (kept for the tab): the list's address, how far it was scrolled, how many rows it
   // showed and its games in order. The sheet steps to the one before and after (arrows too), and the list comes
   // back as it was.
@@ -770,23 +808,34 @@
     sheet.replaceChildren();
     sheet.hidden = false;
     const es = m.platforms;
+    // A sheet is the game's as a whole (several platforms: what they have in common, an Atlas score) or one
+    // platform's, which takes its colour and holds what is its own (its store's reviews, its figures, its tech).
+    const multi = es.length > 1;
+    sheet.classList.toggle("platform", !multi);
+    if (multi) sheet.style.removeProperty("--tint"); else sheet.style.setProperty("--tint", TINTS[es[0].p] || `hsl(${hueOf(es[0].p)} 60% 50%)`);
     // The way back is a round button that stays in the corner of the window, not a link on the picture.
     const back = el("a", { class: "back fab", href: backHref, title: t("x_back"), "aria-label": t("x_back"), text: "←" });
     const shown = pictures(es);
     const wide = shown.backdrops.length || shown.poster;
     const cover = wide ? null : shown.hero ? pictureCover(m, shown.hero, "hero") : drawnCover(m);
     const best = es.filter((e) => e.popular).sort((x, y) => y.popular[0] - x.popular[0])[0];
-    const critics = Math.max(0, ...es.map((e) => (e.popular ? e.popular[2] : 0)));
+    const criticList = es.map((e) => (e.popular ? e.popular[2] : 0)).filter(Boolean);
+    const critics = criticList.length ? Math.round(criticList.reduce((a, b) => a + b, 0) / criticList.length) : 0;
+    const atlas = multi ? atlasScore(es) : null;
     const title = el("h2", { tabindex: "-1" }, m.name || m.id || "");
     const logo = shown.logo ? el("img", { class: "logo", src: proxied(shown.logo, 560), alt: "", decoding: "async", referrerpolicy: "no-referrer" }) : null;
     const rings = el("div", { class: "rings" });
     const ringHelp = el("p", { class: "ring-help", "aria-live": "polite", hidden: "" });
-    if (best) rings.append(ring(best.popular[0], t("x_score"), t("x_score_help"), ringHelp));
+    if (atlas) {
+      rings.append(ring(atlas.score, t("x_atlas_score"), t("x_atlas_help", { n: num(atlas.parts.length) }), ringHelp));
+      rings.lastChild.classList.add("atlas");
+    }
+    if (best && !multi) rings.append(ring(best.popular[0], t("x_score"), t("x_score_help"), ringHelp));
     if (critics) rings.append(ring(critics, t("x_critics"), t("x_critics_help"), ringHelp));
     // The players' rating (IGDB, from 20 ratings) and each store's share of good reviews are rings too.
     const voters = es.filter((e) => e.igdb_rating && e.igdb_rating[1] >= 20).sort((x, y) => y.igdb_rating[1] - x.igdb_rating[1])[0];
     if (voters) rings.append(ring(voters.igdb_rating[0], t("x_players_rating"), t("x_players_help", { n: num(voters.igdb_rating[1]) }), ringHelp));
-    for (const e of es) {
+    for (const e of multi ? [] : es) {
       for (const r of [e.reviews, e.rating]) {
         if (r && r[0]) rings.append(ring(r[1], storeName(e.p), t("x_store_help", { p: r[1], n: num(r[0]), store: storeName(e.p) }), ringHelp));
       }
@@ -795,10 +844,16 @@
     // missing name). The Wikidata item is among the links.
     const ids = el("p", { class: "ids" }, es.length === 1 ? el("span", { class: "badge", text: S._names[es[0].p] || es[0].p }) : null,
       m.name && m.id ? el("code", { text: m.id }) : null,
+      !multi && es[0].gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null,
+      !multi && es[0].tech && es[0].tech.deck >= 2 ? el("span", { class: "chip", text: `Steam Deck · ${t(`x_deck_${es[0].tech.deck}`)}` }) : null,
       !m.name ? el("small", { text: t("x_no_name") }) : null);
     const info = el("div", { class: "info" }, logo, title, ids.childElementCount ? ids : null,
       rings.childElementCount ? rings : null, rings.childElementCount ? ringHelp : null);
-    const top = el("div", { class: "topline" }, el("span", { class: "tools" }, pager(es), heart(m, es)));
+    // On a platform's own sheet: its store, and the way back to the game's sheet of all its platforms.
+    const p1 = es[0], shop = !multi && STORES[p1.p] && /^[\w-]+$/.test(p1.id)
+      ? el("a", { class: "chip store-link", href: STORES[p1.p](p1.id), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", text: `${t("x_open_store", { store: storeName(p1.p) })} ↗` }) : null;
+    const whole = !multi && m.unified ? el("a", { class: "chip whole", href: gameHref("u", m.unified), text: `◂ ${t("x_global_sheet")}` }) : null;
+    const top = el("div", { class: "topline" }, whole, el("span", { class: "tools" }, shop, pager(es), heart(m, es)));
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
       wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
     if (logo) {
@@ -808,22 +863,36 @@
     if (wide) sheet.append(backdrop(shown.backdrops, shown.poster));
     sheet.classList.toggle("with-backdrop", !!wide);
     sheet.append(back, head);     // outside the head, whose entrance animation would make it the button's frame
+    if (!multi) {
+      sheet.append(el("span", { class: "sheet-wm", "aria-hidden": "true" }, icon(PC.has(es[0].p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[es[0].p] || es[0].p.toUpperCase() })));
+    }
 
     const stats = el("dl", { class: "stats" });
     const stat = (label, value) => { if (value !== null && value !== undefined && value !== "") stats.append(el("div", {}, el("dt", { text: label }), el("dd", {}, value))); };
     // A store's reviews: the share of good ones large, in the rings' colours, how many under it.
     // (The stores' shares of good reviews and the players' rating are rings in the head; their counts here.)
-    if (best && best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
-    for (const e of es) {
-      for (const r of [e.reviews, e.rating]) if (r && r[0]) stat(storeName(e.p), t("x_review_count", { n: num(r[0]) }));
+    if (multi) {
+      // The game as a whole: the stores' reviews pooled, how many platforms, the renown on average.
+      let n = 0, sum = 0;
+      for (const e of es) for (const r of [e.reviews, e.rating]) if (r && r[0]) { n += r[0]; sum += r[0] * r[1]; }
+      if (n) stat(t("x_pooled_label"), t("x_pooled_value", { p: num(Math.round(sum / n)), n: num(n) }));
+      stat(t("x_platforms_count"), num(es.length));
+      const known = es.map((e) => (e.popular ? e.popular[0] : 0)).filter(Boolean);
+      if (known.length) stat(t("x_score_avg"), fmt1.format(known.reduce((a, b) => a + b, 0) / known.length));
+    } else {
+      if (best && best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
+      for (const e of es) {
+        for (const r of [e.reviews, e.rating]) if (r && r[0]) stat(storeName(e.p), t("x_review_count", { n: num(r[0]) }));
+      }
     }
     const out = es.map((e) => e.release).filter(Boolean);
     const soon = es.map((e) => e.upcoming).filter(Boolean);
     if (out.length) stat(t("x_release"), ymd(Math.min(...out)));
     else if (soon.length) stat(t("x_release"), t("x_coming", { date: ymd(Math.min(...soon)) }));
     if (stats.childElementCount) sheet.append(stats);
-    // Where the game stands on its best known platform (its stats.json, a few kB, asked after the sheet is drawn).
-    if (best) {
+    if (atlas) sheet.append(recipe(atlas));
+    // Where the game stands on its platform (its stats.json, a few kB, asked after the sheet is drawn).
+    if (best && !multi) {
       const where = el("p", { class: "insights", hidden: "" });
       sheet.append(where);
       get(`x/${best.p}/stats.json`).then((st) => {
@@ -843,7 +912,7 @@
         if (q.length) where.after(distribution(q, best.popular[0], plat));
       }, () => where.remove());
     }
-    for (const e of es) {
+    for (const e of multi ? [] : es) {
       if (e.steam && (e.steam.owners || e.steam.ccu)) {
         sheet.append(el("p", { class: "dim figures", text: t("x_steam_figures", { owners: num(e.steam.owners || 0), ccu: num(e.steam.ccu || 0) }) }));
         break;
@@ -871,7 +940,7 @@
       main.append(dl);
       // How many games of the platform have it, once its menus are in (a few kB, the browse view's own).
       const homeName = S._names[home] || home;
-      get(`x/${home}/facets.json`).then((f) => {
+      if (!multi) get(`x/${home}/facets.json`).then((f) => {
         for (const c of dl.querySelectorAll("a.chip[data-kind]")) {
           const found = ((f.facets || {})[c.dataset.kind] || []).find(([v]) => v === c.dataset.value);
           if (!found) continue;
@@ -883,7 +952,7 @@
         }
       }, () => {});
     }
-    const technical = techBlock(es, m.wd);
+    const technical = multi ? null : techBlock(es, m.wd);
     if (technical) side.append(technical);
 
     if (es.length > 1) {
@@ -1164,7 +1233,7 @@
   function platformSheet(platform, id, g) {
     const entry = { p: platform, id };
     for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
-    return { name: g.name, id, qid: g.qid, wd: g.wd, platforms: [entry], traits: g.traits,
+    return { name: g.name, id, qid: g.qid, unified: g.unified ? g.qid : "", wd: g.wd, platforms: [entry], traits: g.traits,
       similar: (g.similar || []).map(([o, name, s, pic, shared]) => [platform, o, name, s, pic, shared]),
       family: g.family ? [g.family[0], g.family[1].map((r) => [platform, ...r])] : null, links: g.links };
   }
@@ -1235,7 +1304,8 @@
       const es = m.platforms, top = es.filter((e) => e.popular).sort((x, y) => y.popular[0] - x.popular[0])[0];
       const voters = es.filter((e) => e.igdb_rating && e.igdb_rating[1] >= 20).sort((x, y) => y.igdb_rating[1] - x.igdb_rating[1])[0];
       const out = es.map((e) => e.release).filter(Boolean);
-      return { score: top ? top.popular[0] : 0, critics: Math.max(0, ...es.map((e) => (e.popular ? e.popular[2] : 0))), players: voters ? voters.igdb_rating[0] : 0,
+      const a = atlasScore(es);
+      return { atlas: a ? a.score : 0, score: top ? top.popular[0] : 0, critics: Math.max(0, ...es.map((e) => (e.popular ? e.popular[2] : 0))), players: voters ? voters.igdb_rating[0] : 0,
         release: out.length ? Math.min(...out) : 0 };
     });
     const figure = (key, label) => {
@@ -1244,7 +1314,7 @@
         best > 0 && v === best && values.some((x) => x !== best) ? el("span", { class: "lead", title: t("x_highest"), "aria-label": t("x_highest"), text: "★" }) : null) : el("span", { class: "dim", text: "–" })))];
     };
     const names = (m) => m.platforms.map((e) => S._names[e.p] || e.p).join(", ");
-    const rows = [figure("score", t("x_score")), figure("critics", t("x_critics")), figure("players", t("x_players_rating")),
+    const rows = [figure("atlas", t("x_atlas_score")), figure("score", t("x_score")), figure("critics", t("x_critics")), figure("players", t("x_players_rating")),
       [t("x_release"), facts.map((f) => (f.release ? el("span", { text: ymd(f.release) }) : el("span", { class: "dim", text: "–" })))],
       [t("x_by_platform"), got.map((m) => el("span", { text: names(m) }))],
       [t("x_genres"), got.map((m) => el("span", { class: "chips" }, ...((m.traits && m.traits.genres) || []).slice(0, 4).map((n) => chip("genres", n))))],

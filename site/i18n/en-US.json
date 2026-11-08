@@ -389,5 +389,19 @@
   "x_compare": "Compare",
   "x_compare_n": "Compare {n} games",
   "x_compare_pick": "Tick 2 or 3 games to compare them.",
-  "x_highest": "Highest"
+  "x_highest": "Highest",
+  "x_atlas_score": "Atlas score",
+  "x_atlas_help": "One score from the critics, the players and how well known the game is, each weighed by how much it rests on ({n} signals).",
+  "x_atlas_how": "How it is worked out",
+  "x_atlas_note": "Store reviews and the players' rating are pulled toward 70 when there are few. Reach is the square root of the best renown, so it counts for little against quality. The weights are worked out again over the signals there are.",
+  "x_sig_store": "Store reviews",
+  "x_sig_reach": "Reach",
+  "x_signal": "Signal",
+  "x_weight": "Weight",
+  "x_pooled_label": "Reviews, all stores",
+  "x_pooled_value": "{p} % positive of {n} reviews",
+  "x_platforms_count": "Platforms",
+  "x_score_avg": "Average renown",
+  "x_global_sheet": "Overall sheet",
+  "x_value": "Value"
 }

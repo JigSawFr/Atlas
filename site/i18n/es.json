@@ -389,5 +389,19 @@
   "x_compare": "Comparar",
   "x_compare_n": "Comparar {n} juegos",
   "x_compare_pick": "Marca 2 o 3 juegos para compararlos.",
-  "x_highest": "El más alto"
+  "x_highest": "El más alto",
+  "x_atlas_score": "Puntuación Atlas",
+  "x_atlas_help": "Una sola nota a partir de la crítica, los jugadores y la popularidad, cada una ponderada según su base ({n} señales).",
+  "x_atlas_how": "Cómo se calcula",
+  "x_atlas_note": "Las reseñas de las tiendas y la nota de los jugadores se acercan a 70 cuando son pocas. El alcance es la raíz cuadrada de la mejor popularidad, así que pesa poco frente a la calidad. Los pesos se recalculan con las señales disponibles.",
+  "x_sig_store": "Reseñas de tiendas",
+  "x_sig_reach": "Alcance",
+  "x_signal": "Señal",
+  "x_weight": "Peso",
+  "x_pooled_label": "Reseñas, todas las tiendas",
+  "x_pooled_value": "{p} % positivas de {n} reseñas",
+  "x_platforms_count": "Plataformas",
+  "x_score_avg": "Popularidad media",
+  "x_global_sheet": "Ficha global",
+  "x_value": "Valor"
 }
