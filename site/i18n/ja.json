@@ -141,6 +141,7 @@
   "x_view_name": "このビューの名前",
   "x_saved_views": "保存したビュー",
   "x_remove_view": "ビュー「{name}」を削除",
+  "x_remove_filter": "フィルター「{name}」を外す",
   "x_about": "概要",
   "x_wikipedia_text": "Wikipediaより（CC BY-SA 4.0）",
   "x_gallery": "スクリーンショット",

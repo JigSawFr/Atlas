@@ -141,6 +141,7 @@
   "x_view_name": "此檢視的名稱",
   "x_saved_views": "已儲存的檢視",
   "x_remove_view": "刪除檢視 {name}",
+  "x_remove_filter": "移除篩選條件 {name}",
   "x_about": "簡介",
   "x_wikipedia_text": "文字來自維基百科，CC BY-SA 4.0",
   "x_gallery": "截圖",

@@ -141,6 +141,7 @@
   "x_view_name": "Nombre de esta vista",
   "x_saved_views": "Vistas guardadas",
   "x_remove_view": "Quitar la vista {name}",
+  "x_remove_filter": "Quitar el filtro {name}",
   "x_about": "Acerca del juego",
   "x_wikipedia_text": "Texto de Wikipedia, CC BY-SA 4.0",
   "x_gallery": "Capturas de pantalla",

@@ -26,7 +26,7 @@
   const status = $("x-status"), results = $("x-results"), sheet = $("x-sheet");
   const search = $("x-search"), machine = $("x-machine");
   const panel = $("x-browse"), facetBox = $("x-facets"), sortBox = $("x-sort");
-  const more = $("x-more"), loadAll = $("x-loadall");
+  const more = $("x-more"), loadAll = $("x-loadall"), active = $("x-active");
   const cache = new Map();
   let read = 0;
 
@@ -114,7 +114,17 @@
   const go = (hash) => { if (location.hash !== hash) location.hash = hash; else show(); };
 
   function pressed(group, attr, value) {
-    for (const b of document.querySelectorAll(`#${group} button:not(.layout)`)) b.setAttribute("aria-pressed", String(b.dataset[attr] === value));
+    const box = $(group);
+    let on = null;
+    for (const b of box.querySelectorAll("button:not(.layout)")) {
+      b.setAttribute("aria-pressed", String(b.dataset[attr] === value));
+      if (b.dataset[attr] === value) on = b;
+    }
+    // On a phone the row scrolls sideways: the button pressed is brought into it (the page itself does not move).
+    if (on && box.scrollWidth > box.clientWidth) {
+      const r = on.getBoundingClientRect(), g = box.getBoundingClientRect();
+      if (r.left < g.left || r.right > g.right) box.scrollLeft += r.left - g.left - (g.width - r.width) / 2;
+    }
   }
 
   function setStatus(text) {
@@ -128,12 +138,15 @@
 
   // A tile for a game: Steam's header where the id is a Steam app's (a fixed name on the store's server, through
   // wsrv.nl), else a cover drawn by the page. No sheet is fetched for it: a shard of sheets is some 160 kB.
-  function tile(kind, ref, name) {
-    const draw = () => drawnCover({ id: ref, name }, "tile");
+  // A thumb is the same, small, at the head of a row of a list.
+  function tile(kind, ref, name, thumb) {
+    const cls = thumb ? "tile thumb" : "tile";
+    const draw = () => drawnCover({ id: ref, name }, cls);
     if (kind !== "steam" || !/^\d+$/.test(ref)) return draw();
-    const img = el("img", { src: proxied(STORE_PICTURES.steam(ref, "header.jpg"), 320, 150), alt: "", loading: "lazy", decoding: "async",
-      referrerpolicy: "no-referrer", width: "320", height: "150" });
-    const figure = el("figure", { class: "cover tile" }, img);
+    const [w, h] = thumb ? [128, 60] : [320, 150];
+    const img = el("img", { src: proxied(STORE_PICTURES.steam(ref, "header.jpg"), w, h), alt: "", loading: "lazy", decoding: "async",
+      referrerpolicy: "no-referrer", width: String(w), height: String(h) });
+    const figure = el("figure", { class: `cover ${cls}` }, img);
     img.addEventListener("error", () => figure.replaceWith(draw()));
     return figure;
   }
@@ -149,7 +162,7 @@
   function row(platform, id, name, meta, extra) {
     if (cards) return el("li", {}, card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, meta));
     return el("li", {}, el("a", { href: `#${platform}/game/${encodeURIComponent(id)}` },
-      nameOf(id, name, platform), el("span", { class: "meta" }, ...meta), extra || null));
+      tile(platform, id, name, true), nameOf(id, name, platform), el("span", { class: "meta" }, ...meta), extra || null));
   }
 
   function trend(v) {
@@ -176,7 +189,7 @@
     const lists = await get(`x/${platform}/lists.json`);
     results.replaceChildren();
     let note = "", count = 0;
-    if (view === "upcoming") {    } else if (view === "upcoming") {
+    if (view === "upcoming") {
       for (const [id, name, when] of lists.upcoming) results.append(row(platform, id, name, [el("span", { class: "date", text: ymd(when) })]));
       count = lists.upcoming.length;
       note = t("x_upcoming_note");
@@ -374,9 +387,10 @@
       const img = el("img", { alt: "", decoding: "async", referrerpolicy: "no-referrer" });
       const mk = (cls, key, text) => el("button", { type: "button", class: `viewer-btn ${cls}`, "aria-label": t(key), text });
       const prev = mk("prev", "x_prev", "‹"), next = mk("next", "x_next", "›"), close = mk("close", "x_close", "✕");
-      const dialog = el("dialog", { class: "viewer" }, img, prev, next, close);
-      viewer = { dialog, img, origins: [], at: 0 };
-      const go = (d) => { const n = viewer.origins.length; viewer.at = (viewer.at + d + n) % n; img.src = proxied(viewer.origins[viewer.at], 1280); };
+      const count = el("p", { class: "viewer-count", "aria-live": "polite" });
+      const dialog = el("dialog", { class: "viewer" }, img, prev, next, close, count);
+      viewer = { dialog, img, count, origins: [], at: 0 };
+      const go = (d) => { const n = viewer.origins.length; viewer.at = (viewer.at + d + n) % n; viewerShow(); };
       prev.addEventListener("click", () => go(-1));
       next.addEventListener("click", () => go(1));
       close.addEventListener("click", () => dialog.close());
@@ -392,17 +406,32 @@
     }
     viewer.origins = origins;
     viewer.at = start;
-    viewer.img.src = proxied(origins[start], 1280);
+    viewerShow();
     viewer.dialog.showModal();
+  }
+
+  // The picture asked, its place among the others, and the next one fetched ahead so the arrow shows it at once.
+  function viewerShow() {
+    const { origins, at } = viewer, n = origins.length;
+    viewer.img.src = proxied(origins[at], 1280);
+    viewer.count.textContent = `${num(at + 1)} / ${num(n)}`;
+    viewer.dialog.classList.toggle("single", n < 2);
+    if (n > 1) {
+      const ahead = new Image();
+      ahead.referrerPolicy = "no-referrer";
+      ahead.src = proxied(origins[(at + 1) % n], 1280);
+    }
   }
 
   function gallery(origins) {
     if (!origins.length) return null;
-    const strip = el("div", { class: "shots" });
+    const strip = el("div", { class: `shots n${Math.min(origins.length, 5)}` });
     origins.forEach((origin, i) => {
       const img = el("img", { src: proxied(origin, i ? 320 : 480, i ? 180 : 270), alt: t("x_screenshot", { n: i + 1 }), loading: "lazy", decoding: "async",
         referrerpolicy: "no-referrer", width: i ? "240" : "360", height: i ? "135" : "203" });
-      const link = el("a", { href: proxied(origin, 1280), target: "_blank", rel: "noreferrer noopener", referrerpolicy: "no-referrer", class: i ? "" : "first" }, img);
+      // On a wide screen the first is large and four more beside it; the last of them says how many are left.
+      const link = el("a", { href: proxied(origin, 1280), target: "_blank", rel: "noreferrer noopener", referrerpolicy: "no-referrer", class: i ? "" : "first",
+        "data-more": i === 4 && origins.length > 5 ? `+${num(origins.length - 5)}` : null }, img);
       link.addEventListener("click", (ev) => {
         if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button || typeof HTMLDialogElement === "undefined") return;
         ev.preventDefault();
@@ -434,6 +463,8 @@
     return layer;
   }
 
+  const toneOf = (v) => (v >= 75 ? "high" : v >= 50 ? "mid" : "low");
+
   // A score out of 100 as a ring (a dasharray set by script, as the bars' widths: the CSP allows no style attribute).
   function ring(v, label) {
     const svg = document.createElementNS(SVG, "svg");
@@ -445,8 +476,7 @@
       if (cls === "arc") { c.setAttribute("pathLength", "100"); c.setAttribute("stroke-dasharray", `${Math.max(2, Math.min(100, v))} 100`); }
       svg.append(c);
     }
-    const tone = v >= 75 ? "high" : v >= 50 ? "mid" : "low";
-    return el("div", { class: `ring ${tone}`, role: "img", "aria-label": `${label}: ${v} / 100` }, svg, el("b", { text: String(v) }), el("small", { text: label }));
+    return el("div", { class: `ring ${toneOf(v)}`, role: "img", "aria-label": `${label}: ${v} / 100` }, svg, el("b", { text: String(v) }), el("small", { text: label }));
   }
 
   // A sheet is drawn from one model, whether it is of a game on one platform or on several:
@@ -472,7 +502,10 @@
     if (best) rings.append(ring(best.popular[0], t("x_score")));
     if (critics) rings.append(ring(critics, t("x_critics")));
     const info = el("div", { class: "info" }, logo, title,
-      el("p", { class: "ids" }, ...es.map((e) => el("span", { class: "badge", text: S._names[e.p] || e.p })),
+      // On a sheet of several platforms each badge opens that platform's own sheet.
+      el("p", { class: "ids" }, ...es.map((e) => (es.length > 1
+        ? el("a", { class: "badge", href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone`, text: S._names[e.p] || e.p })
+        : el("span", { class: "badge", text: S._names[e.p] || e.p }))),
         m.name && m.id ? el("code", { text: m.id }) : null,
         m.qid ? el("a", { href: `https://www.wikidata.org/wiki/${m.qid}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: m.qid }) : null,
         !m.name ? el("small", { text: t("x_no_name") }) : null),
@@ -489,10 +522,13 @@
 
     const stats = el("dl", { class: "stats" });
     const stat = (label, value) => { if (value !== null && value !== undefined && value !== "") stats.append(el("div", {}, el("dt", { text: label }), el("dd", {}, value))); };
+    // A store's reviews: the share of good ones large, in the rings' colours, the full sentence under it.
+    const reviewed = (label, [n, p]) => stats.append(el("div", { class: "rev" }, el("dt", { text: label }),
+      el("dd", {}, el("b", { class: `pct ${toneOf(p)}`, text: `${p} %` }), el("small", { text: t("x_reviews", { n: num(n), p }) }))));
     if (best && best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
     for (const e of es) {
-      if (e.reviews) stat(storeName(e.p), t("x_reviews", { n: num(e.reviews[0]), p: e.reviews[1] }));
-      if (e.rating) stat(storeName(e.p), t("x_reviews", { n: num(e.rating[0]), p: e.rating[1] }));
+      if (e.reviews) reviewed(storeName(e.p), e.reviews);
+      if (e.rating) reviewed(storeName(e.p), e.rating);
     }
     const players = es.filter((e) => e.igdb_rating && e.igdb_rating[1] >= 20).sort((x, y) => y.igdb_rating[1] - x.igdb_rating[1])[0];
     if (players) stat(t("x_players_rating"), `${players.igdb_rating[0]} / 100`);
@@ -503,7 +539,7 @@
     if (stats.childElementCount) sheet.append(stats);
     for (const e of es) {
       if (e.steam && (e.steam.owners || e.steam.ccu)) {
-        sheet.append(el("p", { class: "dim", text: t("x_steam_figures", { owners: num(e.steam.owners || 0), ccu: num(e.steam.ccu || 0) }) }));
+        sheet.append(el("p", { class: "dim figures", text: t("x_steam_figures", { owners: num(e.steam.owners || 0), ccu: num(e.steam.ccu || 0) }) }));
         break;
       }
     }
@@ -528,13 +564,13 @@
     if (technical) side.append(technical);
 
     if (es.length > 1) {
-      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => el("li", {},
+      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => el("li", {}, el("a", { href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
         el("span", { class: "badge", text: S._names[e.p] || e.p }),
         e.popular ? score(e.popular[0]) : null,
         e.release ? el("span", { class: "date", text: ymd(e.release) }) : (e.upcoming ? el("span", { class: "date", text: t("x_coming", { date: ymd(e.upcoming) }) }) : null),
         e.reviews || e.rating ? el("span", { class: "dim", text: t("x_reviews", { n: num((e.reviews || e.rating)[0]), p: (e.reviews || e.rating)[1] }) }) : null,
         e.gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null,
-        el("a", { class: "out", href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone`, text: "→", "aria-label": `${S._names[e.p] || e.p}: ${e.id}` }))))));
+        el("span", { class: "out", "aria-hidden": "true", text: "→" })))))));
     }
 
     // The first lines of the Wikipedia page, in the visitor's language else English, with its credit (CC BY-SA 4.0).
@@ -570,7 +606,7 @@
 
     const won = m.wd && m.wd.awards;
     if (won && won.length) {
-      sheet.append(section(t("x_awards"), el("ul", { class: "awards" }, ...won.map(([name, year]) => el("li", {}, el("span", { class: "chip", text: year ? `${name} (${year})` : name }))))));
+      main.append(section(t("x_awards"), el("ul", { class: "awards" }, ...won.map(([name, year]) => el("li", {}, el("span", { class: "chip", text: year ? `${name} (${year})` : name }))))));
     }
 
     const team = m.wd && m.wd.team;
@@ -582,8 +618,10 @@
       if (dl.childElementCount) side.append(section(t("x_team"), dl));
     }
 
-    if (m.similar && m.similar.length) {
-      main.append(section(t("x_similar"), el("ul", { class: "cardgrid" }, ...m.similar.map(([kind, ref, name, s]) =>
+    // Not the game itself (a platform's list can name the sheet of all its platforms, or one of them).
+    const alike = (m.similar || []).filter(([kind, ref]) => !(kind === "u" && ref === m.qid) && !es.some((e) => e.p === kind && e.id === ref));
+    if (alike.length) {
+      main.append(section(t("x_similar"), el("ul", { class: "cardgrid" }, ...alike.map(([kind, ref, name, s]) =>
         el("li", {}, card(gameHref(kind, ref), kind, ref, name, [score(s)]))))));
     }
     for (const e of es) {
@@ -622,10 +660,19 @@
       if (items.length) side.append(section(t("x_other_platforms"), el("ul", { class: "links" }, ...items)));
     }
     bars(sheet);
+    fitSide();
     setStatus(t("x_loaded", { size: kb(read) }));
     head.querySelector("h2").focus({ preventScroll: true });
     window.scrollTo({ top: sheet.getBoundingClientRect().top + window.scrollY - 16 });
   }
+
+  // The facts' column stays in view while the story scrolls, only when it fits the window: a taller one scrolls
+  // with the page (a scroll inside a scroll hides its end).
+  function fitSide() {
+    const side = sheet.querySelector(".side");
+    if (side) side.classList.toggle("stuck", side.scrollHeight <= window.innerHeight - 32);
+  }
+  window.addEventListener("resize", () => { if (!sheet.hidden) fitSide(); });
 
   const backTo = (platform) => (lastBrowse.startsWith(`#${platform}/browse`) ? lastBrowse : `#${platform}/popular`);
 
@@ -696,6 +743,24 @@
   function leaveBrowse() {
     panel.hidden = true;
     more.hidden = true;
+    active.hidden = true;
+  }
+
+  // The values picked, above the list: each one a link to the same view without it.
+  function drawActive(b, v) {
+    const items = [];
+    for (const [kind, n] of v.found) {
+      const value = b.f.facets[kind][n][0], name = labelOf(kind, value);
+      const params = new URLSearchParams(v.query);
+      const rest = params.getAll(kind).filter((x) => x !== value);
+      params.delete(kind);
+      for (const x of rest) params.append(kind, x);
+      items.push(el("a", { class: "chip on", href: hashOf(b.platform, params), "aria-label": t("x_remove_filter", { name }) },
+        iconOf(kind, value), el("span", { text: name }), el("span", { class: "x", "aria-hidden": "true", text: "×" })));
+    }
+    if (items.length > 1 || v.unknown) items.push(el("a", { class: "clear", href: hashOf(b.platform, new URLSearchParams(v.how !== "popular" ? [["sort", v.how]] : [])), text: t("x_clear") }));
+    active.replaceChildren(...items);
+    active.hidden = !items.length;
   }
 
   async function browseState(platform) {
@@ -840,6 +905,14 @@
     bars(results);
     syncFacets(b, V);
     renderSaved();
+    drawActive(b, V);
+    if (V.unknown) {
+      // A value the data does not know (an old link, a typo): nothing matches, and no page would change that.
+      more.hidden = true;
+      loadAll.hidden = true;
+      setStatus(t("x_nothing"));
+      return;
+    }
     const partial = b.loaded < b.f.pages;
     const total = found.length ? (partial ? `≥ ${num(ids.length)}` : num(ids.length)) : num(b.f.games);
     const parts = [ids.length || !partial ? t("x_count_of", { shown: num(Math.min(limit, ids.length)), n: total }) : ""];
@@ -1010,6 +1083,15 @@
     clearTimeout(timer);       // the typing's own search, waiting its turn, would take the address back
     const q = search.value.trim();
     if (q) go(`#all/search/${encodeURIComponent(q)}`);
+  });
+  // "/" goes to the search box, as on most sites with one; Escape in it empties it.
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || e.target.closest("input, select, textarea, [contenteditable], dialog")) return;
+    e.preventDefault();
+    search.focus();
+  });
+  search.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && search.value) { e.preventDefault(); search.value = ""; search.dispatchEvent(new Event("input")); }
   });
   window.addEventListener("hashchange", show);
   show();
