@@ -767,7 +767,7 @@
       : el("span", { class: `step ${key} off`, "aria-hidden": "true", text: sign }));
     const prev = tr.rows[at - 1], next = tr.rows[at + 1];
     pagerNow = { prev: prev && prev[0], next: next && next[0] };
-    return el("span", { class: "pager" }, step(prev, "prev", t("x_prev"), "‹"), el("span", { class: "dim", text: `${num(at + 1)} / ${num(tr.rows.length)}` }), step(next, "next", t("x_next"), "›"));
+    return el("span", { class: "pager fab", role: "group", "aria-label": t("x_prev") + " / " + t("x_next") }, step(prev, "prev", t("x_prev"), "‹"), el("span", { class: "dim", text: `${num(at + 1)} / ${num(tr.rows.length)}` }), step(next, "next", t("x_next"), "›"));
   }
 
   // Favourites: games marked with a heart, kept in this browser only (a key "<platform>/<id>", or "u/<Wikidata item>"
@@ -786,7 +786,7 @@
   function heart(m, es) {
     if (es.length > 1 && !m.qid) return null;
     const k = es.length > 1 ? `u/${m.qid}` : `${es[0].p}/${es[0].id}`;
-    const b = el("button", { type: "button", class: "fav" });
+    const b = el("button", { type: "button", class: "fav fab" });
     const draw = () => {
       const on = favs().some((f) => f.k === k), label = t(on ? "x_fav_remove" : "x_fav_add");
       b.classList.toggle("on", on);
@@ -853,7 +853,7 @@
     const p1 = es[0], shop = !multi && STORES[p1.p] && /^[\w-]+$/.test(p1.id)
       ? el("a", { class: "chip store-link", href: STORES[p1.p](p1.id), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", text: `${t("x_open_store", { store: storeName(p1.p) })} ↗` }) : null;
     const whole = !multi && m.unified ? el("a", { class: "chip whole", href: gameHref("u", m.unified), text: `◂ ${t("x_global_sheet")}` }) : null;
-    const top = el("div", { class: "topline" }, whole, el("span", { class: "tools" }, shop, pager(es), heart(m, es)));
+    const top = whole || shop ? el("div", { class: "topline" }, whole, shop) : null;
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
       wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
     if (logo) {
@@ -862,7 +862,9 @@
     }
     if (wide) sheet.append(backdrop(shown.backdrops, shown.poster));
     sheet.classList.toggle("with-backdrop", !!wide);
-    sheet.append(back, head);     // outside the head, whose entrance animation would make it the button's frame
+    // The way back, the steps through the list and the heart float in the window's corners and bottom; outside the
+    // head, whose entrance animation would make it their frame.
+    sheet.append(back, pager(es), heart(m, es), head);
     if (!multi) {
       sheet.append(el("span", { class: "sheet-wm", "aria-hidden": "true" }, icon(PC.has(es[0].p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[es[0].p] || es[0].p.toUpperCase() })));
     }
