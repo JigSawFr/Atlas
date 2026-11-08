@@ -18,6 +18,10 @@ none of is left out. The 3DS's games are by their family (tools/n3ds.py),
 the PS4's and PS5's by their Wikidata item (ps4, ps5: tools/playstation.py's
 folders), for the games tied to another platform.
 
+When sources/igdb/external.json exists (IGDB's keys), tools/identity.py adds the ids IGDB gives a
+game on Steam, GOG, Epic and the Microsoft Store, and the games only IGDB knows, by "igdb:<id>"
+instead of a Wikidata item; an id two games claim is left out.
+
 One query to Wikidata's query service a run; when it turns the run away,
 QLever's copy of Wikidata (qlever.dev) is asked the same.
 
@@ -108,6 +112,27 @@ def rows():
         return body["results"]["bindings"]
 
 
+def with_igdb(games, src):
+    """`games` with the ids IGDB's store pages add (tools/identity.py), then the items by number,
+    the games of IGDB alone ("igdb:<id>") after them. Nothing changes without sources/igdb/external.json."""
+    import identity
+    groups = identity.igdb_groups(src("igdb/external.json").get("items"))
+    named = {}
+    if groups:
+        by_switch = {t: q for q, ids in games.items() for t in ids.get("switch", [])}
+        rows = [{"tid": {"value": by_switch[b["tid"]["value"].upper()]}, "slug": b["slug"]}
+                for b in common.bindings(src("wikidata/switch-igdb.json").get("rows") or [])
+                if b["tid"]["value"].upper() in by_switch]
+        named = identity.qid_to_igdb(rows, src("igdb/games.json").get("items"))
+        named.update(identity.qid_to_igdb(common.bindings(src("wikidata/others-igdb.json").get("rows") or []),
+                                          src("igdb/others.json").get("items")))
+    games, found = identity.combine(games, groups, named)
+    if groups:
+        print(f"links: IGDB's store pages: {found['joined']} games given ids, {found['new']} games of its own, "
+              f"{len(found['conflicts'])} left out (an id of two games)", file=sys.stderr)
+    return dict(sorted(games.items(), key=lambda kv: (0, int(kv[0][1:])) if kv[0][1:].isdigit() else (1, kv[0])))
+
+
 def main():
     out_dir, previous_dir, sources_dir = sys.argv[1], sys.argv[2], sys.argv[3]
     src = common.reader(sources_dir, previous_dir)
@@ -123,7 +148,7 @@ def main():
         if qid in games or len(machines) > 1:
             for pid in machines:
                 games.setdefault(qid, {})[pid] = [qid]
-    games = dict(sorted(games.items(), key=lambda kv: int(kv[0][1:]) if kv[0][1:].isdigit() else 0))
+    games = with_igdb(games, src)
     report = []
     common.publish(out_dir, "links.json", {
         "schema": common.SCHEMA, "generated": datetime.date.today().isoformat(),

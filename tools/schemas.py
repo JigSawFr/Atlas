@@ -75,7 +75,7 @@ KINDS = {
     "names": file_schema("Every game's name: {id: name}", {"type": "string"}),
     "gamepass": file_schema("The Game Pass's games: {id: [console, pc]}", {
         "type": "array", "items": {"enum": ["console", "pc"]}}),
-    "links": file_schema("Each game's ids on every platform, by Wikidata item", {
+    "links": file_schema("Each game's ids on every platform, by Wikidata item (or \"igdb:<id>\" for a game only IGDB knows)", {
         "type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}}),
     "platforms": file_schema("The platforms' registry", {
         "type": "object", "required": ["name", "kind"], "properties": {

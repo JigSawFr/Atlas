@@ -533,7 +533,7 @@
         ? el("a", { class: "badge", href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone`, text: S._names[e.p] || e.p })
         : el("span", { class: "badge", text: S._names[e.p] || e.p }))),
         m.name && m.id ? el("code", { text: m.id }) : null,
-        m.qid ? el("a", { href: `https://www.wikidata.org/wiki/${m.qid}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: m.qid }) : null,
+        /^Q\d+$/.test(m.qid || "") ? el("a", { href: `https://www.wikidata.org/wiki/${m.qid}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: m.qid }) : null,
         !m.name ? el("small", { text: t("x_no_name") }) : null),
       rings.childElementCount ? rings : null, rings.childElementCount ? ringHelp : null);
     const head = el("header", { class: wide ? "masthead" : "" }, back, cover,
