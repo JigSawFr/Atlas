@@ -142,6 +142,8 @@
   "x_saved_views": "Saved views",
   "x_remove_view": "Remove the view {name}",
   "x_remove_filter": "Remove the filter {name}",
+  "x_score_help": "How well known the game is, out of 100: its Wikipedia pages and views, its critics' reviews and its store reviews, against the best known.",
+  "x_critics_help": "The critics' average, out of 100, as Wikidata gives it.",
   "x_about": "About",
   "x_wikipedia_text": "Text from Wikipedia, CC BY-SA 4.0",
   "x_gallery": "Screenshots",

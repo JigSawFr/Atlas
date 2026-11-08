@@ -181,7 +181,33 @@ def year_of(game: dict) -> int:
     return release // 10000 if isinstance(release, int) and release >= 10_000_000 else 0
 
 
-def browse(best: list, games: dict, names: dict, tags: dict, spelled: dict = None) -> tuple:
+# A list's row may end with the name of a picture for its tile, a letter and a name (explore.js `tile()`):
+# "s<app>" Steam's header of the same game (by links.json or the game's own Steam app), "i<id>" IGDB's cover,
+# and in the lists only (their names are long: some 70 characters, a page of the browse index would double)
+# "g<name>" GOG's own landscape cover. Steam's own rows need none: their id is the app.
+LONG_PICTURES = {"gog": "g"}
+
+
+def picture(platform: str, gid: str, game, link, store: dict, long_ok: bool) -> str:
+    """The name of a tile's picture for a row, or ""."""
+    if platform == "steam":
+        return ""
+    img = (store or {}).get("img") or {}
+    if long_ok and platform in LONG_PICTURES and img.get("h"):
+        return LONG_PICTURES[platform] + img["h"]
+    app = None
+    if link:
+        app = next(iter(link[1].get("steam") or ()), None)
+    if not app and isinstance(game, dict) and isinstance(game.get("steam"), dict):
+        app = game["steam"].get("app")
+    if app and str(app).isdigit():
+        return f"s{app}"
+    if isinstance(game, dict) and game.get("igdb_cover"):
+        return f"i{game['igdb_cover']}"
+    return ""
+
+
+def browse(best: list, games: dict, names: dict, tags: dict, spelled: dict = None, pic=None) -> tuple:
     """The browse index of the named games in `best` ([(id, [score, trend, critics])],
     best first): (facets, pages), the facets as {facet: [[value, count]]} and
     each page as {"games": rows, "facets": {facet: [[value number, row gaps]]}}."""
@@ -200,7 +226,9 @@ def browse(best: list, games: dict, names: dict, tags: dict, spelled: dict = Non
                     found[kind].setdefault(value, []).append(len(rows))
             if year:
                 found["year"].setdefault(str(year), []).append(len(rows))
-        rows.append([gid, names[gid], *(list(score) + [0, 0, 0])[:3], year])
+        row = [gid, names[gid], *(list(score) + [0, 0, 0])[:3], year]
+        ref = pic(gid, False) if pic else ""
+        rows.append(row + [ref] if ref else row)
     kept = {}
     for kind, values in found.items():
         chosen = [(v, at) for v, at in values.items() if len(at) >= FACET_MIN]
@@ -347,20 +375,30 @@ def build(data_dir: str, out_dir: str) -> dict:
         base = os.path.join(out_dir, "x", platform)
         os.makedirs(base, exist_ok=True)
 
+        stores = tech.read(data_dir, platform)       # what the stores' own sources say: runs on, languages, ages, pictures
+        own_links = links.get(platform) or {}
+
+        def pic(gid, long_ok=True):
+            return picture(platform, gid, games.get(gid), own_links.get(gid), stores.get(gid), long_ok)
+
+        def with_pic(row, gid, long_ok=True):
+            ref = pic(gid, long_ok)
+            return row + [ref] if ref else row
+
         best = sorted(scores.items(), key=lambda kv: (-kv[1][0], kv[0]))
         trending = sorted(((g, s) for g, s in scores.items() if s[1] > 0), key=lambda kv: (-kv[1][1], -kv[1][0], kv[0]))
         soon = sorted(upcoming.items(), key=lambda kv: (kv[1][0], kv[0]))
         lists = {
             "platform": platform,
             "generated": files["popular"].get("generated"),
-            "popular": [[g, names.get(g, ""), *s] for g, s in best[:LIST]],
-            "trending": [[g, names.get(g, ""), *s] for g, s in trending[:LIST]],
-            "upcoming": [[g, names.get(g, ""), r[0], r[2] if len(r) > 2 else 0] for g, r in soon[:LIST]],
+            "popular": [with_pic([g, names.get(g, ""), *(list(s) + [0, 0, 0])[:3]], g) for g, s in best[:LIST]],
+            "trending": [with_pic([g, names.get(g, ""), *(list(s) + [0, 0, 0])[:3]], g) for g, s in trending[:LIST]],
+            "upcoming": [with_pic([g, names.get(g, ""), r[0], r[2] if len(r) > 2 else 0], g) for g, r in soon[:LIST]],
         }
         write(os.path.join(base, "names.json"),
               sorted(([g, n, (scores.get(g) or [0])[0]] for g, n in names.items()), key=lambda x: (-x[2], x[1])))
 
-        facets, pages = browse(best, games, names, tags, spelled)
+        facets, pages = browse(best, games, names, tags, spelled, pic)
         generated = files["popular"].get("generated")
         os.makedirs(os.path.join(base, "browse"), exist_ok=True)
         for n, page in enumerate(pages):
@@ -370,7 +408,6 @@ def build(data_dir: str, out_dir: str) -> dict:
                "games": sum(len(p["games"]) for p in pages), "facets": facets})
 
         sheets = {}
-        stores = tech.read(data_dir, platform)       # what the stores' own sources say: runs on, languages, ages, pictures
         every = set(scores) | set(games) | set(upcoming) | set(similar)
         of_edition = {}
         for e, g in editions.items():
@@ -398,7 +435,7 @@ def build(data_dir: str, out_dir: str) -> dict:
             if gid in upcoming:
                 sheet["upcoming"] = upcoming[gid][0]
             if gid in similar:
-                sheet["similar"] = [[o, names.get(o, ""), s] for o, s in similar[gid]]
+                sheet["similar"] = [with_pic([o, names.get(o, ""), s], o, False) for o, s in similar[gid]]
             if gid in editions:
                 sheet["edition_of"] = [editions[gid], names.get(editions[gid], "")]
             if gid in of_edition:
@@ -413,13 +450,13 @@ def build(data_dir: str, out_dir: str) -> dict:
                 sheet["unified"] = True
                 kept.setdefault(sheet["qid"], {})[platform] = (gid, sheet)
                 refs = []
-                for o, name, score in sheet.get("similar", ()):
+                for o, name, score, *ref in sheet.get("similar", ()):
                     target = (links.get(platform) or {}).get(o)
                     if target and target[0] in multi:
                         if target[0] != sheet["qid"]:
-                            refs.append(["u", target[0], name, score])
+                            refs.append(["u", target[0], name, score, *(ref or [f"s{o}"] if platform == "steam" else ref)])
                     else:
-                        refs.append([platform, o, name, score])
+                        refs.append([platform, o, name, score, *ref])
                 similar_refs.setdefault(sheet["qid"], {})[platform] = refs
             sheets[gid] = sheet
         shards = sharded(base, "g", sheets)

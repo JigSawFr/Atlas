@@ -182,6 +182,15 @@ class SiteData(unittest.TestCase):
             "900020": {"name": "Moss & Märchen", "tags": [19, 22], "release": 20240820, "developers": [["Q6", "Sega"]]},
             "900030": {"name": "Old Stone", "tags": [19, 22, 23], "release": 19991231, "developers": [["Q6", "Sega"]]}}})
 
+    def test_a_rows_picture(self):
+        lists = self.read("x/switch/lists.json")
+        self.assertEqual(lists["popular"][0], ["0100A1B2C3D4E000", "", 80, 12, 90, "s900010"])   # Steam's header of the same game
+        self.assertEqual(len(lists["popular"][1]), 5)                                             # none known: no column
+        self.assertEqual([len(r) for r in self.read("x/steam/lists.json")["popular"]], [5, 5, 5])   # Steam's id is the app
+        self.assertEqual(site_data.picture("switch", "a", {"igdb_cover": "co1abc"}, None, {}, False), "ico1abc")
+        self.assertEqual(site_data.picture("gog", "a", {}, ("Q1", {"steam": ["7"]}), {"img": {"h": "f00.png"}}, True), "gf00.png")
+        self.assertEqual(site_data.picture("gog", "a", {}, ("Q1", {"steam": ["7"]}), {"img": {"h": "f00.png"}}, False), "s7")
+
     def test_browse(self):
         self.steam_games()
         summary = site_data.build(self.data, self.out)

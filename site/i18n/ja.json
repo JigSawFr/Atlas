@@ -142,6 +142,8 @@
   "x_saved_views": "保存したビュー",
   "x_remove_view": "ビュー「{name}」を削除",
   "x_remove_filter": "フィルター「{name}」を外す",
+  "x_score_help": "ゲームの知名度（100点満点）：Wikipediaのページと閲覧数、批評家のレビュー、ストアのレビューを、最も有名なゲームと比べたもの。",
+  "x_critics_help": "批評家の平均点（100点満点）。Wikidataによる。",
   "x_about": "概要",
   "x_wikipedia_text": "Wikipediaより（CC BY-SA 4.0）",
   "x_gallery": "スクリーンショット",

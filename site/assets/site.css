@@ -481,3 +481,23 @@ a.badge:hover, a.badge:focus-visible { color: var(--snow); border-color: var(--m
   .stats div { padding: 10px 12px; }
   .stats .pct { font-size: 1.25rem; }
 }
+
+/* The rings are buttons: pressed, the line under them says what each measures. */
+button.ring { padding: 0; border: 0; background: none; color: var(--snow); font: inherit; cursor: help; border-radius: 12px; }
+button.ring:focus-visible { outline: 2px solid var(--aurora); outline-offset: 4px; }
+button.ring[aria-expanded="true"] small { color: var(--snow); }
+.ring-help { margin: 0; max-width: 56ch; font-size: 0.875rem; color: var(--mist); }
+.ring-help[hidden] { display: none; }
+
+/* The filters' menus under one summary (folded on a phone at first). */
+.filters > summary {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 12px;
+  border: 1px solid var(--night-line); background: var(--night); color: var(--snow); font: 600 0.9375rem var(--body); cursor: pointer;
+}
+.filters > summary:hover { border-color: var(--mist); }
+.filters[open] > summary { margin-bottom: 10px; }
+
+/* On a sheet the explorer's heading folds to its eyebrow and title on one short line. */
+.x-on-sheet .hero.small { padding-block: clamp(16px, 3vw, 24px) 0; gap: 4px; }
+.x-on-sheet .hero.small h1 { font-size: clamp(1.25rem, 3vw, 1.5rem); max-width: none; }
+.x-on-sheet .hero.small .lede { display: none; }

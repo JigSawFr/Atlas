@@ -142,6 +142,8 @@
   "x_saved_views": "Vistas guardadas",
   "x_remove_view": "Remover a vista {name}",
   "x_remove_filter": "Remover o filtro {name}",
+  "x_score_help": "Quão conhecido é o jogo, em 100: as suas páginas e visualizações na Wikipédia, as críticas e as avaliações nas lojas, face aos mais conhecidos.",
+  "x_critics_help": "A média da crítica, em 100, tal como a Wikidata a indica.",
   "x_about": "Sobre o jogo",
   "x_wikipedia_text": "Texto da Wikipédia, CC BY-SA 4.0",
   "x_gallery": "Capturas de ecrã",

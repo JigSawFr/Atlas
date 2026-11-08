@@ -142,6 +142,8 @@
   "x_saved_views": "已儲存的檢視",
   "x_remove_view": "刪除檢視 {name}",
   "x_remove_filter": "移除篩選條件 {name}",
+  "x_score_help": "遊戲的知名度（滿分100）：依據其維基百科頁面與瀏覽量、評論家評價和商店評價，與最知名的遊戲相比。",
+  "x_critics_help": "評論家平均分（滿分100），來自維基數據。",
   "x_about": "簡介",
   "x_wikipedia_text": "文字來自維基百科，CC BY-SA 4.0",
   "x_gallery": "截圖",

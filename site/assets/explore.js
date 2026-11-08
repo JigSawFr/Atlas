@@ -27,6 +27,9 @@
   const search = $("x-search"), machine = $("x-machine");
   const panel = $("x-browse"), facetBox = $("x-facets"), sortBox = $("x-sort");
   const more = $("x-more"), loadAll = $("x-loadall"), active = $("x-active");
+  // The filters' menus fold under one summary: open on a wide screen, folded on a phone (the list comes first).
+  const filters = $("x-filters"), filtersTitle = $("x-filters-title");
+  filters.open = window.matchMedia("(min-width: 701px)").matches;
   const cache = new Map();
   let read = 0;
 
@@ -138,13 +141,25 @@
 
   // A tile for a game: Steam's header where the id is a Steam app's (a fixed name on the store's server, through
   // wsrv.nl), else a cover drawn by the page. No sheet is fetched for it: a shard of sheets is some 160 kB.
+  // The other platforms' rows may name a picture (tools/site_data.py `picture()`): "s<app>" Steam's header of the
+  // same game, "i<id>" IGDB's cover (vertical: its top kept), "g<name>" GOG's own cover.
   // A thumb is the same, small, at the head of a row of a list.
-  function tile(kind, ref, name, thumb) {
+  function tileOrigin(kind, ref, pic) {
+    if (kind === "steam" && /^\d+$/.test(ref)) return STORE_PICTURES.steam(ref, "header.jpg");
+    const k = (pic || "")[0], n = (pic || "").slice(1);
+    if (k === "s" && /^\d+$/.test(n)) return STORE_PICTURES.steam(n, "header.jpg");
+    if (k === "i" && /^\w+$/.test(n)) return `https://images.igdb.com/igdb/image/upload/t_cover_big/${n}.jpg`;
+    if (k === "g" && /^[\w.]+$/.test(n)) return STORE_PICTURES.gog(ref, n);
+    return null;
+  }
+
+  function tile(kind, ref, name, thumb, pic) {
     const cls = thumb ? "tile thumb" : "tile";
     const draw = () => drawnCover({ id: ref, name }, cls);
-    if (kind !== "steam" || !/^\d+$/.test(ref)) return draw();
+    const origin = tileOrigin(kind, ref, pic);
+    if (!origin) return draw();
     const [w, h] = thumb ? [128, 60] : [320, 150];
-    const img = el("img", { src: proxied(STORE_PICTURES.steam(ref, "header.jpg"), w, h), alt: "", loading: "lazy", decoding: "async",
+    const img = el("img", { src: proxied(origin, w, h) + (pic && pic[0] === "i" ? "&a=top" : ""), alt: "", loading: "lazy", decoding: "async",
       referrerpolicy: "no-referrer", width: String(w), height: String(h) });
     const figure = el("figure", { class: `cover ${cls}` }, img);
     img.addEventListener("error", () => figure.replaceWith(draw()));
@@ -155,14 +170,14 @@
   try { cards = localStorage.getItem("atlas-cards") === "1"; } catch (e) { /* no storage: rows */ }
 
   // A game as a card: its picture, its name, its figures.
-  function card(href, kind, ref, name, meta) {
-    return el("a", { class: "card", href }, tile(kind, ref, name), nameOf(ref, name), el("span", { class: "meta" }, ...meta));
+  function card(href, kind, ref, name, meta, pic) {
+    return el("a", { class: "card", href }, tile(kind, ref, name, false, pic), nameOf(ref, name), el("span", { class: "meta" }, ...meta));
   }
 
-  function row(platform, id, name, meta, extra) {
-    if (cards) return el("li", {}, card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, meta));
+  function row(platform, id, name, meta, pic) {
+    if (cards) return el("li", {}, card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, meta, pic));
     return el("li", {}, el("a", { href: `#${platform}/game/${encodeURIComponent(id)}` },
-      tile(platform, id, name, true), nameOf(id, name, platform), el("span", { class: "meta" }, ...meta), extra || null));
+      tile(platform, id, name, true, pic), nameOf(id, name, platform), el("span", { class: "meta" }, ...meta)));
   }
 
   function trend(v) {
@@ -190,14 +205,14 @@
     results.replaceChildren();
     let note = "", count = 0;
     if (view === "upcoming") {
-      for (const [id, name, when] of lists.upcoming) results.append(row(platform, id, name, [el("span", { class: "date", text: ymd(when) })]));
+      for (const [id, name, when, , pic] of lists.upcoming) results.append(row(platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
       count = lists.upcoming.length;
       note = t("x_upcoming_note");
     } else {
       const rows = lists[view] || [];
-      for (const [id, name, s, tr, critics] of rows) {
+      for (const [id, name, s, tr, critics, pic] of rows) {
         results.append(row(platform, id, name, [score(s), trend(tr),
-          critics ? el("span", { class: "dim", text: `${t("x_critics")} ${critics}` }) : null]));
+          critics ? el("span", { class: "dim", text: `${t("x_critics")} ${critics}` }) : null], pic));
       }
       count = rows.length;
       note = t(view === "trending" ? "x_trending_note" : "x_popular_note");
@@ -466,7 +481,8 @@
   const toneOf = (v) => (v >= 75 ? "high" : v >= 50 ? "mid" : "low");
 
   // A score out of 100 as a ring (a dasharray set by script, as the bars' widths: the CSP allows no style attribute).
-  function ring(v, label) {
+  // A ring says what it measures when pressed (a finger has no hover): its help under the rings.
+  function ring(v, label, help, helpBox) {
     const svg = document.createElementNS(SVG, "svg");
     svg.setAttribute("viewBox", "0 0 36 36");
     svg.setAttribute("aria-hidden", "true");
@@ -476,7 +492,16 @@
       if (cls === "arc") { c.setAttribute("pathLength", "100"); c.setAttribute("stroke-dasharray", `${Math.max(2, Math.min(100, v))} 100`); }
       svg.append(c);
     }
-    return el("div", { class: `ring ${toneOf(v)}`, role: "img", "aria-label": `${label}: ${v} / 100` }, svg, el("b", { text: String(v) }), el("small", { text: label }));
+    const b = el("button", { type: "button", class: `ring ${toneOf(v)}`, "aria-label": `${label}: ${v} / 100`, "aria-expanded": "false", title: help },
+      svg, el("b", { text: String(v), "aria-hidden": "true" }), el("small", { text: label, "aria-hidden": "true" }));
+    b.addEventListener("click", () => {
+      const open = b.getAttribute("aria-expanded") !== "true";
+      for (const other of b.parentNode.querySelectorAll(".ring")) other.setAttribute("aria-expanded", "false");
+      b.setAttribute("aria-expanded", String(open));
+      helpBox.textContent = open ? help : "";
+      helpBox.hidden = !open;
+    });
+    return b;
   }
 
   // A sheet is drawn from one model, whether it is of a game on one platform or on several:
@@ -499,8 +524,9 @@
     const title = el("h2", { tabindex: "-1" }, m.name || m.id || "");
     const logo = shown.logo ? el("img", { class: "logo", src: proxied(shown.logo, 560), alt: "", decoding: "async", referrerpolicy: "no-referrer" }) : null;
     const rings = el("div", { class: "rings" });
-    if (best) rings.append(ring(best.popular[0], t("x_score")));
-    if (critics) rings.append(ring(critics, t("x_critics")));
+    const ringHelp = el("p", { class: "ring-help", "aria-live": "polite", hidden: "" });
+    if (best) rings.append(ring(best.popular[0], t("x_score"), t("x_score_help"), ringHelp));
+    if (critics) rings.append(ring(critics, t("x_critics"), t("x_critics_help"), ringHelp));
     const info = el("div", { class: "info" }, logo, title,
       // On a sheet of several platforms each badge opens that platform's own sheet.
       el("p", { class: "ids" }, ...es.map((e) => (es.length > 1
@@ -509,7 +535,7 @@
         m.name && m.id ? el("code", { text: m.id }) : null,
         m.qid ? el("a", { href: `https://www.wikidata.org/wiki/${m.qid}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: m.qid }) : null,
         !m.name ? el("small", { text: t("x_no_name") }) : null),
-      rings.childElementCount ? rings : null);
+      rings.childElementCount ? rings : null, rings.childElementCount ? ringHelp : null);
     const head = el("header", { class: wide ? "masthead" : "" }, back, cover,
       wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
     if (logo) {
@@ -619,10 +645,12 @@
     }
 
     // Not the game itself (a platform's list can name the sheet of all its platforms, or one of them).
-    const alike = (m.similar || []).filter(([kind, ref]) => !(kind === "u" && ref === m.qid) && !es.some((e) => e.p === kind && e.id === ref));
+    // Nor another entry of it under the same name (an edition the links do not tie to it).
+    const alike = (m.similar || []).filter(([kind, ref, name]) => !(kind === "u" && ref === m.qid) && !es.some((e) => e.p === kind && e.id === ref)
+      && !(name && m.name && fold(name) === fold(m.name)));
     if (alike.length) {
-      main.append(section(t("x_similar"), el("ul", { class: "cardgrid" }, ...alike.map(([kind, ref, name, s]) =>
-        el("li", {}, card(gameHref(kind, ref), kind, ref, name, [score(s)]))))));
+      main.append(section(t("x_similar"), el("ul", { class: "cardgrid" }, ...alike.map(([kind, ref, name, s, pic]) =>
+        el("li", {}, card(gameHref(kind, ref), kind, ref, name, [score(s)], pic))))));
     }
     for (const e of es) {
       if (e.edition_of) {
@@ -724,7 +752,7 @@
     const entry = { p: platform, id };
     for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
     renderSheet({ name: g.name, id, qid: g.qid, wd: g.wd, platforms: [entry], traits: g.traits,
-      similar: (g.similar || []).map(([o, name, s]) => [platform, o, name, s]), links: g.links }, backTo(platform));
+      similar: (g.similar || []).map(([o, name, s, pic]) => [platform, o, name, s, pic]), links: g.links }, backTo(platform));
   }
 
   // Browsing: facets.json gives the menus, then the pages of games, best known
@@ -892,15 +920,16 @@
       box.title.textContent = chosen ? `${t(`x_${kind}`)} · ${chosen}` : t(`x_${kind}`);
       if (chosen && !box.details.open) box.details.open = true;
     }
+    filtersTitle.textContent = v.found.length ? `${t("x_filters")} · ${num(v.found.length)}` : t("x_filters");
   }
 
   function draw(b) {
     const { ids, found, how } = V;
     results.replaceChildren(...ids.slice(0, limit).map((i) => {
-      const [id, name, s, tr, critics, year] = b.rows[i];
+      const [id, name, s, tr, critics, year, pic] = b.rows[i];
       return row(b.platform, id, name, [score(s), trend(tr),
         critics ? el("span", { class: "dim", text: `${t("x_critics")} ${critics}` }) : null,
-        year ? el("span", { class: "dim", text: String(year) }) : null]);
+        year ? el("span", { class: "dim", text: String(year) }) : null], pic);
     }));
     bars(results);
     syncFacets(b, V);
@@ -1026,6 +1055,8 @@
 
   async function show() {
     const { platform, view, arg, query } = route();
+    // On a sheet the page's own heading folds to a line: the sheet is what is read.
+    document.body.classList.toggle("x-on-sheet", view === "game" || view === "ugame");
     pressed("x-platforms", "platform", platform);
     machine.value = [...machine.options].some((o) => o.value === platform) ? platform : "";
     try {

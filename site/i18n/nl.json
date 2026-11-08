@@ -142,6 +142,8 @@
   "x_saved_views": "Opgeslagen weergaven",
   "x_remove_view": "Weergave {name} verwijderen",
   "x_remove_filter": "Filter {name} verwijderen",
+  "x_score_help": "Hoe bekend het spel is, op 100: zijn Wikipedia-pagina's en -weergaven, recensies van critici en van winkels, vergeleken met de bekendste.",
+  "x_critics_help": "Het gemiddelde van de critici, op 100, zoals Wikidata het geeft.",
   "x_about": "Over het spel",
   "x_wikipedia_text": "Tekst van Wikipedia, CC BY-SA 4.0",
   "x_gallery": "Schermafbeeldingen",

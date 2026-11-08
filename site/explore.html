@@ -30,7 +30,10 @@
               <option value="name">{{x_sort_name}}</option>
             </select></label>
         </div>
-        <div class="facets" id="x-facets" role="group" aria-label="{{x_filters}}"></div>
+        <details class="filters" id="x-filters">
+          <summary><span id="x-filters-title">{{x_filters}}</span></summary>
+          <div class="facets" id="x-facets" role="group" aria-label="{{x_filters}}"></div>
+        </details>
         <div class="group">
           <button type="button" id="x-clear">{{x_clear}}</button>
           <button type="button" id="x-random">{{x_random}}</button>

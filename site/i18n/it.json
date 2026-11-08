@@ -142,6 +142,8 @@
   "x_saved_views": "Viste salvate",
   "x_remove_view": "Rimuovi la vista {name}",
   "x_remove_filter": "Rimuovi il filtro {name}",
+  "x_score_help": "Quanto è noto il gioco, su 100: pagine e visite su Wikipedia, recensioni della critica e dei negozi, rispetto ai più noti.",
+  "x_critics_help": "La media della critica, su 100, come la riporta Wikidata.",
   "x_about": "Informazioni",
   "x_wikipedia_text": "Testo da Wikipedia, CC BY-SA 4.0",
   "x_gallery": "Schermate",
