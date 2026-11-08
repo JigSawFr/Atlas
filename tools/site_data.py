@@ -253,6 +253,32 @@ def browse(best: list, games: dict, names: dict, tags: dict, spelled: dict = Non
     return facets, pages
 
 
+# What two alike games have in common, for the card of the one under the other: at most SHARED notions, the rarest
+# first (a platformer and a farm sim are alike by "farm" before "indie"), as "<letter>:<key>" (taxonomy.KINDS' letters).
+SHARED = 3
+SHARED_KINDS = ("genres", "themes", "gameplay", "styles", "moods", "content")
+LETTER = {kind: letter for letter, kind in KINDS.items()}
+
+
+def shared_traits(a: dict, b: dict, rarity: dict) -> list:
+    """The notions the traits `a` and `b` ({kind: [values]}) have in common, the rarest first (`rarity`: {(kind,
+    value): games with it}, a value missing from it counting as the rarest), as "<letter>:<key>"."""
+    found = []
+    for kind in SHARED_KINDS:
+        for value in (a.get(kind) or ()):
+            if value in (b.get(kind) or ()):
+                found.append((rarity.get((kind, value), 0), SHARED_KINDS.index(kind), f"{LETTER[kind]}:{value}"))
+    return [x[2] for x in sorted(found)[:SHARED]]
+
+
+def similar_row(o: str, name: str, score: int, pic: str, shared: list) -> list:
+    """A sheet's alike game: [id, name, similarity, picture name, shared notions], the empty tail left out."""
+    row = [o, name, score, pic, shared]
+    while row[3:] and not row[-1]:
+        row.pop()
+    return row
+
+
 STAT_TOP = 12           # genres, studios and publishers a platform's figures name
 STAT_LIST = 10          # games in its best rated and hidden gems
 STAT_YEARS = 30         # years of releases it counts, the latest
@@ -480,6 +506,7 @@ def build(data_dir: str, out_dir: str) -> dict:
               sorted(([g, n, (scores.get(g) or [0])[0]] for g, n in names.items()), key=lambda x: (-x[2], x[1])))
 
         facets, pages = browse(best, games, names, tags, spelled, pic)
+        rarity = {(kind, v): n for kind, values in facets.items() for v, n in values}
         generated = files["popular"].get("generated")
         figures = stats(platform, best, games, names, tags, spelled, pic, generated)
         write(os.path.join(base, "stats.json"), figures)
@@ -520,7 +547,10 @@ def build(data_dir: str, out_dir: str) -> dict:
             if gid in upcoming:
                 sheet["upcoming"] = upcoming[gid][0]
             if gid in similar:
-                sheet["similar"] = [with_pic([o, names.get(o, ""), s], o, False) for o, s in similar[gid]]
+                mine = sheet.get("traits") or {}
+                sheet["similar"] = [similar_row(o, names.get(o, ""), s, pic(o, False),
+                                                shared_traits(mine, trait_names(games.get(o), tags, spelled) if isinstance(games.get(o), dict) else {}, rarity))
+                                    for o, s in similar[gid]]
             if gid in editions:
                 sheet["edition_of"] = [editions[gid], names.get(editions[gid], "")]
             if gid in of_edition:
@@ -539,7 +569,10 @@ def build(data_dir: str, out_dir: str) -> dict:
                     target = (links.get(platform) or {}).get(o)
                     if target and target[0] in multi:
                         if target[0] != sheet["qid"]:
-                            refs.append(["u", target[0], name, score, *(ref or [f"s{o}"] if platform == "steam" else ref)])
+                            # A sheet of all its platforms has no app id to draw Steam's picture from: it is named.
+                            named = (ref[0] if ref else "") or (f"s{o}" if platform == "steam" else "")
+                            tail = similar_row("", name, score, named, ref[1] if len(ref) > 1 else [])[3:]
+                            refs.append(["u", target[0], name, score, *tail])
                     else:
                         refs.append([platform, o, name, score, *ref])
                 similar_refs.setdefault(sheet["qid"], {})[platform] = refs

@@ -182,6 +182,16 @@ class SiteData(unittest.TestCase):
             "900020": {"name": "Moss & Märchen", "tags": [19, 22], "release": 20240820, "developers": [["Q6", "Sega"]]},
             "900030": {"name": "Old Stone", "tags": [19, 22, 23], "release": 19991231, "developers": [["Q6", "Sega"]]}}})
 
+    def test_what_two_alike_games_share(self):
+        rarity = {("genres", "action"): 900, ("genres", "farm"): 12, ("styles", "pixel_art"): 40}
+        mine = {"genres": ["action", "farm"], "styles": ["pixel_art"], "modes": ["single"]}
+        other = {"genres": ["farm", "action", "puzzle"], "styles": ["pixel_art"], "modes": ["single"]}
+        self.assertEqual(site_data.shared_traits(mine, other, rarity), ["g:farm", "y:pixel_art", "g:action"])   # the rarest first; modes left out
+        self.assertEqual(site_data.shared_traits(mine, {}, rarity), [])
+        self.assertEqual(site_data.similar_row("a", "A", 70, "", []), ["a", "A", 70])                           # the empty tail is left out
+        self.assertEqual(site_data.similar_row("a", "A", 70, "", ["g:farm"]), ["a", "A", 70, "", ["g:farm"]])
+        self.assertEqual(site_data.similar_row("a", "A", 70, "s9", []), ["a", "A", 70, "s9"])
+
     def test_a_rows_picture(self):
         lists = self.read("x/switch/lists.json")
         self.assertEqual(lists["popular"][0], ["0100A1B2C3D4E000", "", 80, 12, 90, "s900010"])   # Steam's header of the same game
