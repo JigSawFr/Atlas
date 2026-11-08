@@ -556,10 +556,20 @@
     psp: "PSP", psv: "Vita", "3ds": "3DS", nds: "DS", wiiu: "Wii U", wii: "Wii", gamecube: "GameCube", n64: "N64", snes: "SNES", nes: "NES",
     "xbox-og": "Xbox", xbox360: "360", genesis: "Mega Drive", dreamcast: "Dreamcast", saturn: "Saturn", gb: "Game Boy", gbc: "GBC", gba: "GBA" };
   const PC = new Set(["steam", "gog", "dos", "amiga", "atarist", "c64", "msx", "zxspectrum", "amstradcpc", "apple2"]);
+  // Each platform's own colour, the one its machines and stores are known by (a colour, not a mark); a hue from
+  // the id for the others.
+  const TINTS = { switch: "#e60012", "3ds": "#ce181e", nds: "#b8bcc6", wii: "#34bedd", wiiu: "#009ac7", gamecube: "#6a5acd",
+    n64: "#2c9a3c", snes: "#8f7fd0", nes: "#e60012", fds: "#e8b400", gb: "#8bac0f", gbc: "#f5b60a", gba: "#5a4fcf",
+    steam: "#1a9fff", gog: "#a649d6", xbox: "#107c10", "xbox-og": "#3fa535", xbox360: "#9bc848",
+    ps1: "#b7b7b7", ps2: "#2d50c8", ps3: "#5a6e8c", ps4: "#0070d1", ps5: "#2f6ff0", psp: "#6d7c95", psv: "#1f63c6",
+    genesis: "#0060a8", sms: "#e03a3e", gamegear: "#3a3d9c", saturn: "#4b5bb5", dreamcast: "#f26f22", segacd: "#2b6cc4",
+    neogeo: "#d8a71d", turbografx16: "#ff6a13", atari2600: "#c8102e", colecovision: "#e4572e", c64: "#6c5eb5",
+    amiga: "#ff5a1f", atarist: "#9a9a9a", msx: "#2f7ad8", zxspectrum: "#e8262e", amstradcpc: "#2fb34a", apple2: "#58b947",
+    dos: "#00a6a6", "3do": "#d4af37", cdi: "#3b6fd1", arcade: "#ff3cac" };
   function platTile(p, link) {
     const li = el("li", { class: "plat" }, el("span", { class: "wm", "aria-hidden": "true" },
       icon(PC.has(p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[p] || p.toUpperCase() })), link);
-    li.style.setProperty("--hue", String(hueOf(p)));
+    li.style.setProperty("--tint", TINTS[p] || `hsl(${hueOf(p)} 60% 50%)`);
     return li;
   }
 

@@ -581,19 +581,21 @@ button.ring[aria-expanded="true"] small { color: var(--snow); }
 .chip.insight.below { background: rgb(255 200 87 / 0.08); border-color: rgb(255 200 87 / 0.35); }
 @media (prefers-reduced-motion: no-preference) { .insights:not([hidden]) { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both 0.15s; } }
 
-/* ---- A platform's tile on a sheet: a tint of its own, its short name large and faint behind it, with a computer
+/* ---- A platform's tile on a sheet: its own colour (explore.js TINTS), its short name large and faint behind it, with a computer
    or a console drawn beside. */
 .byplat li.plat {
   position: relative; overflow: hidden; isolation: isolate;
-  background: linear-gradient(115deg, hsl(var(--hue, 210) 55% 22% / 0.55), var(--abyss) 72%);
+  background: linear-gradient(115deg, color-mix(in srgb, var(--tint, #33bbff) 34%, var(--abyss)), var(--abyss) 78%);
+  border-color: color-mix(in srgb, var(--tint, #33bbff) 40%, var(--night-line));
 }
 .plat .wm {
   position: absolute; z-index: -1; right: -8px; bottom: -14px; display: flex; align-items: center; gap: 6px;
-  color: var(--snow); opacity: 0.08; pointer-events: none; white-space: nowrap;
+  color: color-mix(in srgb, var(--tint, #33bbff) 75%, var(--snow)); opacity: 0.2; pointer-events: none; white-space: nowrap;
 }
 .plat .wm b { font: 800 3.25rem/1 var(--display); letter-spacing: -0.04em; }
 .plat .wm .ico { width: 3.25rem; height: 3.25rem; stroke-width: 1.5; }
-.byplat li.plat:hover .wm { opacity: 0.13; }
+.byplat li.plat:hover .wm { opacity: 0.3; }
+.byplat li.plat:hover, .byplat li.plat:focus-within { border-color: color-mix(in srgb, var(--tint, #33bbff) 70%, var(--snow)); }
 
 /* ---- The cards of a sheet and of the figures (alike games, editions, best rated, gems): one size each, the picture
    filling the card under a shade, the name and the figures laid over it. */
