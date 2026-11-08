@@ -89,6 +89,15 @@ class Words(unittest.TestCase):
         self.assertEqual(taxonomy.company_key("Image &amp; Form Games"), taxonomy.company_key("Image & Form Games"))
         self.assertEqual(taxonomy.company_key("USA"), "usa")                                       # never nothing
 
+    def test_aliases_are_final(self):
+        for name, target in taxonomy.COMPANY_ALIASES.items():
+            self.assertNotIn(target, taxonomy.COMPANY_ALIASES, name)       # one step, never a chain
+            self.assertEqual(taxonomy.company_key(name), target, name)     # the key of the name is the alias, folded
+        for name in ("Microsoft Game Studios", "Xbox Game Studios", "Double Fine", "Double Fine Productions, Inc."):
+            self.assertEqual(taxonomy.company_key(name), taxonomy.company_key(name.replace("Microsoft Game", "Xbox Game")), name)
+        self.assertEqual(taxonomy.company_key("Double Fine"), taxonomy.company_key("Double Fine Productions, Inc."))
+        self.assertNotEqual(taxonomy.company_key("Atari Games"), taxonomy.company_key("Atari"))
+
     def test_a_company_in_another_script_is_its_own(self):
         keys = {taxonomy.company_key(n) for n in ("橘子班", "乌鸦大仙", "Новый Диск", "カプコン")}
         self.assertEqual(len(keys), 4)                                                              # none is ""
