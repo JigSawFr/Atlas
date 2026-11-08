@@ -284,6 +284,38 @@ STAT_LIST = 10          # games in its best rated and hidden gems
 STAT_YEARS = 30         # years of releases it counts, the latest
 
 
+FAMILY = 12
+SERIES_MAX = 30          # a "series" of more games than this is a publisher's or a store's label, not a series
+
+
+def families(sheets: dict, pic) -> dict:
+    """The games of a series, oldest first: {id: [series, [[id, name, release, picture], ...]]} for each game whose
+    first series has another named game (and no more than SERIES_MAX). The first FAMILY of them, the game itself in
+    place of the last when it is further on."""
+    series = {}
+    for gid, sheet in sheets.items():
+        found = (sheet.get("traits") or {}).get("series")
+        if found and sheet.get("name"):
+            series.setdefault(found[0], []).append(gid)
+    out = {}
+    for name, ids in series.items():
+        if not 2 <= len(ids) <= SERIES_MAX:
+            continue
+        ids.sort(key=lambda g: (sheets[g].get("release") or 99999999, sheets[g]["name"], g))
+        rows = {}
+
+        def row(g):
+            if g not in rows:
+                rows[g] = [g, sheets[g]["name"], sheets[g].get("release") or 0]
+                if pic(g):
+                    rows[g].append(pic(g))
+            return rows[g]
+        shown = ids[:FAMILY]
+        for gid in ids:
+            out[gid] = [name, [row(g) for g in (shown if gid in shown else shown[:-1] + [gid])]]
+    return out
+
+
 def mean(values: list):
     return round(sum(values) / len(values), 1) if values else None
 
@@ -401,6 +433,11 @@ def unify(entries: dict, similar_of: dict) -> dict:
                 alike[key] = ref
     if alike:
         out["similar"] = sorted(alike.values(), key=lambda r: (-r[3], r[2], r[1]))[:UNIFIED_SIMILAR]
+    for p in order:
+        if entries[p][1].get("family"):
+            name, rows = entries[p][1]["family"]
+            out["family"] = [name, [[p, *row] for row in rows]]      # the games of its series, each on the platform that named it
+            break
     links = {}
     for p in order:
         for other, ids in (entries[p][1].get("links") or {}).items():
@@ -577,6 +614,8 @@ def build(data_dir: str, out_dir: str) -> dict:
                         refs.append([platform, o, name, score, *ref])
                 similar_refs.setdefault(sheet["qid"], {})[platform] = refs
             sheets[gid] = sheet
+        for gid, family in families(sheets, lambda g: pic(g, False)).items():
+            sheets[gid]["family"] = family
         shards = sharded(base, "g", sheets)
         lists["shards"] = shards
         lists["games"] = len(sheets)

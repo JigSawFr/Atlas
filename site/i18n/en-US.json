@@ -180,8 +180,8 @@
   "x_gallery": "Screenshots",
   "x_screenshot": "Screenshot {n}",
   "x_close": "Close",
-  "x_prev": "Previous screenshot",
-  "x_next": "Next screenshot",
+  "x_prev": "Previous in the list",
+  "x_next": "Next in the list",
   "x_official_site": "Official site",
   "x_runs_on": "Runs on",
   "x_deck_3": "Verified",
@@ -379,5 +379,15 @@
   "x_sections": "Sections of this sheet",
   "x_trait_count": "{n} games on {platform}",
   "x_dist_title": "Where it stands among {platform} games",
-  "x_dist_help": "Each bar is a band of renown; the line marks this game: better known than {p} % of games."
+  "x_dist_help": "Each bar is a band of renown; the line marks this game: better known than {p} % of games.",
+  "x_timeline": "Release dates",
+  "x_favorites": "Favorites",
+  "x_fav_add": "Add to favorites",
+  "x_fav_remove": "Remove from favorites",
+  "x_fav_empty": "No favorites yet. Open a game and press the heart.",
+  "x_fav_note": "Kept in this browser only, never sent.",
+  "x_compare": "Compare",
+  "x_compare_n": "Compare {n} games",
+  "x_compare_pick": "Tick 2 or 3 games to compare them.",
+  "x_highest": "Highest"
 }

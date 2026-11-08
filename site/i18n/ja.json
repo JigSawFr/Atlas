@@ -180,8 +180,8 @@
   "x_gallery": "スクリーンショット",
   "x_screenshot": "スクリーンショット {n}",
   "x_close": "閉じる",
-  "x_prev": "前のスクリーンショット",
-  "x_next": "次のスクリーンショット",
+  "x_prev": "リストの前へ",
+  "x_next": "リストの次へ",
   "x_official_site": "公式サイト",
   "x_runs_on": "対応機種",
   "x_deck_3": "検証済み",
@@ -379,5 +379,15 @@
   "x_sections": "このページの項目",
   "x_trait_count": "{platform}の{n}作品",
   "x_dist_title": "{platform}のゲームの中での位置",
-  "x_dist_help": "各バーは知名度の帯で、線がこのゲームの位置です。ゲームの{p} %より知られています。"
+  "x_dist_help": "各バーは知名度の帯で、線がこのゲームの位置です。ゲームの{p} %より知られています。",
+  "x_timeline": "発売日",
+  "x_favorites": "お気に入り",
+  "x_fav_add": "お気に入りに追加",
+  "x_fav_remove": "お気に入りから削除",
+  "x_fav_empty": "お気に入りはまだありません。ゲームを開いてハートを押してください。",
+  "x_fav_note": "このブラウザーにのみ保存され、送信されません。",
+  "x_compare": "比較",
+  "x_compare_n": "{n}作品を比較",
+  "x_compare_pick": "比較するゲームを2〜3作品選んでください。",
+  "x_highest": "最高"
 }

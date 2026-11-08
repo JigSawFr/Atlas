@@ -560,8 +560,8 @@ button.ring[aria-expanded="true"] small { color: var(--snow); }
   .fig { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 70ms); }
   .sheet:not([hidden]) > header, .sheet:not([hidden]) > .stats { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
   .sheet:not([hidden]) > .stats { animation-delay: 0.08s; }
-  .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
-  .reveal.seen { opacity: 1; transform: none; }
+  .unveil { opacity: 0; transform: translateY(16px); transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .unveil.seen { opacity: 1; transform: none; }
   .sheet .backdrop:not(.blurred).ready img { animation: drift 28s ease-in-out infinite alternate; }
   a.card .cover img { transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
   a.card:hover .cover img, a.card:focus-visible .cover img { transform: scale(1.06); }
@@ -724,3 +724,50 @@ a.chip .n { color: var(--mist); font-size: 0.75rem; }
 .dist-chart .mark { stroke: var(--snow); stroke-width: 2; stroke-linecap: round; }
 .dist .dim { margin: 0; font-size: 0.8125rem; }
 @media (prefers-reduced-motion: no-preference) { .dist { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both 0.2s; } }
+
+/* The line above a sheet: the way back, the steps through the list it was opened from, the heart. */
+.topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.topline .tools { display: inline-flex; align-items: center; gap: 8px; }
+.pager { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8125rem; }
+.step { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--night-line); background: var(--abyss); color: var(--snow); font-size: 1.25rem; line-height: 1; text-decoration: none; }
+a.step:hover { border-color: var(--mist); }
+.step.off { opacity: 0.35; }
+.fav { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--night-line); background: var(--abyss); color: var(--mist); font-size: 1.25rem; line-height: 1; cursor: pointer; }
+.fav:hover { color: var(--snow); border-color: var(--mist); }
+.fav.on { color: #ff6b8b; border-color: rgb(255 107 139 / 0.5); background: rgb(255 107 139 / 0.1); }
+@media (prefers-reduced-motion: no-preference) { .fav.on { animation: beat 0.35s ease-out; } @keyframes beat { 40% { transform: scale(1.25); } } }
+
+/* A game on several platforms: when each one came out, on one axis. */
+.timeline { margin: 14px 0 0; display: grid; gap: 8px; }
+.timeline figcaption { font-size: 0.875rem; color: var(--mist); }
+.timeline ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.timeline li { display: grid; grid-template-columns: minmax(4.5rem, 8rem) minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 0.8125rem; }
+.tl-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-track { position: relative; height: 2px; margin-inline: 7px; background: var(--night-line); border-radius: 1px; }
+.tl-track i { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--tint); box-shadow: 0 0 0 3px var(--night); }
+.tl-date { font-family: var(--mono); color: var(--mist); white-space: nowrap; }
+
+/* The games of a series: the one on this sheet is marked. */
+.family a.card.here { outline: 2px solid rgb(51 187 255 / 0.7); outline-offset: -2px; }
+
+/* The favourites, and two or three of them side by side. */
+.results li.fav-bar { counter-increment: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.results li.fav-item { display: flex; align-items: center; gap: 10px; }
+.fav-item > a { flex: 1; min-width: 0; }
+.fav-item input[type="checkbox"] { width: 22px; height: 22px; flex: none; accent-color: #33bbff; }
+.unfav { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--night-line); background: var(--abyss); color: var(--mist); font-size: 1.125rem; cursor: pointer; }
+.unfav:hover { color: var(--snow); border-color: var(--mist); }
+button.compare { min-height: 44px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--night-line); background: var(--night); color: var(--snow); font: 600 0.9375rem var(--body); cursor: pointer; }
+button.compare:hover:not(:disabled) { border-color: var(--mist); }
+button.compare:disabled { opacity: 0.5; cursor: not-allowed; }
+.fav-bar .dim { font-size: 0.875rem; }
+.compare-wrap { overflow-x: auto; }
+table.compare { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 520px; }
+table.compare th, table.compare td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--night-line); }
+table.compare thead th { font-weight: 600; }
+table.compare thead a { display: grid; gap: 8px; color: var(--snow); text-decoration: none; }
+table.compare tbody th { font-weight: 500; color: var(--mist); width: 8rem; font-size: 0.875rem; }
+table.compare .corner { color: var(--mist); font-size: 0.875rem; font-weight: 500; vertical-align: bottom; }
+table.compare .cv { display: inline-flex; align-items: center; gap: 8px; }
+table.compare .lead { color: #ffc857; }
+table.compare .chips { display: flex; flex-wrap: wrap; gap: 6px; }
