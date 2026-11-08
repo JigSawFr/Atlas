@@ -1019,8 +1019,11 @@
 
     // Not the game itself (a platform's list can name the sheet of all its platforms, or one of them).
     // Nor another entry of it under the same name (an edition the links do not tie to it).
+    // Nor the games of its series, which have their own row above.
+    const kin = new Set(), kinNames = new Set();
+    for (const [k, r, n] of (m.family && m.family[1]) || []) { kin.add(`${k}/${r}`); if (n) kinNames.add(fold(n)); }
     const alike = (m.similar || []).filter(([kind, ref, name]) => !(kind === "u" && ref === m.qid) && !es.some((e) => e.p === kind && e.id === ref)
-      && !(name && m.name && fold(name) === fold(m.name)));
+      && !(name && m.name && fold(name) === fold(m.name)) && !kin.has(`${kind}/${ref}`) && !(name && kinNames.has(fold(name))));
     if (alike.length) {
       // On a sheet of several platforms a game that is on one only says which; the figure is how alike, not how known.
       main.append(section(t("x_similar"), el("ul", { class: "cardgrid alike carousel" }, ...alike.map(([kind, ref, name, s, pic, shared]) =>

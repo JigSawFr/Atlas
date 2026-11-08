@@ -380,7 +380,6 @@ a.chip:hover, a.chip:focus-visible { background: rgb(51 187 255 / 0.2); }
   .cols { grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 28px; align-items: start; }
   .side.stuck { position: sticky; top: 16px; }
 }
-.shots a.first img { width: 360px; }
 .shots { scroll-snap-type: x mandatory; align-items: flex-start; }
 .shots a { scroll-snap-align: start; }
 
