@@ -149,6 +149,14 @@ class SiteData(unittest.TestCase):
         for gid in games:
             self.assertEqual(site_data.trait_names(games[gid], {}, spelled)["publishers"], ["Feral Interactive"])
 
+    def test_one_spelling_across_games_and_credits(self):
+        games = {"1": {"developers": [[1, "Konami"]], "publishers": [[3, "Konami"]]},
+                 "2": {"developers": [[2, "Konami Digital Entertainment Co., Ltd."]]},
+                 "3": {"developers": [[4, "id Software / Nightdive Studios"]]}}
+        spelled = site_data.spellings(games, {})
+        self.assertEqual(site_data.trait_names(games["2"], {}, spelled)["developers"], ["Konami"])
+        self.assertEqual(site_data.trait_names(games["3"], {}, spelled)["developers"], ["id Software", "Nightdive Studios"])
+
     def facets(self, platform):
         return self.read(f"x/{platform}/facets.json")
 

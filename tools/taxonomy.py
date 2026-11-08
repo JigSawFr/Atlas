@@ -349,6 +349,47 @@ COMPANY_ALIASES = {
     "gray matter studios": "gray matter",
 }
 
+# The words a studio's or a publisher's name adds to the company's own ("Konami Digital Entertainment").
+DESCRIPTORS = {"entertainment", "games", "game", "studios", "studio", "software", "interactive", "publishing", "digital",
+               "productions", "production", "group", "media", "labs", "works", "international", "holdings",
+               "technologies", "technology", "network"}
+# Names that look like another company's with a descriptor added, and are not.
+NOT_THE_SAME = {"atari games"}          # the arcade maker, apart from Atari
+MAX_ABSORBED = 4                        # a base name that absorbs more than this many is a common word ("Phoenix")
+
+
+def company_core(key: str) -> str:
+    """A company key without the descriptors it ends with ("konami digital entertainment" is "konami")."""
+    words = key.split()
+    while len(words) > 1 and words[-1] in DESCRIPTORS:
+        words.pop()
+    return " ".join(words)
+
+
+def company_merges(uses: dict) -> dict:
+    """{key: the key of the company it adds descriptors to} from {company key: games that name it}.
+    Only a name the data has itself is a base ("Konami" is there, so "Konami Digital Entertainment" is
+    Konami; "Avalanche Software" and "Avalanche Studios" stay two when there is no "Avalanche"), and a base that
+    would take in many names, or is a descriptor, is left alone."""
+    merges = {}
+    for key in uses:
+        core = company_core(key)
+        if core != key and len(core) >= 3 and core in uses and core not in DESCRIPTORS and key not in NOT_THE_SAME:
+            merges[key] = core
+    taken = {}
+    for base in merges.values():
+        taken[base] = taken.get(base, 0) + 1
+    return {k: b for k, b in merges.items() if taken[b] <= MAX_ABSORBED}
+
+
+_SEPARATORS = re.compile(r"\s*;\s*|\s+/\s+|\s+\+\s+")
+
+
+def split_company(name: str) -> list:
+    """The companies a credit names when it lists several ("id Software / Nightdive Studios", "A; B")."""
+    return [part for part in _SEPARATORS.split(str(name)) if part.strip()]
+
+
 _NOTE = re.compile(r"\s*[(（][^()（）]*[)）]\s*$")
 
 

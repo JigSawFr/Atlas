@@ -98,6 +98,26 @@ class Words(unittest.TestCase):
         self.assertEqual(taxonomy.company_key("Double Fine"), taxonomy.company_key("Double Fine Productions, Inc."))
         self.assertNotEqual(taxonomy.company_key("Atari Games"), taxonomy.company_key("Atari"))
 
+    def test_descriptors_join_a_name_the_data_has(self):
+        uses = {"konami": 900, "konami digital entertainment": 50, "avalanche software": 80, "avalanche studios": 20,
+                "phoenix": 7, "phoenix labs": 5, "phoenix games": 9, "phoenix studio": 2, "phoenix software": 1,
+                "phoenix interactive": 1, "atari": 100, "atari games": 40, "digital": 3, "digital media": 2}
+        merges = taxonomy.company_merges(uses)
+        self.assertEqual(merges["konami digital entertainment"], "konami")
+        self.assertNotIn("avalanche software", merges)        # no "Avalanche" to join: two studios
+        self.assertNotIn("avalanche studios", merges)
+        self.assertFalse([k for k in merges if k.startswith("phoenix")])   # a common word takes in too many
+        self.assertNotIn("atari games", merges)               # named apart
+        self.assertNotIn("digital media", merges)             # the base is a descriptor
+
+    def test_a_credit_naming_several_companies(self):
+        self.assertEqual(taxonomy.split_company("id Software / Nightdive Studios"), ["id Software", "Nightdive Studios"])
+        self.assertEqual(taxonomy.split_company("Boss Team Games, LLC; Saber Interactive Inc."),
+                         ["Boss Team Games, LLC", "Saber Interactive Inc."])
+        self.assertEqual(taxonomy.split_company("Baba Yaga Games + Sometimes You"), ["Baba Yaga Games", "Sometimes You"])
+        self.assertEqual(taxonomy.split_company("Image & Form Games"), ["Image & Form Games"])
+        self.assertEqual(taxonomy.split_company("AC/DC Games"), ["AC/DC Games"])
+
     def test_a_company_in_another_script_is_its_own(self):
         keys = {taxonomy.company_key(n) for n in ("橘子班", "乌鸦大仙", "Новый Диск", "カプコン")}
         self.assertEqual(len(keys), 4)                                                              # none is ""
