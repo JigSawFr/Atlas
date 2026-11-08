@@ -790,14 +790,12 @@
         if (r && r[0]) rings.append(ring(r[1], storeName(e.p), t("x_store_help", { p: r[1], n: num(r[0]), store: storeName(e.p) }), ringHelp));
       }
     }
-    const info = el("div", { class: "info" }, logo, title,
-      // On a sheet of several platforms each badge opens that platform's own sheet.
-      el("p", { class: "ids" }, ...es.map((e) => (es.length > 1
-        ? el("a", { class: "badge", href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone`, text: S._names[e.p] || e.p })
-        : el("span", { class: "badge", text: S._names[e.p] || e.p }))),
-        m.name && m.id ? el("code", { text: m.id }) : null,
-        /^Q\d+$/.test(m.qid || "") ? el("a", { href: `https://www.wikidata.org/wiki/${m.qid}`, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: m.qid }) : null,
-        !m.name ? el("small", { text: t("x_no_name") }) : null),
+    // The platforms are the tiles' where there are several: the line under the title is then the id alone (and its
+    // missing name). The Wikidata item is among the links.
+    const ids = el("p", { class: "ids" }, es.length === 1 ? el("span", { class: "badge", text: S._names[es[0].p] || es[0].p }) : null,
+      m.name && m.id ? el("code", { text: m.id }) : null,
+      !m.name ? el("small", { text: t("x_no_name") }) : null);
+    const info = el("div", { class: "info" }, logo, title, ids.childElementCount ? ids : null,
       rings.childElementCount ? rings : null, rings.childElementCount ? ringHelp : null);
     const top = el("div", { class: "topline" }, back, el("span", { class: "tools" }, pager(es), heart(m, es)));
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
@@ -970,6 +968,7 @@
     const outside = [];
     const open = (label, href) => outside.push(el("li", {}, el("a", { class: "out-link", href, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: `${label} ↗` })));
     if (wd.web) open(t("x_official_site"), wd.web);
+    if (/^Q\d+$/.test(m.qid || "")) open(`Wikidata · ${m.qid}`, `https://www.wikidata.org/wiki/${m.qid}`);
     if (wd.wiki) {
       // The visitor's language first (the catalogs' es-419, fr-CA, pt-BR… are Spanish, French, Portuguese), English after.
       const own = LANG.split("-")[0], langs = [own, "en"].filter((l, i, all) => wd.wiki[l] && all.indexOf(l) === i);
