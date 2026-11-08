@@ -223,7 +223,7 @@ time.late { color: #ffb347; }
 .fields { display: flex; flex-wrap: wrap; gap: 12px; }
 .field { display: grid; gap: 4px; font-size: 0.8125rem; color: var(--mist); font-family: var(--mono); }
 .field[hidden] { display: none; }
-.field.search { flex: 1 1 260px; }
+.field.search { flex: 1 1 180px; }
 .field select, .field input {
   min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--night-line); background: var(--abyss);
   color: var(--snow); font: 400 1rem var(--body); width: 100%;
@@ -267,6 +267,17 @@ time.late { color: #ffb347; }
   border-radius: 14px; background: var(--night); border: 1px solid var(--night-line); color: var(--snow); text-decoration: none;
 }
 .results a::before { content: counter(rank); grid-row: span 2; font: 500 0.8125rem var(--mono); color: var(--mist); text-align: right; }
+/* A row: its rank, a small picture (Steam's header, else the drawn cover), the name and the figures under it; side by
+   side from a tablet's width. */
+.results:not(.cards) a { grid-template-columns: 2.2rem 64px minmax(0, 1fr); align-items: center; gap: 2px 12px; padding: 8px 12px; }
+.results:not(.cards) a::before { align-self: center; }
+.cover.thumb { grid-row: span 2; width: 64px; border-radius: 6px; border: 0; }
+@media (min-width: 760px) {
+  .results:not(.cards) a { grid-template-columns: 2.4rem 80px minmax(0, 1fr) auto; gap: 12px 16px; }
+  .results:not(.cards) a::before, .results:not(.cards) .cover.thumb { grid-row: auto; }
+  .cover.thumb { width: 80px; }
+  .results:not(.cards) .meta { justify-content: flex-end; }
+}
 .results a:hover { border-color: var(--mist); }
 .name { font-weight: 600; overflow-wrap: anywhere; }
 .name.none { display: inline-flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-weight: 500; }
@@ -314,13 +325,15 @@ time.late { color: #ffb347; }
 .shots a { flex: none; display: block; scroll-snap-align: start; border-radius: 10px; overflow: hidden; border: 1px solid var(--night-line); }
 .shots img { display: block; width: 240px; aspect-ratio: 16 / 9; object-fit: cover; background: var(--abyss); }
 .byplat { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.byplat li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 10px 14px; border-radius: 14px; background: var(--abyss); border: 1px solid var(--night-line); }
-.byplat .out { margin-left: auto; min-width: 44px; min-height: 44px; display: inline-grid; place-items: center; }
+.byplat li { border-radius: 14px; background: var(--abyss); border: 1px solid var(--night-line); }
+.byplat li:hover, .byplat li:focus-within { border-color: var(--mist); }
+.byplat a { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; min-height: 44px; padding: 10px 14px; border-radius: inherit; color: var(--snow); text-decoration: none; }
+.byplat .out { margin-left: auto; color: var(--link); }
 .traits dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .saved ul { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 6px 0 0; }
 .saved li { display: inline-flex; align-items: center; gap: 2px; }
 .saved .x { background: none; border: 0; color: var(--snow); cursor: pointer; font-size: 1rem; padding: 0 4px; }
-.views .curve { width: 100%; max-width: 360px; height: auto; color: var(--aurora, #33bbff); }
+.views .curve { width: 100%; max-width: 560px; height: auto; color: var(--aurora, #33bbff); }
 .awards { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0; }
 a.chip { text-decoration: none; }
 a.chip:hover, a.chip:focus-visible { background: rgb(51 187 255 / 0.2); }
@@ -365,7 +378,7 @@ a.chip:hover, a.chip:focus-visible { background: rgb(51 187 255 / 0.2); }
 .cols, .main, .side { display: grid; gap: 22px; min-width: 0; align-content: start; }
 @media (min-width: 1000px) {
   .cols { grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 28px; align-items: start; }
-  .side { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: thin; }
+  .side.stuck { position: sticky; top: 16px; }
 }
 .shots a.first img { width: 360px; }
 .shots { scroll-snap-type: x mandatory; align-items: flex-start; }
@@ -383,7 +396,7 @@ a.chip:hover, a.chip:focus-visible { background: rgb(51 187 255 / 0.2); }
 .viewer-btn.close { right: 16px; top: 16px; }
 
 /* Cards: the similar games and editions of a sheet, and the lists when asked. */
-.cardgrid { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); }
+.cardgrid { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); }
 .results.cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 12px; }
 a.card { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; align-content: start; gap: 6px; padding: 0 0 10px; overflow: hidden; border-radius: 14px; background: var(--night); border: 1px solid var(--night-line); color: var(--snow); text-decoration: none; transition: transform 0.15s ease, border-color 0.15s ease; }
 a.card:hover, a.card:focus-visible { border-color: var(--mist); transform: translateY(-2px); }
@@ -398,3 +411,73 @@ button.layout { margin-inline-start: auto; }
 /* Grid items keep to their column: a wide table scrolls in its box. */
 .explorer, .explorer > *, .sheet > * { min-width: 0; }
 .explorer, .sheet { grid-template-columns: minmax(0, 1fr); }
+
+/* ---- The explorer on a phone: the platforms and the lists in one row each, scrolled sideways, rather than five rows
+   of buttons above the games. */
+@media (max-width: 700px) {
+  #x-platforms, #x-views { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  #x-platforms::-webkit-scrollbar, #x-views::-webkit-scrollbar { display: none; }
+  #x-platforms button, #x-views button { flex: none; white-space: nowrap; }
+  .results.cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 10px; }
+}
+
+/* The values picked, above the list, each one removed by a click. */
+.active { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.active[hidden] { display: none; }
+.chip.on { min-height: 32px; padding: 2px 8px 2px 10px; background: rgb(0 255 204 / 0.1); border-color: rgb(0 255 204 / 0.4); }
+.chip.on:hover, .chip.on:focus-visible { background: rgb(0 255 204 / 0.2); }
+.chip .x { color: var(--mist); font-size: 1.0625rem; line-height: 1; }
+.active .clear { display: inline-flex; align-items: center; min-height: 32px; padding: 0 6px; font-size: 0.875rem; }
+.status { font-size: 0.875rem; }
+
+/* A store's reviews in the figures: the share of good ones large, the sentence under it. */
+.stats .rev dd { display: grid; gap: 2px; }
+.stats .pct { font: 600 1.5rem/1.1 var(--display); }
+.pct.high { color: var(--aurora); }
+.pct.mid { color: #ffc857; }
+.pct.low { color: #ff6b6b; }
+.stats .rev small { font: 400 0.8125rem/1.4 var(--body); color: var(--mist); }
+.sheet .figures { margin-top: -10px; font-size: 0.875rem; }
+a.badge { display: inline-flex; align-items: center; min-height: 28px; text-decoration: none; }
+a.badge:hover, a.badge:focus-visible { color: var(--snow); border-color: var(--mist); }
+
+/* The screenshots on a wide screen: the first large, up to four beside it, the last saying how many more the viewer
+   holds; on a phone, a strip scrolled sideways. */
+@media (min-width: 700px) {
+  .shots.n2, .shots.n3, .shots.n4, .shots.n5 { display: grid; gap: 8px; overflow: visible; padding-bottom: 0; }
+  .shots.n2 { grid-template-columns: 1fr 1fr; }
+  .shots.n3, .shots.n4 { grid-template-columns: 2fr 1fr; }
+  .shots.n5 { grid-template-columns: 2fr 1fr 1fr; }
+  .shots.n3 a.first { grid-row: span 2; }
+  .shots.n4 a.first { grid-row: span 3; }
+  .shots.n5 a.first { grid-row: span 2; }
+  .shots:is(.n2, .n3, .n4, .n5) a:nth-child(n+6) { display: none; }
+  .shots:is(.n2, .n3, .n4, .n5) img, .shots:is(.n2, .n3, .n4, .n5) a.first img { width: 100%; height: 100%; }
+  .shots.n1 a.first img { width: min(100%, 640px); }
+  .shots a[data-more] { position: relative; }
+  .shots a[data-more]::after {
+    content: attr(data-more); position: absolute; inset: 0; display: grid; place-items: center;
+    background: rgb(5 8 16 / 0.6); font: 600 1.5rem var(--display); color: var(--snow);
+  }
+}
+.shots a { transition: border-color 0.15s ease; }
+.shots a:hover, .shots a:focus-visible { border-color: var(--mist); }
+.viewer-count { position: absolute; left: 50%; bottom: 16px; translate: -50% 0; margin: 0; padding: 4px 12px; border-radius: 99px; background: rgb(14 22 40 / 0.85); font: 500 0.875rem var(--mono); color: var(--snow); }
+.viewer.single .viewer-btn.prev, .viewer.single .viewer-btn.next, .viewer.single .viewer-count { display: none; }
+
+/* A sheet on a phone: the cover beside the title, two figures a row, smaller rings. */
+@media (max-width: 600px) {
+  /* The cover and the title (or logo) side by side; the badges and the rings under both, across the sheet. */
+  .banner:has(> .poster) { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: end; gap: 14px; }
+  .banner:has(> .poster) .info { display: contents; }
+  .banner:has(> .poster) .info > :is(.logo, h2) { grid-column: 2; grid-row: 1; }
+  .banner:has(> .poster) .info > :is(.ids, .rings) { grid-column: 1 / -1; }
+  .banner .cover.poster { width: 92px; }
+  .logo { max-height: 84px; }
+  .ring { width: 66px; }
+  .ring svg { width: 52px; height: 52px; }
+  .ring b { height: 52px; font-size: 1.0625rem; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .stats div { padding: 10px 12px; }
+  .stats .pct { font-size: 1.25rem; }
+}

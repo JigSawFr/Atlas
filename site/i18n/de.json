@@ -141,6 +141,7 @@
   "x_view_name": "Name dieser Ansicht",
   "x_saved_views": "Gespeicherte Ansichten",
   "x_remove_view": "Ansicht {name} entfernen",
+  "x_remove_filter": "Filter {name} entfernen",
   "x_about": "Über das Spiel",
   "x_wikipedia_text": "Text aus Wikipedia, CC BY-SA 4.0",
   "x_gallery": "Screenshots",

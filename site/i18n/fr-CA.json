@@ -141,6 +141,7 @@
   "x_view_name": "Nom de cette vue",
   "x_saved_views": "Vues enregistrées",
   "x_remove_view": "Supprimer la vue {name}",
+  "x_remove_filter": "Retirer le filtre {name}",
   "x_about": "À propos",
   "x_wikipedia_text": "Texte de Wikipédia, CC BY-SA 4.0",
   "x_gallery": "Captures d'écran",
