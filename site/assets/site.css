@@ -504,7 +504,8 @@ button.ring[aria-expanded="true"] small { color: var(--snow); }
 
 /* ---- The figures of a platform (#<platform>/stats): headline numbers, columns, horizontal bars. One hue, Boréale's
    ice, for every series; text in the text colours; marks with 4px rounded ends from their baseline, 2px apart. */
-.figures-view { display: grid; gap: 28px; }
+.figures-view { display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); }
+.figures-view > * { min-width: 0; }
 .figures-view[hidden] { display: none; }
 .figures-view section h3 { font-size: 1.0625rem; margin-bottom: 12px; }
 .figs { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }
@@ -600,22 +601,98 @@ button.ring[aria-expanded="true"] small { color: var(--snow); }
 /* ---- The cards of a sheet and of the figures (alike games, editions, best rated, gems): one size each, the picture
    filling the card under a shade, the name and the figures laid over it. */
 .cardgrid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
-.cardgrid a.card { position: relative; display: block; aspect-ratio: 3 / 2; padding: 0; isolation: isolate; box-shadow: 0 6px 18px rgb(0 0 0 / 0.35); }
-.cardgrid a.card .cover { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; aspect-ratio: auto; }
-.cardgrid a.card::after {
-  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(to top, rgb(5 10 22 / 0.96) 0%, rgb(5 10 22 / 0.7) 38%, rgb(5 10 22 / 0.05) 78%);
+.cardgrid a.card {
+  position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; aspect-ratio: 3 / 2; padding: 8px 12px 10px;
+  isolation: isolate; box-shadow: 0 6px 18px rgb(0 0 0 / 0.35); overflow: hidden;
+  transform: perspective(700px) translateY(var(--lift, 0px)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
 }
+.cardgrid a.card:hover, .cardgrid a.card:focus-visible { --lift: -3px; transform: perspective(700px) translateY(var(--lift)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+.cardgrid a.card .cover { position: absolute; inset: 0; z-index: -3; width: 100%; height: 100%; aspect-ratio: auto; }
+.cardgrid a.card::after {
+  content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none;
+  background: linear-gradient(to top, rgb(5 10 22 / 0.96) 0%, rgb(5 10 22 / 0.72) 42%, rgb(5 10 22 / 0.05) 80%);
+}
+/* A glint that follows the pointer (explore.js sets --mx and --my; none without a fine pointer). */
+.cardgrid a.card::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 0.2s ease;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / 0.16), transparent 55%);
+}
+.cardgrid a.card:hover::before { opacity: 1; }
 .cardgrid a.card > .name {
-  position: absolute; inset: auto 0 32px 0; padding: 0 12px; line-height: 1.25; text-shadow: 0 1px 8px rgb(0 0 0 / 0.8);
+  padding: 0; line-height: 1.25; text-shadow: 0 1px 8px rgb(0 0 0 / 0.8);
   display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.cardgrid a.card > .meta { position: absolute; inset: auto 0 10px 0; padding: 0 12px; flex-wrap: nowrap; }
+.cardgrid a.card > .meta { padding: 0; flex-wrap: nowrap; min-width: 0; }
 .cardgrid a.card > .meta .bar { width: 56px; }
 .cardgrid a.card:hover, .cardgrid a.card:focus-visible { box-shadow: 0 14px 34px rgb(0 0 0 / 0.55), 0 0 0 1px var(--mist); }
+/* What the two games have in common (up to three notions, the rarest first) and, on a sheet of several platforms, the
+   one platform a game is on. */
+.shared { display: flex; flex-wrap: nowrap; gap: 4px; overflow: hidden; min-width: 0; }
+.shared .mini {
+  display: inline-flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; padding: 1px 7px 1px 5px; border-radius: 99px;
+  background: rgb(14 22 40 / 0.7); border: 1px solid rgb(232 238 247 / 0.16); font-size: 0.6875rem; line-height: 1.5; color: var(--snow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.shared .mini .ico { width: 0.8rem; height: 0.8rem; color: var(--aurora); }
+.pbadge {
+  position: absolute; top: 8px; left: 8px; max-width: calc(100% - 16px); padding: 1px 8px; border-radius: 99px;
+  background: rgb(14 22 40 / 0.8); border: 1px solid rgb(232 238 247 / 0.2); font: 500 0.6875rem var(--mono); color: var(--snow);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sim { font: 500 0.75rem var(--mono); color: var(--aurora); }
 @media (max-width: 600px) {
   .cardgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .cardgrid a.card { aspect-ratio: 4 / 3; }
+  /* The long rows of cards (alike games, best rated, gems) scroll sideways instead of making rows of two. */
+  .cardgrid.carousel { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; margin-inline: -4px; padding-inline: 4px; scrollbar-width: none; }
+  .cardgrid.carousel::-webkit-scrollbar { display: none; }
+  .cardgrid.carousel > li { flex: 0 0 62%; scroll-snap-align: start; min-width: 0; }
   .rings { gap: 8px; }
   .ring { width: 60px; }
 }
+
+/* ---- A platform's tile, in full: a small ring for its renown, its name (starred where the game is best known), its
+   release and how long after the first it came, its reviews and what the platform adds, a link to its store. */
+.byplat li.plat {
+  position: relative;
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+}
+.byplat .plat-main {
+  display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 4px 12px; padding: 10px 40px 10px 14px; min-height: 56px;
+}
+.byplat .plat-main.has-ring { grid-template-columns: 44px minmax(0, 1fr); }
+.byplat .plat-main.has-ring > .mini-ring { grid-row: span 2; }
+.byplat .plat-main.has-ring > .plat-more { grid-column: 1 / -1; }
+.plat-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.plat-when, .plat-more { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.plat .star { color: #ffc857; font-size: 0.9375rem; line-height: 1; }
+.plat .chip { font-size: 0.75rem; padding: 1px 8px; }
+.chip.gap { background: rgb(255 200 87 / 0.1); border-color: rgb(255 200 87 / 0.35); }
+.chip.first { background: rgb(0 255 204 / 0.1); border-color: rgb(0 255 204 / 0.35); }
+.byplat .out { position: absolute; right: 14px; bottom: 10px; margin: 0; }
+.byplat a.store {
+  position: absolute; top: 6px; right: 6px; z-index: 2; display: inline-grid; place-items: center; min-width: 32px; min-height: 32px; padding: 0;
+  border-radius: 10px; color: var(--mist); font-size: 1rem; text-decoration: none;
+}
+.byplat a.store:hover, .byplat a.store:focus-visible { color: var(--snow); background: rgb(232 238 247 / 0.12); }
+.byplat li.plat.best { box-shadow: 0 0 0 1px color-mix(in srgb, var(--tint, #33bbff) 55%, transparent), 0 8px 26px -10px var(--tint, #33bbff); }
+.mini-ring { position: relative; display: grid; place-items: center; width: 44px; height: 44px; --tone: var(--aurora); }
+.mini-ring.mid { --tone: #ffc857; }
+.mini-ring.low { --tone: #ff6b6b; }
+.mini-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); fill: none; stroke-width: 3.5; }
+.mini-ring .track { stroke: rgb(232 238 247 / 0.16); }
+.mini-ring .arc { stroke: var(--tone); stroke-linecap: round; }
+.mini-ring b { font: 600 0.875rem var(--display); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .byplat li.plat { transition: transform 0.15s ease-out, border-color 0.15s ease, box-shadow 0.2s ease; }
+  .cardgrid a.card { transition: transform 0.15s ease-out, box-shadow 0.2s ease, border-color 0.15s ease; }
+  .mini-ring .arc { animation: ring-in 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both 0.2s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .byplat li.plat, .cardgrid a.card { transform: none !important; }
+  .cardgrid a.card::before { display: none; }
+}
+
+/* A row of cards that scrolls sideways must not widen the column that holds it. */
+.main, .side { grid-template-columns: minmax(0, 1fr); }
+.main > *, .side > * { min-width: 0; }

@@ -171,8 +171,20 @@
   try { cards = localStorage.getItem("atlas-cards") === "1"; } catch (e) { /* no storage: rows */ }
 
   // A game as a card: its picture, its name, its figures.
-  function card(href, kind, ref, name, meta, pic) {
-    return el("a", { class: "card", href }, tile(kind, ref, name, false, pic), nameOf(ref, name), el("span", { class: "meta" }, ...meta));
+  // `extra`: { shared: ["g:farm", …] the notions it has in common with the sheet's game, badge: the platform's name }.
+  const INV = Object.fromEntries(Object.entries(NOTION).map(([k, v]) => [v, k]));
+  function sharedLine(shared) {
+    const items = (shared || []).map((x) => {
+      const at = x.indexOf(":"), kind = INV[x.slice(0, at)], value = x.slice(at + 1);
+      return kind ? el("span", { class: "mini" }, iconOf(kind, value), labelOf(kind, value)) : null;
+    }).filter(Boolean);
+    return items.length ? el("span", { class: "shared", role: "group", "aria-label": t("x_in_common") }, ...items) : null;
+  }
+  function card(href, kind, ref, name, meta, pic, extra) {
+    const e = extra || {};
+    return el("a", { class: "card", href }, tile(kind, ref, name, false, pic),
+      e.badge ? el("span", { class: "pbadge", text: e.badge }) : null, sharedLine(e.shared),
+      nameOf(ref, name), el("span", { class: "meta" }, ...meta));
   }
 
   function row(platform, id, name, meta, pic) {
@@ -521,7 +533,7 @@
 
   // A score out of 100 as a ring (a dasharray set by script, as the bars' widths: the CSP allows no style attribute).
   // A ring says what it measures when pressed (a finger has no hover): its help under the rings.
-  function ring(v, label, help, helpBox) {
+  function ringSvg(v) {
     const svg = document.createElementNS(SVG, "svg");
     svg.setAttribute("viewBox", "0 0 36 36");
     svg.setAttribute("aria-hidden", "true");
@@ -531,6 +543,14 @@
       if (cls === "arc") { c.setAttribute("pathLength", "100"); c.setAttribute("stroke-dasharray", `${Math.max(2, Math.min(100, v))} 100`); }
       svg.append(c);
     }
+    return svg;
+  }
+
+  // A small ring with no help, for a platform's tile (the renown there; its label is the tile's text).
+  const miniRing = (v, label) => el("span", { class: `mini-ring ${toneOf(v)}`, role: "img", "aria-label": `${label}: ${v} / 100` }, ringSvg(v), el("b", { text: String(v), "aria-hidden": "true" }));
+
+  function ring(v, label, help, helpBox) {
+    const svg = ringSvg(v);
     const b = el("button", { type: "button", class: `ring ${toneOf(v)}`, "aria-label": `${label}: ${v} / 100`, "aria-expanded": "false", title: help },
       svg, el("b", { text: String(v), "aria-hidden": "true" }), el("small", { text: label, "aria-hidden": "true" }));
     b.addEventListener("click", () => {
@@ -566,11 +586,51 @@
     neogeo: "#d8a71d", turbografx16: "#ff6a13", atari2600: "#c8102e", colecovision: "#e4572e", c64: "#6c5eb5",
     amiga: "#ff5a1f", atarist: "#9a9a9a", msx: "#2f7ad8", zxspectrum: "#e8262e", amstradcpc: "#2fb34a", apple2: "#58b947",
     dos: "#00a6a6", "3do": "#d4af37", cdi: "#3b6fd1", arcade: "#ff3cac" };
-  function platTile(p, link) {
+  function platTile(p, main, store) {
     const li = el("li", { class: "plat" }, el("span", { class: "wm", "aria-hidden": "true" },
-      icon(PC.has(p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[p] || p.toUpperCase() })), link);
+      icon(PC.has(p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[p] || p.toUpperCase() })), main, store || null);
     li.style.setProperty("--tint", TINTS[p] || `hsl(${hueOf(p)} 60% 50%)`);
     return li;
+  }
+
+  // The time between two releases, in the visitor's language and the unit that reads best ("11 months").
+  function gap(from, to) {
+    const day = (n) => { const x = String(n); return Date.UTC(+x.slice(0, 4), +x.slice(4, 6) - 1, +x.slice(6, 8)) / 86400000; };
+    const d = Math.round(day(to) - day(from));
+    const [unit, n] = d < 60 ? ["day", d] : d < 730 ? ["month", Math.round(d / 30.4)] : ["year", Math.round(d / 36.5) / 10];
+    return new Intl.NumberFormat(LANG, { style: "unit", unit, unitDisplay: "long", maximumFractionDigits: 1 }).format(n);
+  }
+
+  // The "By platform" tiles: the platform's own colour, its renown as a small ring, the release with how long after
+  // the first it came, the reviews, what the platform adds (Game Pass, Steam Deck), a link to the store where there
+  // is one, and the one it is best known on marked.
+  function platformTiles(es) {
+    const first = Math.min(...es.map((e) => e.release || e.upcoming || Infinity));
+    const dated = new Set(es.map((e) => e.release || e.upcoming).filter(Boolean)).size > 1;
+    const top = es.filter((e) => e.popular).sort((x, y) => y.popular[0] - x.popular[0])[0];
+    return es.map((e) => {
+      const when = e.release || e.upcoming;
+      const rev = e.reviews || e.rating;
+      const name = S._names[e.p] || e.p;
+      const deck = e.tech && e.tech.deck >= 2 ? `Steam Deck · ${t(`x_deck_${e.tech.deck}`)}` : "";
+      const lines = [];
+      lines.push(el("span", { class: "plat-name" }, el("span", { class: "badge", text: name }),
+        top === e && es.filter((x) => x.popular).length > 1 ? el("span", { class: "star", title: t("x_best_platform"), "aria-label": t("x_best_platform"), text: "★" }) : null));
+      if (when) {
+        const later = dated && when > first ? el("span", { class: "chip gap", title: t("x_later", { d: gap(first, when) }), text: `+${gap(first, when)}` }) : null;
+        lines.push(el("span", { class: "plat-when" }, el("span", { class: "date", text: e.release ? ymd(when) : t("x_coming", { date: ymd(when) }) }), later,
+          dated && when === first ? el("span", { class: "chip first", text: t("x_first") }) : null));
+      }
+      const extras = [e.gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null, deck ? el("span", { class: "chip", text: deck }) : null].filter(Boolean);
+      if (rev || extras.length) lines.push(el("span", { class: "plat-more" }, rev ? el("span", { class: "dim", text: t("x_reviews", { n: num(rev[0]), p: rev[1] }) }) : null, ...extras));
+      const main = el("a", { class: `plat-main${e.popular ? " has-ring" : ""}`, href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
+        e.popular ? miniRing(e.popular[0], t("x_score")) : null, ...lines, el("span", { class: "out", "aria-hidden": "true", text: "→" }));
+      const shop = STORES[e.p] && /^[\w-]+$/.test(e.id) ? el("a", { class: "store", href: STORES[e.p](e.id), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank",
+        title: t("x_open_store", { store: name }), "aria-label": t("x_open_store", { store: name }), text: "↗" }) : null;
+      const li = platTile(e.p, main, shop);
+      if (top === e && es.filter((x) => x.popular).length > 1) li.classList.add("best");
+      return li;
+    });
   }
 
   function renderSheet(m, backHref) {
@@ -676,13 +736,7 @@
     if (technical) side.append(technical);
 
     if (es.length > 1) {
-      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...es.map((e) => platTile(e.p, el("a", { href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
-        el("span", { class: "badge", text: S._names[e.p] || e.p }),
-        e.popular ? score(e.popular[0]) : null,
-        e.release ? el("span", { class: "date", text: ymd(e.release) }) : (e.upcoming ? el("span", { class: "date", text: t("x_coming", { date: ymd(e.upcoming) }) }) : null),
-        e.reviews || e.rating ? el("span", { class: "dim", text: t("x_reviews", { n: num((e.reviews || e.rating)[0]), p: (e.reviews || e.rating)[1] }) }) : null,
-        e.gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null,
-        el("span", { class: "out", "aria-hidden": "true", text: "→" })))))));
+      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...platformTiles(es))));
     }
 
     // The first lines of the Wikipedia page, in the visitor's language else English, with its credit (CC BY-SA 4.0).
@@ -735,8 +789,10 @@
     const alike = (m.similar || []).filter(([kind, ref, name]) => !(kind === "u" && ref === m.qid) && !es.some((e) => e.p === kind && e.id === ref)
       && !(name && m.name && fold(name) === fold(m.name)));
     if (alike.length) {
-      main.append(section(t("x_similar"), el("ul", { class: "cardgrid" }, ...alike.map(([kind, ref, name, s, pic]) =>
-        el("li", {}, card(gameHref(kind, ref), kind, ref, name, [score(s)], pic))))));
+      // On a sheet of several platforms a game that is on one only says which; the figure is how alike, not how known.
+      main.append(section(t("x_similar"), el("ul", { class: "cardgrid alike carousel" }, ...alike.map(([kind, ref, name, s, pic, shared]) =>
+        el("li", {}, card(gameHref(kind, ref), kind, ref, name, [el("span", { class: "sim", text: t("x_alike_pct", { n: num(s) }) })], pic,
+          { shared, badge: es.length > 1 && kind !== "u" ? S._names[kind] || kind : "" }))))));
     }
     for (const e of es) {
       if (e.edition_of) {
@@ -858,7 +914,7 @@
     if (st.developers.length) grid.append(section(t("x_st_developers"), hbars(st.developers.map(([d, n, c]) => [d, n, avg(c), browseBy("developers", d)]))));
     if (st.publishers.length) grid.append(section(t("x_st_publishers"), hbars(st.publishers.map(([d, n, c]) => [d, n, avg(c), browseBy("publishers", d)]))));
     if (grid.childElementCount) parts.push(grid);
-    const games = (list) => el("ul", { class: "cardgrid" }, ...list.map(([id, name, c, r, pic]) =>
+    const games = (list) => el("ul", { class: "cardgrid carousel" }, ...list.map(([id, name, c, r, pic]) =>
       el("li", {}, card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: `pct ${toneOf(c)}`, text: String(c) }), score(r)], pic))));
     if (st.best.length) parts.push(section(t("x_st_best"), games(st.best)));
     if (st.gems.length) parts.push(section(t("x_st_gems"), el("p", { class: "dim", text: t("x_st_gems_note") }), games(st.gems)));
@@ -940,7 +996,7 @@
     const entry = { p: platform, id };
     for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
     renderSheet({ name: g.name, id, qid: g.qid, wd: g.wd, platforms: [entry], traits: g.traits,
-      similar: (g.similar || []).map(([o, name, s, pic]) => [platform, o, name, s, pic]), links: g.links }, backTo(platform));
+      similar: (g.similar || []).map(([o, name, s, pic, shared]) => [platform, o, name, s, pic, shared]), links: g.links }, backTo(platform));
   }
 
   // Browsing: facets.json gives the menus, then the pages of games, best known
@@ -1306,6 +1362,25 @@
     const q = search.value.trim();
     if (q) go(`#all/search/${encodeURIComponent(q)}`);
   });
+  // A card or a platform's tile leans toward the pointer and catches a glint of light (a fine pointer that hovers, and
+  // only for visitors who have not asked for less motion): the custom properties are read by site.css.
+  const FINE = window.matchMedia("(hover: hover) and (pointer: fine)");
+  document.addEventListener("pointermove", (e) => {
+    if (!MOTION.matches || !FINE.matches || !e.target.closest) return;
+    const c = e.target.closest(".cardgrid a.card, .byplat li.plat");
+    if (!c) return;
+    const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    const k = c.matches(".plat") ? 3 : 7;
+    c.style.setProperty("--ry", `${((x - 0.5) * 2 * k).toFixed(2)}deg`);
+    c.style.setProperty("--rx", `${((0.5 - y) * 2 * k).toFixed(2)}deg`);
+    c.style.setProperty("--mx", `${(x * 100).toFixed(1)}%`);
+    c.style.setProperty("--my", `${(y * 100).toFixed(1)}%`);
+  });
+  document.addEventListener("pointerout", (e) => {
+    const c = e.target.closest && e.target.closest(".cardgrid a.card, .byplat li.plat");
+    if (c && !c.contains(e.relatedTarget)) for (const v of ["--rx", "--ry", "--mx", "--my"]) c.style.removeProperty(v);
+  });
+
   // "/" goes to the search box, as on most sites with one; Escape in it empties it.
   document.addEventListener("keydown", (e) => {
     if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || e.target.closest("input, select, textarea, [contenteditable], dialog")) return;
