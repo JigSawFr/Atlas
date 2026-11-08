@@ -376,8 +376,15 @@ that made them: each file the branch had that day, attached on its own
 (`platforms/switch/popular.json` as `platforms-switch-popular.json`, a release's files having
 no folders),
 all of them in one zip with their folders (`atlas-data-YYYY-MM-DD.zip`,
-about 3 MB), and their `SHA256SUMS.txt`. Some 17 MB a week, kept for good, as the data's
-history: the renown and the trends of a week.
+about 17 MB), and their `SHA256SUMS.txt`. Not all of `sources/` goes in: its
+catalogs (Steam's apps, titledb, the stores', Wikidata's...) are collected
+again every week and weigh the most (309 MB of the 435 MB the first release
+came to). Only the day's signals, which cannot be collected again, are kept:
+`sources/igdb/games.json`, `sources/igdb/popularity.json`,
+`sources/msstore/gamepass.json`, `sources/steam-store/most-played.json`,
+`sources/steamspy/apps.json` and `sources/wikipedia/daily.json` and
+`monthly.json` (the list is in `tools/archive.sh`). Some 90 MB a week, kept for
+good, as the data's history: the renown and the trends of a week.
 
 The last week's files have addresses of their own, which follow each new
 release:
