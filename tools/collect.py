@@ -49,6 +49,7 @@ import common
 import extracts
 import features
 import gog
+import identity
 import igdb
 import links
 import n3ds
@@ -360,6 +361,11 @@ def collect_igdb(what, out_dir, previous_dir, fresh, today, report, client=None)
     print(f"igdb: the other platforms' {len(wanted)} games, {len(asked)} asked, {len(others)} found", file=sys.stderr)
     common.publish_source(out_dir, f"{common.SOURCES}/igdb/others.json", payload(
         "igdb", today, "IGDB (api.igdb.com: games)", terms, items=others), previous_dir, report)
+    # Each game's pages on the stores (Steam, GOG, Epic, Microsoft), which tie its ids together (tools/identity.py).
+    external = igdb.read_external(client, identity.platform_of, identity.store_id)
+    print(f"igdb: {len(external)} store pages of games", file=sys.stderr)
+    common.publish_source(out_dir, f"{common.SOURCES}/igdb/external.json", payload(
+        "igdb", today, "IGDB (api.igdb.com: external_games)", terms, items=external), previous_dir, report)
 
 
 def monthly_wanted(fresh, previous_dir):

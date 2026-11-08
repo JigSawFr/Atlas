@@ -197,6 +197,41 @@ def slugs(rows, base_id):
     return out
 
 
+def sources_query():
+    return f"fields name; limit {BATCH};"
+
+
+def external_query(sources, after):
+    """The external games (a game's page on a store) of these sources, BATCH of them after this id."""
+    return (f"fields id,game,uid,url,external_game_source; where id > {after} & game != null & "
+            f"external_game_source = ({','.join(str(s) for s in sources)}); sort id asc; limit {BATCH};")
+
+
+def read_external(client, platform_of, store_id):
+    """[[IGDB game id, platform, store id], ...] of every game's page on the stores Atlas has ids of
+    (platform_of names a source's platform, store_id reads an id): the sources are asked of
+    IGDB by name, then their external games page by page, by id."""
+    names = {s["id"]: platform_of(s.get("name")) for s in client.query("external_game_sources", sources_query())
+             if isinstance(s, dict) and isinstance(s.get("id"), int)}
+    wanted = sorted(i for i, p in names.items() if p)
+    print(f"igdb: external sources {sorted(set(names[i] for i in wanted))}", file=sys.stderr)
+    out, after = [], 0
+    while wanted:
+        page = [r for r in client.query("external_games", external_query(wanted, after)) if isinstance(r, dict)]
+        if not page:
+            break
+        for r in page:
+            platform = names.get(r.get("external_game_source"))
+            value = store_id(platform, r.get("uid"), r.get("url")) if platform else None
+            if value and isinstance(r.get("game"), int):
+                out.append([r["game"], platform, value])
+        last = max(r.get("id", 0) for r in page)
+        if last <= after:
+            break
+        after = last
+    return out
+
+
 def quoted(values):
     return ",".join(json.dumps(v) for v in values)
 

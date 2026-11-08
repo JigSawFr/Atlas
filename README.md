@@ -122,6 +122,10 @@ a GOG page's slug (`gog`), an Epic Games Store page's slug (`epic`). A
 platform the game has no id on is left out; a game may have several of one
 (editions, regions). It takes one Wikidata query; when Wikidata's service
 turns the run away, [QLever](https://qlever.dev)'s copy of Wikidata is asked.
+With IGDB's keys, its pages of a game on Steam, GOG, Epic and the Microsoft Store
+(`sources/igdb/external.json`) add the ids Wikidata lacks, and a game only IGDB
+knows is listed under `igdb:<IGDB id>` instead of a Wikidata item. An id two
+games claim, or a group that would join two Wikidata items, is left out.
 
 `platforms/switch/popular.json`:
 
