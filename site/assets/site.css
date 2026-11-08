@@ -696,3 +696,31 @@ button.ring[aria-expanded="true"] small { color: var(--snow); }
 /* A row of cards that scrolls sideways must not widen the column that holds it. */
 .main, .side { grid-template-columns: minmax(0, 1fr); }
 .main > *, .side > * { min-width: 0; }
+
+/* The bar that comes in when the head is out of the window: the game, its score, the sheet's sections. */
+.sheet-bar { position: fixed; z-index: 30; inset: 0 0 auto 0; display: flex; align-items: center; gap: 14px; padding: 8px clamp(12px, 3vw, 24px); background: rgb(11 18 32 / 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--night-line); transform: translateY(-110%); visibility: hidden; transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), visibility 0s 0.25s; }
+.sheet-bar.on { transform: none; visibility: visible; transition-delay: 0s; }
+.bar-title { display: flex; align-items: center; gap: 10px; margin: 0; min-width: 0; flex: none; max-width: 40%; font: 600 0.9375rem/1.2 var(--display); }
+.bar-title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-title b { flex: none; padding: 1px 8px; border-radius: 99px; background: rgb(51 187 255 / 0.15); color: var(--snow); font-size: 0.8125rem; }
+.sheet-bar nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; scroll-behavior: smooth; }
+.sheet-bar nav::-webkit-scrollbar { display: none; }
+.sheet-bar .tab { flex: none; min-height: 36px; padding: 4px 12px; border-radius: 99px; border: 1px solid transparent; background: none; color: var(--mist); font: inherit; font-size: 0.875rem; cursor: pointer; }
+.sheet-bar .tab:hover { color: var(--snow); }
+.sheet-bar .tab.here { color: var(--snow); background: rgb(51 187 255 / 0.12); border-color: rgb(51 187 255 / 0.3); }
+.cols section { scroll-margin-top: 72px; }
+@media (max-width: 640px) { .bar-title { max-width: 34%; } .bar-title b { display: none; } }
+@media (prefers-reduced-motion: reduce) { .sheet-bar, .sheet-bar nav { transition: none; scroll-behavior: auto; } }
+
+/* How many games of the platform have a notion, on its chip. */
+a.chip .n { color: var(--mist); font-size: 0.75rem; }
+
+/* Where the score falls among the platform's. */
+.dist { margin: 0; display: grid; gap: 6px; max-width: 420px; }
+.dist figcaption { font-size: 0.875rem; color: var(--mist); }
+.dist-chart { width: 100%; height: auto; display: block; overflow: visible; }
+.dist-chart .band { fill: rgb(51 187 255 / 0.28); }
+.dist-chart .band.here { fill: rgb(51 187 255 / 0.6); }
+.dist-chart .mark { stroke: var(--snow); stroke-width: 2; stroke-linecap: round; }
+.dist .dim { margin: 0; font-size: 0.8125rem; }
+@media (prefers-reduced-motion: no-preference) { .dist { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both 0.2s; } }

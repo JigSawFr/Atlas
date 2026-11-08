@@ -375,5 +375,9 @@
   "status_reviewed": "리뷰 있음",
   "status_retro": "예전 기기 ({n})",
   "status_note": "연결됨: links.json이 다른 플랫폼의 같은 게임과 이어 준 것. 리뷰 있음: 리뷰나 평점이 있는 것. 전체 보고서:",
-  "files_status": "각 소스와 플랫폼의 최신 상태"
+  "files_status": "각 소스와 플랫폼의 최신 상태",
+  "x_sections": "이 페이지의 섹션",
+  "x_trait_count": "{platform}의 게임 {n}개",
+  "x_dist_title": "{platform} 게임 중 위치",
+  "x_dist_help": "각 막대는 인지도 구간이며, 선이 이 게임의 위치입니다. 게임의 {p} %보다 유명합니다."
 }

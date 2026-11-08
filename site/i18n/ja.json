@@ -375,5 +375,9 @@
   "status_reviewed": "レビューあり",
   "status_retro": "過去の機種（{n}）",
   "status_note": "リンク：links.json が他のプラットフォームの同じゲームと結び付けたもの。レビューあり：レビューまたは評価があるもの。レポート全体：",
-  "files_status": "各ソースとプラットフォームの鮮度"
+  "files_status": "各ソースとプラットフォームの鮮度",
+  "x_sections": "このページの項目",
+  "x_trait_count": "{platform}の{n}作品",
+  "x_dist_title": "{platform}のゲームの中での位置",
+  "x_dist_help": "各バーは知名度の帯で、線がこのゲームの位置です。ゲームの{p} %より知られています。"
 }

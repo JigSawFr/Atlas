@@ -375,5 +375,9 @@
   "status_reviewed": "Con recensioni",
   "status_retro": "Le vecchie macchine ({n})",
   "status_note": "Collegati: uniti da links.json allo stesso gioco su un'altra piattaforma. Con recensioni: recensioni o un voto. Il rapporto completo:",
-  "files_status": "Quanto è aggiornata ogni fonte e piattaforma"
+  "files_status": "Quanto è aggiornata ogni fonte e piattaforma",
+  "x_sections": "Sezioni della scheda",
+  "x_trait_count": "{n} giochi su {platform}",
+  "x_dist_title": "Dove si colloca tra i giochi {platform}",
+  "x_dist_help": "Ogni barra è una fascia di notorietà; la linea indica questo gioco: più noto del {p} % dei giochi."
 }

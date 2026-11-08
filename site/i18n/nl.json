@@ -375,5 +375,9 @@
   "status_reviewed": "Met reviews",
   "status_retro": "De oude systemen ({n})",
   "status_note": "Gekoppeld: door links.json verbonden met dezelfde game op een ander platform. Met reviews: reviews of een score. Het hele rapport:",
-  "files_status": "Hoe actueel elke bron en elk platform is"
+  "files_status": "Hoe actueel elke bron en elk platform is",
+  "x_sections": "Onderdelen van deze pagina",
+  "x_trait_count": "{n} games op {platform}",
+  "x_dist_title": "Waar het staat onder de games op {platform}",
+  "x_dist_help": "Elke balk is een bekendheidsklasse; de lijn markeert deze game: bekender dan {p} % van de games."
 }

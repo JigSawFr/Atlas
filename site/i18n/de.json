@@ -375,5 +375,9 @@
   "status_reviewed": "Mit Bewertungen",
   "status_retro": "Die alten Systeme ({n})",
   "status_note": "Verknüpft: von links.json mit demselben Spiel auf einer anderen Plattform verbunden. Mit Bewertungen: Bewertungen oder eine Note. Der ganze Bericht:",
-  "files_status": "Wie aktuell jede Quelle und Plattform ist"
+  "files_status": "Wie aktuell jede Quelle und Plattform ist",
+  "x_sections": "Abschnitte dieser Seite",
+  "x_trait_count": "{n} Spiele auf {platform}",
+  "x_dist_title": "Wo es unter den Spielen auf {platform} steht",
+  "x_dist_help": "Jeder Balken ist ein Bekanntheitsbereich; die Linie markiert dieses Spiel: bekannter als {p} % der Spiele."
 }

@@ -633,7 +633,71 @@
     });
   }
 
+  // Where a score falls among the platform's: its 101 cut points counted in bands of 5, one bar a band, one line for
+  // the game. The sentence under it is the chart's text.
+  function distribution(q, v, platform) {
+    const BANDS = 20, count = new Array(BANDS).fill(0);
+    for (const x of q) count[Math.min(BANDS - 1, Math.floor(x / (100 / BANDS)))] += 1;
+    const top = Math.max(...count, 1), W = 240, H = 56, w = W / BANDS;
+    const p = Math.round((q.filter((x) => x < v).length / q.length) * 100);
+    const svg = document.createElementNS(SVG, "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H + 4}`);
+    svg.setAttribute("class", "dist-chart");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", `${t("x_dist_title", { platform })}. ${t("x_dist_help", { p: num(p) })}`);
+    count.forEach((n, i) => {
+      const h = Math.max(n ? 2 : 0, (n / top) * H);
+      const r = document.createElementNS(SVG, "rect");
+      for (const [k, x] of [["x", (i * w + 0.5).toFixed(1)], ["y", (H - h).toFixed(1)], ["width", (w - 1).toFixed(1)], ["height", h.toFixed(1)], ["rx", "1.5"]]) r.setAttribute(k, x);
+      r.setAttribute("class", i === Math.min(BANDS - 1, Math.floor(v / (100 / BANDS))) ? "band here" : "band");
+      svg.append(r);
+    });
+    const at = Math.min(W - 1, Math.max(1, (v / 100) * W));
+    const line = document.createElementNS(SVG, "line");
+    for (const [k, x] of [["x1", at.toFixed(1)], ["x2", at.toFixed(1)], ["y1", "0"], ["y2", String(H + 4)], ["class", "mark"]]) line.setAttribute(k, x);
+    svg.append(line);
+    return el("figure", { class: "dist" }, el("figcaption", { text: t("x_dist_title", { platform }) }), svg,
+      el("p", { class: "dim", text: t("x_dist_help", { p: num(p) }) }));
+  }
+
+  // The bar that slides in once the head has left the window: the game, its score, the sheet's sections (the one in
+  // view marked). Buttons, not links: the address belongs to the router.
+  let barOff = null;
+  function sectionBar(head, name, score) {
+    if (barOff) barOff();
+    const targets = [...sheet.querySelectorAll(".cols section")].filter((x) => x.querySelector(":scope > h3"));
+    if (!targets.length) return null;
+    const ctl = new AbortController(), on = { signal: ctl.signal, passive: true };
+    const buttons = targets.map((sec) => {
+      const b = el("button", { type: "button", class: "tab", text: sec.querySelector(":scope > h3").textContent });
+      b.addEventListener("click", () => sec.scrollIntoView({ behavior: MOTION.matches ? "smooth" : "auto", block: "start" }));
+      return b;
+    });
+    const bar = el("div", { class: "sheet-bar", inert: "" },
+      el("p", { class: "bar-title" }, el("span", { text: name }), score ? el("b", { text: String(score) }) : null),
+      el("nav", { "aria-label": t("x_sections") }, ...buttons));
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const shownBar = head.getBoundingClientRect().bottom < 0;
+      bar.classList.toggle("on", shownBar);
+      bar.toggleAttribute("inert", !shownBar);
+      let here = -1;
+      targets.forEach((sec, i) => { if (sec.getBoundingClientRect().top <= window.innerHeight * 0.3) here = i; });
+      buttons.forEach((b, i) => { b.classList.toggle("here", i === here); if (i === here) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
+      const cur = buttons[here];
+      if (cur && shownBar) { const nav = bar.querySelector("nav"); nav.scrollLeft = cur.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; }
+    };
+    const ask = () => { if (!frame) frame = requestAnimationFrame(update); };
+    window.addEventListener("scroll", ask, on);
+    window.addEventListener("resize", ask, on);
+    barOff = () => { ctl.abort(); barOff = null; };
+    ask();
+    return bar;
+  }
+
   function renderSheet(m, backHref) {
+    if (barOff) barOff();
     sheet.replaceChildren();
     sheet.hidden = false;
     const es = m.platforms;
@@ -707,6 +771,7 @@
         }
         where.replaceChildren(...items);
         where.hidden = !items.length;
+        if (q.length) where.after(distribution(q, best.popular[0], plat));
       }, () => where.remove());
     }
     for (const e of es) {
@@ -728,9 +793,26 @@
     if (m.traits) {
       const dl = el("dl", { class: "traits" });
       for (const [kind, names] of Object.entries(m.traits)) {
-        dl.append(el("div", {}, el("dt", {}, icon(`i-k-${kind}`), t(`x_${kind}`)), el("dd", {}, ...names.map((n) => chip(kind, n, traitHref(kind, n))))));
+        dl.append(el("div", {}, el("dt", {}, icon(`i-k-${kind}`), t(`x_${kind}`)), el("dd", {}, ...names.map((n) => {
+          const c = chip(kind, n, traitHref(kind, n));
+          if (c.href) { c.dataset.kind = kind; c.dataset.value = n; }
+          return c;
+        }))));
       }
       main.append(dl);
+      // How many games of the platform have it, once its menus are in (a few kB, the browse view's own).
+      const homeName = S._names[home] || home;
+      get(`x/${home}/facets.json`).then((f) => {
+        for (const c of dl.querySelectorAll("a.chip[data-kind]")) {
+          const found = ((f.facets || {})[c.dataset.kind] || []).find(([v]) => v === c.dataset.value);
+          if (!found) continue;
+          const sentence = t("x_trait_count", { n: num(found[1]), platform: homeName });
+          const label = c.textContent;
+          c.append(el("small", { class: "n", text: num(found[1]) }));
+          c.title = sentence;
+          c.setAttribute("aria-label", `${label}: ${sentence}`);
+        }
+      }, () => {});
     }
     const technical = techBlock(es, m.wd);
     if (technical) side.append(technical);
@@ -829,6 +911,8 @@
       }
       if (items.length) side.append(section(t("x_other_platforms"), el("ul", { class: "links" }, ...items)));
     }
+    const bar = sectionBar(head, m.name || m.id || "", best ? best.popular[0] : 0);
+    if (bar) sheet.append(bar);
     bars(sheet);
     reveal(sheet);
     fitSide();
