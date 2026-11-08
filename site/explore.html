@@ -13,6 +13,7 @@
         <button type="button" data-view="popular">{{x_popular}}</button>
         <button type="button" data-view="trending">{{x_trending}}</button>
         <button type="button" data-view="upcoming">{{x_upcoming}}</button>
+        <button type="button" data-view="stats">{{x_stats}}</button>
         <button type="button" class="layout" id="x-layout" aria-pressed="false" aria-label="{{x_as_cards}}" title="{{x_as_cards}}">▦</button>
       </div>
       <div class="fields">
@@ -48,6 +49,8 @@
     <ol class="results" id="x-results"></ol>
     <button type="button" class="more" id="x-more" hidden>{{x_more}}</button>
     <article class="sheet" id="x-sheet" hidden></article>
+    <div class="figures-view" id="x-stats" hidden></div>
+    <div class="tip" id="x-tip" role="tooltip" hidden></div>
     <noscript><p class="status">{{x_noscript}}</p></noscript>
   </section>
   <script type="application/json" id="x-strings">{{strings}}</script>

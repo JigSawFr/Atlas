@@ -253,6 +253,83 @@ def browse(best: list, games: dict, names: dict, tags: dict, spelled: dict = Non
     return facets, pages
 
 
+STAT_TOP = 12           # genres, studios and publishers a platform's figures name
+STAT_LIST = 10          # games in its best rated and hidden gems
+STAT_YEARS = 30         # years of releases it counts, the latest
+
+
+def mean(values: list):
+    return round(sum(values) / len(values), 1) if values else None
+
+
+def median(values: list):
+    if not values:
+        return None
+    v = sorted(values)
+    m = len(v) // 2
+    return v[m] if len(v) % 2 else round((v[m - 1] + v[m]) / 2, 1)
+
+
+def quantiles(values: list) -> list:
+    """The 101 cut points of `values` (0 %, 1 % … 100 %): where a game stands among its platform's, on its sheet."""
+    v = sorted(values)
+    return [v[min(len(v) - 1, round(i * (len(v) - 1) / 100))] for i in range(101)] if v else []
+
+
+def stats(platform: str, best: list, games: dict, names: dict, tags: dict, spelled: dict, pic, generated) -> dict:
+    """A platform's figures, condensed at the build so the page reads one small file: how many named games,
+    the critics' and renown's averages and spread, the releases by year, the most common genres, studios and
+    publishers with their critics' average, the best rated and the hidden gems (critics high, renown low).
+    `best` is [(id, [renown, trend, critics])], best known first; the named games only count."""
+    rows = [(gid, list(sc) + [0, 0, 0]) for gid, sc in best if names.get(gid)]
+    critics = [sc[2] for _, sc in rows if sc[2]]
+    renown = [sc[0] for _, sc in rows]
+    hist = [0] * 10
+    for c in critics:
+        hist[min(9, max(0, int(c) // 10))] += 1
+    years, groups = {}, {"genres": {}, "developers": {}, "publishers": {}, "modes": {}}
+    for gid, sc in rows:
+        game = games.get(gid)
+        if not isinstance(game, dict):
+            continue
+        year = year_of(game)
+        if year:
+            years.setdefault(year, []).append(sc[2])
+        traits = trait_names(game, tags, spelled)
+        for kind, found in groups.items():
+            for value in dict.fromkeys(traits.get(kind, ())):
+                found.setdefault(value, []).append(sc)
+    latest = sorted(years)[-STAT_YEARS:]
+
+    def top(kind, need=1):
+        found = [(v, scs) for v, scs in groups[kind].items() if len([x for x in scs if x[2]]) >= need]
+        found.sort(key=lambda x: (-len(x[1]), x[0]))
+        return [[v, len(scs), mean([x[2] for x in scs if x[2]]), mean([x[0] for x in scs])] for v, scs in found[:STAT_TOP]]
+
+    rated = [(gid, sc) for gid, sc in rows if sc[2]]
+    # A score from a handful of critics is noise among the unknown: the best rated are the best known quarter's
+    # (renown at or above its third quartile), the hidden gems those with 85 or more known less than most and more
+    # than the least known quarter (renown between its first quartile and its median).
+    known = sorted(sc[0] for _, sc in rated)
+    q = (lambda f: known[min(len(known) - 1, int(len(known) * f))]) if known else (lambda f: 0)
+    best_rated = sorted([(g, sc) for g, sc in rated if sc[0] >= q(0.75)], key=lambda x: (-x[1][2], -x[1][0], x[0]))[:STAT_LIST]
+    gems = sorted([(g, sc) for g, sc in rated if sc[2] >= 85 and q(0.25) <= sc[0] < q(0.5)],
+                  key=lambda x: (-x[1][2], x[1][0], x[0]))[:STAT_LIST]
+
+    def named(items):
+        return [[g, names[g], sc[2], sc[0], *([pic(g, False)] if pic(g, False) else [])] for g, sc in items]
+
+    return {
+        "platform": platform, "generated": generated, "games": len(rows),
+        "critics": {"n": len(critics), "mean": mean(critics), "median": median(critics), "hist": hist},
+        "renown": {"mean": mean(renown), "median": median(renown), "q": quantiles(renown)},
+        "years": [[y, len(years[y]), mean([c for c in years[y] if c])] for y in latest],
+        "genres": top("genres"), "developers": top("developers", 3), "publishers": top("publishers", 3),
+        "modes": [[v, len(scs)] for v, scs in sorted(groups["modes"].items(), key=lambda x: (-len(x[1]), x[0]))[:6]],
+        "best": named(best_rated), "gems": named(gems),
+    }
+
+
 def unify(entries: dict, similar_of: dict) -> dict:
     """One sheet for a game on several platforms: {platform: (id, sheet)} merged. Its name is the
     one most platforms give; each platform keeps its own figures (release, renown, reviews, ratings),
@@ -366,6 +443,7 @@ def build(data_dir: str, out_dir: str) -> dict:
         found = read(os.path.join(data_dir, "platforms", platform, "games.json")) or {}
         tally(found.get("games") or {}, found.get("tags") or {}, seen)
     spelled = spelled_of(seen)
+    every_platform = []     # each platform's headline figures, side by side (x/stats.json)
     for platform in plats:
         files = platform_files(data_dir, platform)
         scores = files["popular"].get("games") or {}
@@ -403,6 +481,10 @@ def build(data_dir: str, out_dir: str) -> dict:
 
         facets, pages = browse(best, games, names, tags, spelled, pic)
         generated = files["popular"].get("generated")
+        figures = stats(platform, best, games, names, tags, spelled, pic, generated)
+        write(os.path.join(base, "stats.json"), figures)
+        every_platform.append([platform, figures["games"], figures["critics"]["n"], figures["critics"]["mean"],
+                               figures["renown"]["mean"], median([y for y, n, _ in figures["years"] for _ in range(n)])])
         os.makedirs(os.path.join(base, "browse"), exist_ok=True)
         for n, page in enumerate(pages):
             write(os.path.join(base, "browse", f"{n}.json"), {"page": n, **page})
@@ -470,6 +552,8 @@ def build(data_dir: str, out_dir: str) -> dict:
         summary[platform] = {"games": len(sheets), "named": len(names), "popular": len(scores),
                              "upcoming": len(upcoming), "similar": len(similar), "browse": sum(len(p["games"]) for p in pages), "pages": len(pages),
                              "shards": shards, "generated": files["popular"].get("generated")}
+    # [platform, named games, games with a critics' score, critics' average, renown's average, median year of the last years]
+    write(os.path.join(out_dir, "x", "stats.json"), {"platforms": sorted(every_platform, key=lambda r: -r[1])})
     one = {q: unify(entries, similar_refs.get(q, {})) for q, entries in kept.items()}
     os.makedirs(os.path.join(out_dir, "x", "u"), exist_ok=True)
     write(os.path.join(out_dir, "x", "u", "meta.json"),

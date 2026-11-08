@@ -501,3 +501,82 @@ button.ring[aria-expanded="true"] small { color: var(--snow); }
 .x-on-sheet .hero.small { padding-block: clamp(16px, 3vw, 24px) 0; gap: 4px; }
 .x-on-sheet .hero.small h1 { font-size: clamp(1.25rem, 3vw, 1.5rem); max-width: none; }
 .x-on-sheet .hero.small .lede { display: none; }
+
+/* ---- The figures of a platform (#<platform>/stats): headline numbers, columns, horizontal bars. One hue, Boréale's
+   ice, for every series; text in the text colours; marks with 4px rounded ends from their baseline, 2px apart. */
+.figures-view { display: grid; gap: 28px; }
+.figures-view[hidden] { display: none; }
+.figures-view section h3 { font-size: 1.0625rem; margin-bottom: 12px; }
+.figs { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }
+.fig { display: grid; gap: 4px; padding: 16px 18px; border-radius: 16px; background: var(--night); border: 1px solid var(--night-line); }
+.fig b { font: 600 clamp(1.75rem, 4vw, 2.25rem)/1.1 var(--display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.fig span { font: 0.75rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--mist); }
+.colchart { display: flex; align-items: stretch; gap: 2px; height: 180px; padding: 12px 12px 0; border-radius: 16px; background: var(--night); border: 1px solid var(--night-line); }
+.col { flex: 1 1 0; min-width: 0; display: grid; grid-template-rows: minmax(0, 1fr) 22px; cursor: default; }
+.colbar { display: flex; align-items: flex-end; border-bottom: 1px solid var(--night-line); }
+.colbar i { display: block; width: 100%; height: 0; border-radius: 4px 4px 0 0; background: var(--ice); opacity: 0.85; }
+.col:hover .colbar i { opacity: 1; background: #66ccff; }
+.col small { font: 0.6875rem var(--mono); color: var(--mist); text-align: center; white-space: nowrap; overflow: visible; padding-top: 4px; }
+.as-table { margin-top: 8px; }
+.as-table summary { cursor: pointer; display: inline-flex; align-items: center; min-height: 32px; color: var(--link); font-size: 0.875rem; }
+.as-table table { margin-top: 6px; max-width: 420px; }
+.fig-grid { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); align-items: start; }
+.hbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.hbars a, .hbars li > div {
+  display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 4.5rem minmax(0, 7.5rem); align-items: center; gap: 10px;
+  min-height: 36px; padding: 2px 8px; border-radius: 10px; color: var(--snow); text-decoration: none;
+}
+.hbars a:hover, .hbars a:focus-visible { background: rgb(51 187 255 / 0.08); }
+.hb-name { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 0.9375rem; }
+.hb-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-name .ico { color: var(--mist); width: 1rem; height: 1rem; }
+.hb-bar { height: 10px; }
+.hb-bar i { display: block; height: 100%; width: 0; border-radius: 0 4px 4px 0; background: var(--ice); }
+.hb-n { font: 500 0.8125rem var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.hb-aside { font-size: 0.8125rem; color: var(--mist); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 600px) {
+  .hbars a, .hbars li > div { grid-template-columns: minmax(0, 1fr) 3.5rem; gap: 2px 10px; padding: 6px 8px; }
+  .hb-bar { grid-column: 1 / -1; grid-row: 2; }
+  .hb-aside { grid-column: 1 / -1; }
+  .hb-aside:empty { display: none; }
+  .colchart { height: 150px; padding-inline: 6px; }
+}
+.tip {
+  position: fixed; z-index: 50; pointer-events: none; max-width: 260px; padding: 6px 10px; border-radius: 8px;
+  background: var(--abyss); border: 1px solid var(--night-line); box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  font: 500 0.8125rem var(--body); color: var(--snow);
+}
+.tip[hidden] { display: none; }
+.cardgrid .pct { font: 600 0.9375rem var(--display); }
+
+/* ---- Motion, for the visitors who have not asked for less: bars grow, rings fill, rows and sections rise in,
+   figures count up (explore.js), a sheet's backdrop drifts, a card's picture leans in. */
+@media (prefers-reduced-motion: no-preference) {
+  .bar i, .hb-bar i { transition: width 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .colbar i { transition: height 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.15s ease; }
+  .ring .arc { animation: ring-in 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both 0.15s; }
+  .results li { animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 18ms); }
+  .fig { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 70ms); }
+  .sheet:not([hidden]) > header, .sheet:not([hidden]) > .stats { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .sheet:not([hidden]) > .stats { animation-delay: 0.08s; }
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .reveal.seen { opacity: 1; transform: none; }
+  .sheet .backdrop:not(.blurred).ready img { animation: drift 28s ease-in-out infinite alternate; }
+  a.card .cover img { transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  a.card:hover .cover img, a.card:focus-visible .cover img { transform: scale(1.06); }
+  .results a { transition: border-color 0.15s ease, transform 0.15s ease, background-color 0.15s ease; }
+  .results:not(.cards) a:hover { transform: translateX(3px); background-color: #11203d; }
+  .viewer[open] img { animation: zoom-in 0.25s ease both; }
+}
+@keyframes ring-in { from { stroke-dasharray: 0 100; } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes drift { from { transform: scale(1.03); } to { transform: scale(1.12) translate(-1.5%, 1%); } }
+@keyframes zoom-in { from { opacity: 0; transform: scale(0.97); } }
+
+/* Where a game stands on its platform, under its figures. */
+.insights { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 0; }
+.insights[hidden] { display: none; }
+.chip.insight { min-height: 30px; padding: 4px 12px; font-size: 0.875rem; }
+.chip.insight.above { background: rgb(0 255 204 / 0.1); border-color: rgb(0 255 204 / 0.35); }
+.chip.insight.below { background: rgb(255 200 87 / 0.08); border-color: rgb(255 200 87 / 0.35); }
+@media (prefers-reduced-motion: no-preference) { .insights:not([hidden]) { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both 0.15s; } }
