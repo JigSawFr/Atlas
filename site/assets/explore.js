@@ -770,7 +770,8 @@
     sheet.replaceChildren();
     sheet.hidden = false;
     const es = m.platforms;
-    const back = el("a", { class: "back", href: backHref }, `← ${t("x_back")}`);
+    // The way back is a round button that stays in the corner of the window, not a link on the picture.
+    const back = el("a", { class: "back fab", href: backHref, title: t("x_back"), "aria-label": t("x_back"), text: "←" });
     const shown = pictures(es);
     const wide = shown.backdrops.length || shown.poster;
     const cover = wide ? null : shown.hero ? pictureCover(m, shown.hero, "hero") : drawnCover(m);
@@ -797,7 +798,7 @@
       !m.name ? el("small", { text: t("x_no_name") }) : null);
     const info = el("div", { class: "info" }, logo, title, ids.childElementCount ? ids : null,
       rings.childElementCount ? rings : null, rings.childElementCount ? ringHelp : null);
-    const top = el("div", { class: "topline" }, back, el("span", { class: "tools" }, pager(es), heart(m, es)));
+    const top = el("div", { class: "topline" }, el("span", { class: "tools" }, pager(es), heart(m, es)));
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
       wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
     if (logo) {
@@ -806,7 +807,7 @@
     }
     if (wide) sheet.append(backdrop(shown.backdrops, shown.poster));
     sheet.classList.toggle("with-backdrop", !!wide);
-    sheet.append(head);
+    sheet.append(back, head);     // outside the head, whose entrance animation would make it the button's frame
 
     const stats = el("dl", { class: "stats" });
     const stat = (label, value) => { if (value !== null && value !== undefined && value !== "") stats.append(el("div", {}, el("dt", { text: label }), el("dd", {}, value))); };
