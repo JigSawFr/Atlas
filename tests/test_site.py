@@ -396,3 +396,13 @@ class Size(unittest.TestCase):
             self.assertEqual(check_site.size(Path(tmp)), 350)
         self.assertLess(check_site.SIZE_WARN, check_site.SIZE_MAX)
         self.assertLess(check_site.SIZE_MAX, 1000 ** 3)
+
+
+class GameNames(unittest.TestCase):
+    def test_names_of_cases_a_shouting_title(self):
+        files = {"names": {"games": {"1": "THE WITCHER 3: WILD HUNT", "2": "Hades"}}, "upcoming": {}, "games": {}}
+        self.assertEqual(site_data.names_of(files), {"1": "The Witcher 3: Wild Hunt", "2": "Hades"})
+
+    def test_unify_takes_the_mixed_case_spelling(self):
+        entries = {"steam": ("1", {"name": "Doom"}), "switch": ("2", {"name": "DOOM"}), "gog": ("3", {"name": "DOOM"})}
+        self.assertEqual(site_data.unify(entries, {})["name"], "Doom")
