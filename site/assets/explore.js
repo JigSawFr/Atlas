@@ -320,6 +320,9 @@
     }
     if (found.hero) found.backdrops.push(found.hero);
     // Where no store has a vertical cover, IGDB's (it has one for the consoles' games too).
+    // IGDB's artwork is a wide picture too: the backdrop of the games no store has one for (the consoles' games).
+    const art = es.find((e) => e.igdb_art);
+    if (art) found.backdrops.push(`https://images.igdb.com/igdb/image/upload/t_1080p/${art.igdb_art}.jpg`);
     const igdb = es.find((e) => e.igdb_cover);
     if (!found.poster && igdb) found.poster = `https://images.igdb.com/igdb/image/upload/t_cover_big/${igdb.igdb_cover}.jpg`;
     return found;
@@ -672,7 +675,7 @@
       return;
     }
     const entry = { p: platform, id };
-    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "views", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
+    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
     renderSheet({ name: g.name, id, qid: g.qid, wd: g.wd, platforms: [entry], traits: g.traits,
       similar: (g.similar || []).map(([o, name, s]) => [platform, o, name, s]), links: g.links }, backTo(platform));
   }
