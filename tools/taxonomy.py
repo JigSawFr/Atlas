@@ -16,6 +16,7 @@ all of them, with its icon and its name in the page's language:
 The names shown are the site's catalogs' (x_<letter>_<key>: g genres, t themes, m modes, p perspectives,
 y styles, o moods, h gameplay, c content, a access). Python's standard library only.
 """
+import html
 import re
 import unicodedata
 
@@ -250,17 +251,96 @@ def find(value: str):
 # The words a company's name ends with by law, not by name.
 LEGAL = {"inc", "incorporated", "ltd", "limited", "llc", "llp", "lp", "plc", "co", "corp", "corporation", "company",
          "gmbh", "ag", "sa", "sas", "sarl", "srl", "spa", "bv", "nv", "ab", "as", "oy", "aps", "kk", "pty", "sp", "zoo", "ou"}
+# The same, written in the scripts that glue it to the name ("株式会社カプコン").
+LEGAL_CJK = ("株式会社", "有限会社", "合同会社", "有限公司", "股份有限公司", "(株)", "（株）")
+# The places a branch of a company is named after ("Atlus USA", "Nintendo of America"): the company's own name without them.
+REGIONS = {"usa", "america", "americas", "europe", "uk", "japan", "germany", "france", "italy", "spain", "asia", "australia", "canada"}
+# One company under the names its branches and its legal entities go by; {key: the key it shares}, curated:
+# a name is added when it is plainly the same company, not when it only starts alike ("Avalanche Software"
+# and "Avalanche Studios" are two studios, "Atari Games" an arcade maker apart from "Atari").
+COMPANY_ALIASES = {
+    "ubisoft entertainment": "ubisoft",
+    "konami digital entertainment": "konami",
+    "activision publishing": "activision",
+    "sega interactive": "sega",
+    "sega enterprises": "sega",
+    "sega games": "sega",
+    "capcom entertainment": "capcom",
+    "bandai namco entertainment": "bandai namco",
+    "bandai namco games": "bandai namco",
+    "koei tecmo games": "koei tecmo",
+    "team17 digital": "team17",
+    "team17 software": "team17",
+    "microprose software": "microprose",
+    "tinybuild games": "tinybuild",
+    "interplay entertainment": "interplay",
+    "interplay productions": "interplay",
+    "sierra entertainment": "sierra",
+    "midway games": "midway",
+    "acclaim entertainment": "acclaim",
+    "acclaim games": "acclaim",
+    "telltale games": "telltale",
+    "headup games": "headup",
+    "kalypso media digital": "kalypso media",
+    "kalypso media group": "kalypso media",
+    "ziggurat interactive": "ziggurat",
+    "eidos interactive": "eidos",
+    "infogrames studios": "infogrames",
+    "virgin interactive entertainment": "virgin interactive",
+    "warner bros interactive entertainment": "warner bros games",
+    "warner bros interactive": "warner bros games",
+    "warner bros": "warner bros games",
+    "sony interactive entertainment": "sony interactive entertainment",
+    "sony computer entertainment": "sony interactive entertainment",
+    "codemasters software": "codemasters",
+    "slitherine software": "slitherine",
+    "ocean software": "ocean",
+    "lucasfilm games": "lucasfilm",
+    "mindscape international": "mindscape",
+    "jaleco entertainment": "jaleco",
+}
+
+_NOTE = re.compile(r"\s*[(（][^()（）]*[)）]\s*$")
+
+
+def drop_note(name: str) -> str:
+    """A company's name without the note in brackets at its end ("Feral Interactive (Mac)", "Atlus (Japan)"),
+    unless nothing else is left."""
+    while True:
+        short = _NOTE.sub("", name)
+        if not short.strip() or short == name:
+            return name
+        name = short
 
 
 def company_key(name: str) -> str:
     """What two spellings of a studio or a publisher share ("Nintendo Co., Ltd." and "NINTENDO" are
-    "nintendo"): the name folded, without its leading "the" and the legal words it ends with."""
-    words = fold(name).split()
+    "nintendo", "Atlus USA" and "ATLUS" are "atlus"): the name folded (in any script, not only the
+    Latin one), without its note in brackets, its leading "the", the legal words it ends with, the
+    place of a branch, and its other names in COMPANY_ALIASES."""
+    text = unicodedata.normalize("NFKC", html.unescape(str(name)))
+    text = drop_note(text)
+    for word in LEGAL_CJK:
+        text = text.replace(word, " ")
+    text = unicodedata.normalize("NFD", text.casefold())
+    text = unicodedata.normalize("NFC", "".join(c for c in text if not "\u0300" <= c <= "\u036f"))   # accents, not kana's marks
+    text = re.sub(r"['’`]", "", text)
+    words = re.sub(r"[\W_]+", " ", text).split()
+    kept = list(words)
+
+    def strip(until):
+        while len(words) > 1 and until():
+            words.pop()
+
     if words[:1] == ["the"] and len(words) > 1:
         words = words[1:]
-    while len(words) > 1 and words[-1] in LEGAL:
-        words.pop()
-    return " ".join(words)
+    strip(lambda: words[-1] in LEGAL)
+    if len(words) > 2 and words[-2] == "of" and words[-1] in REGIONS:
+        words = words[:-2]
+    strip(lambda: words[-1] in REGIONS)
+    strip(lambda: words[-1] in LEGAL)
+    key = " ".join(words) or " ".join(kept)
+    return COMPANY_ALIASES.get(key, key)
 
 
 _MARKS = re.compile(r"[™®©℠]")
@@ -270,7 +350,7 @@ _SPACES = re.compile(r"[\s ​‌‍﻿]+")
 def clean_title(name: str) -> str:
     """A name as the games' own: the trademark signs gone, one space between words, Unicode
     in its composed form, no dash or colon left at the ends."""
-    name = unicodedata.normalize("NFC", str(name))
+    name = unicodedata.normalize("NFC", html.unescape(str(name)))
     name = _MARKS.sub("", name)
     name = _SPACES.sub(" ", name).strip()
     return name.strip(" :-–—,").strip()

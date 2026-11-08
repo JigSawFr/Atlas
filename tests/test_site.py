@@ -139,6 +139,16 @@ class SiteData(unittest.TestCase):
         self.assertEqual(u["traits"]["genres"], ["puzzle", "action"])                   # on both platforms first
         self.assertEqual(u["links"], {"gog": ["amber"]})
 
+    def test_companies_in_other_scripts_stay_apart_and_notes_go(self):
+        games = {"1": {"developers": [[1, "橘子班"]], "publishers": [[9, "Feral Interactive (Mac)"]]},
+                 "2": {"developers": [[2, "乌鸦大仙"]], "publishers": [[9, "Feral Interactive"]]},
+                 "3": {"developers": [[2, "乌鸦大仙"]], "publishers": [[9, "Feral Interactive (Linux)"]]}}
+        spelled = site_data.spellings(games, {})
+        self.assertEqual(site_data.trait_names(games["1"], {}, spelled)["developers"], ["橘子班"])
+        self.assertEqual(site_data.trait_names(games["2"], {}, spelled)["developers"], ["乌鸦大仙"])
+        for gid in games:
+            self.assertEqual(site_data.trait_names(games[gid], {}, spelled)["publishers"], ["Feral Interactive"])
+
     def facets(self, platform):
         return self.read(f"x/{platform}/facets.json")
 

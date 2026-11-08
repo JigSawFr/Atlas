@@ -69,12 +69,36 @@ class Words(unittest.TestCase):
         for name in ("Nintendo", "NINTENDO", "Nintendo Co., Ltd.", "The Nintendo Company", "nintendo co ltd"):
             self.assertEqual(taxonomy.company_key(name), "nintendo", name)
         self.assertEqual(taxonomy.company_key("Square Enix Co., Ltd."), "square enix")
-        self.assertEqual(taxonomy.company_key("Ubisoft Entertainment"), "ubisoft entertainment")   # a name, not a legal form
+        self.assertEqual(taxonomy.company_key("Avalanche Software"), "avalanche software")          # a name, not a legal form
+        self.assertNotEqual(taxonomy.company_key("Avalanche Software"), taxonomy.company_key("Avalanche Studios"))
+        self.assertNotEqual(taxonomy.company_key("Atari Games"), taxonomy.company_key("Atari, Inc."))
         self.assertNotEqual(taxonomy.company_key("Sega"), taxonomy.company_key("Sega Sammy"))
         self.assertEqual(taxonomy.company_key("Inc"), "inc")                                       # never nothing
         self.assertEqual(taxonomy.company_key("The"), "the")
 
+    def test_one_company_its_branches_and_notes(self):
+        for name in ("Atlus", "ATLUS USA", "Atlus Co., Ltd", "Atlus (Japan)"):
+            self.assertEqual(taxonomy.company_key(name), "atlus", name)
+        for name in ("Nintendo of America", "Nintendo of Europe GmbH", "Nintendo (UK)"):
+            self.assertEqual(taxonomy.company_key(name), "nintendo", name)
+        for name in ("Ubisoft", "UBISOFT", "Ubisoft Entertainment", "Ubisoft Entertainment SA"):
+            self.assertEqual(taxonomy.company_key(name), "ubisoft", name)
+        for name in ("Konami", "KONAMI", "Konami Digital Entertainment Co., Ltd."):
+            self.assertEqual(taxonomy.company_key(name), "konami", name)
+        self.assertEqual(taxonomy.company_key("Feral Interactive (Linux)"), taxonomy.company_key("Feral Interactive (Mac)"))
+        self.assertEqual(taxonomy.company_key("Image &amp; Form Games"), taxonomy.company_key("Image & Form Games"))
+        self.assertEqual(taxonomy.company_key("USA"), "usa")                                       # never nothing
+
+    def test_a_company_in_another_script_is_its_own(self):
+        keys = {taxonomy.company_key(n) for n in ("橘子班", "乌鸦大仙", "Новый Диск", "カプコン")}
+        self.assertEqual(len(keys), 4)                                                              # none is ""
+        self.assertEqual(taxonomy.company_key("株式会社 カプコン"), taxonomy.company_key("カプコン"))
+        self.assertEqual(taxonomy.company_key("方块游戏(CubeGame)"), taxonomy.company_key("方块游戏"))
+        self.assertEqual(taxonomy.company_key("Ｌｅｍｏｎ Ｂａｌｍ"), "lemon balm")                     # full-width letters
+        self.assertEqual(taxonomy.company_key("Bjørn Games"), "bjørn games")
+
     def test_titles(self):
+        self.assertEqual(taxonomy.clean_title("Draknek &amp; Friends"), "Draknek & Friends")
         self.assertEqual(taxonomy.clean_title("The Legend of Zelda™: Breath of the Wild"), "The Legend of Zelda: Breath of the Wild")
         self.assertEqual(taxonomy.clean_title("  Super   Mario®  Odyssey – "), "Super Mario Odyssey")
         self.assertEqual(taxonomy.clean_title("Café"), "Café")                         # composed form

@@ -25,7 +25,7 @@ import os
 from bisect import bisect_left
 
 from common import SCHEMA
-from taxonomy import KINDS, clean_title, company_key, find, fold, tidy_label, with_parents
+from taxonomy import KINDS, clean_title, company_key, drop_note, find, fold, tidy_label, with_parents
 import common
 import extracts
 import tech
@@ -98,6 +98,12 @@ NOTIONS = ("genres", "themes", "modes", "perspectives", "tags")     # whose word
 COMPANIES = ("developers", "publishers")                              # whose names are one by company_key
 
 
+def tidy(kind: str, name: str) -> str:
+    """A trait's name as a sheet shows it: cleaned, and a company's without the note in brackets at its end."""
+    name = clean_title(name)
+    return clean_title(drop_note(name)) if kind in COMPANIES else name
+
+
 def same(kind: str, name: str) -> str:
     """What makes two spellings of a trait one: a company's name without its legal words, else the name folded."""
     return company_key(name) if kind in COMPANIES else fold(name)
@@ -123,7 +129,7 @@ def spellings(games: dict, tags: dict) -> dict:
         if isinstance(game, dict):
             for kind, names in raw_traits(game, tags).items():
                 for name in names:
-                    name = clean_title(name)
+                    name = tidy(kind, name)
                     if kind not in NOTIONS:
                         count = seen.setdefault((kind in COMPANIES, same(kind, name)), {})
                         count[name] = count.get(name, 0) + 1
@@ -142,7 +148,7 @@ def trait_names(game: dict, tags: dict, spelled: dict = None) -> dict:
     out = {}
     for kind, names in raw_traits(game, tags).items():
         for name in names:
-            name = clean_title(name)
+            name = tidy(kind, name)
             found = find(name) if kind in NOTIONS else None
             if kind in NOTIONS and not found:
                 name = tidy_label(name)

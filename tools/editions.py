@@ -12,6 +12,8 @@ second title after "+") are not edition words: those stay apart.
 import collections
 import re
 
+from taxonomy import company_key
+
 EDITION = re.compile(r"""\s*(?:[-:–—(]\s*)?(?:the\s+)?(?:digital\s+)?
   (?:deluxe|complete|definitive|ultimate|gold|premium|collector'?s|game\s+of\s+the\s+year|goty|anniversary|season\s+pass|expanded|standard)
   (?:\s+(?:edition|bundle|pack|version))?\)?\s*$""", re.I | re.X)
@@ -36,7 +38,7 @@ def editions(titles, base_id):
         name = entry.get("name")
         if not tid or not name or entry.get("isDemo") in (True, "True"):
             continue
-        key = (core(name), str(entry.get("publisher") or "").lower())
+        key = (core(name), company_key(str(entry.get("publisher") or "")))
         if not key[0]:
             continue
         try:
