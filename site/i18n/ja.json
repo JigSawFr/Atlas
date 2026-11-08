@@ -389,5 +389,19 @@
   "x_compare": "比較",
   "x_compare_n": "{n}作品を比較",
   "x_compare_pick": "比較するゲームを2〜3作品選んでください。",
-  "x_highest": "最高"
+  "x_highest": "最高",
+  "x_atlas_score": "Atlasスコア",
+  "x_atlas_help": "批評家、プレイヤー、知名度から算出した一つのスコアで、それぞれ根拠の厚みに応じて重みを付けています（{n}個の指標）。",
+  "x_atlas_how": "計算方法",
+  "x_atlas_note": "ストアのレビューとプレイヤー評価は、件数が少ないときは70に近づけます。リーチは最高の知名度の平方根で、品質に比べて影響は小さくなります。重みは、あるシグナルだけで再計算します。",
+  "x_sig_store": "ストアのレビュー",
+  "x_sig_reach": "リーチ",
+  "x_signal": "指標",
+  "x_weight": "重み",
+  "x_pooled_label": "レビュー（全ストア）",
+  "x_pooled_value": "{n}件中{p} %が好評",
+  "x_platforms_count": "プラットフォーム",
+  "x_score_avg": "平均の知名度",
+  "x_global_sheet": "総合ページ",
+  "x_value": "値"
 }

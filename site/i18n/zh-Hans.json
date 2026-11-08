@@ -389,5 +389,19 @@
   "x_compare": "比较",
   "x_compare_n": "比较 {n} 款游戏",
   "x_compare_pick": "勾选 2 或 3 款游戏进行比较。",
-  "x_highest": "最高"
+  "x_highest": "最高",
+  "x_atlas_score": "Atlas 评分",
+  "x_atlas_help": "由评论、玩家和知名度合成的一个分数，每项按其依据的多少加权（{n} 项信号）。",
+  "x_atlas_how": "计算方法",
+  "x_atlas_note": "商店评价和玩家评分在数量少时会向 70 靠拢。覆盖度是最高知名度的平方根，相比质量影响很小。权重会根据现有的信号重新计算。",
+  "x_sig_store": "商店评价",
+  "x_sig_reach": "覆盖度",
+  "x_signal": "信号",
+  "x_weight": "权重",
+  "x_pooled_label": "评价（所有商店）",
+  "x_pooled_value": "{n} 条评价中 {p} % 为好评",
+  "x_platforms_count": "平台",
+  "x_score_avg": "平均知名度",
+  "x_global_sheet": "综合页面",
+  "x_value": "数值"
 }

@@ -389,5 +389,19 @@
   "x_compare": "Vergleichen",
   "x_compare_n": "{n} Spiele vergleichen",
   "x_compare_pick": "Wähle 2 oder 3 Spiele zum Vergleichen aus.",
-  "x_highest": "Höchster Wert"
+  "x_highest": "Höchster Wert",
+  "x_atlas_score": "Atlas-Wertung",
+  "x_atlas_help": "Eine Wertung aus Kritik, Spielern und Bekanntheit, jeweils danach gewichtet, worauf sie beruht ({n} Signale).",
+  "x_atlas_how": "So wird sie berechnet",
+  "x_atlas_note": "Shop-Bewertungen und Spielerwertung werden bei wenigen Stimmen Richtung 70 gezogen. Die Reichweite ist die Wurzel der höchsten Bekanntheit und zählt neben der Qualität wenig. Die Gewichte werden über die vorhandenen Signale neu berechnet.",
+  "x_sig_store": "Shop-Bewertungen",
+  "x_sig_reach": "Reichweite",
+  "x_signal": "Signal",
+  "x_weight": "Gewicht",
+  "x_pooled_label": "Bewertungen, alle Shops",
+  "x_pooled_value": "{p} % positiv von {n} Bewertungen",
+  "x_platforms_count": "Plattformen",
+  "x_score_avg": "Durchschnittliche Bekanntheit",
+  "x_global_sheet": "Gesamtseite",
+  "x_value": "Wert"
 }
