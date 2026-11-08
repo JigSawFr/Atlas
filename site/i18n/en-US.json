@@ -375,5 +375,9 @@
   "status_reviewed": "With reviews",
   "status_retro": "The old machines ({n})",
   "status_note": "Linked: tied by links.json to the same game on another platform. With reviews: reviews or a rating. The whole report:",
-  "files_status": "How fresh each source and platform is"
+  "files_status": "How fresh each source and platform is",
+  "x_sections": "Sections of this sheet",
+  "x_trait_count": "{n} games on {platform}",
+  "x_dist_title": "Where it stands among {platform} games",
+  "x_dist_help": "Each bar is a band of renown; the line marks this game: better known than {p} % of games."
 }

@@ -375,5 +375,9 @@
   "status_reviewed": "有评测",
   "status_retro": "旧机型（{n}）",
   "status_note": "已关联：links.json 将其与其他平台上的同一游戏相连。有评测：有评测或评分。完整报告：",
-  "files_status": "各来源和平台的新鲜度"
+  "files_status": "各来源和平台的新鲜度",
+  "x_sections": "本页分区",
+  "x_trait_count": "{platform}上有 {n} 款游戏",
+  "x_dist_title": "在{platform}游戏中的位置",
+  "x_dist_help": "每根柱子是一个知名度区间，竖线标出这款游戏：比 {p} % 的游戏更知名。"
 }

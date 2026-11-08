@@ -375,5 +375,9 @@
   "status_reviewed": "Com avaliações",
   "status_retro": "As máquinas antigas ({n})",
   "status_note": "Vinculados: unidos por links.json ao mesmo jogo em outra plataforma. Com avaliações: avaliações ou uma nota. O relatório completo:",
-  "files_status": "O quanto cada fonte e plataforma está em dia"
+  "files_status": "O quanto cada fonte e plataforma está em dia",
+  "x_sections": "Seções da ficha",
+  "x_trait_count": "{n} jogos em {platform}",
+  "x_dist_title": "Onde fica entre os jogos de {platform}",
+  "x_dist_help": "Cada barra é uma faixa de notoriedade; a linha marca este jogo: mais conhecido do que {p} % dos jogos."
 }
