@@ -548,9 +548,9 @@
 
     const stats = el("dl", { class: "stats" });
     const stat = (label, value) => { if (value !== null && value !== undefined && value !== "") stats.append(el("div", {}, el("dt", { text: label }), el("dd", {}, value))); };
-    // A store's reviews: the share of good ones large, in the rings' colours, the full sentence under it.
+    // A store's reviews: the share of good ones large, in the rings' colours, how many under it.
     const reviewed = (label, [n, p]) => stats.append(el("div", { class: "rev" }, el("dt", { text: label }),
-      el("dd", {}, el("b", { class: `pct ${toneOf(p)}`, text: `${p} %` }), el("small", { text: t("x_reviews", { n: num(n), p }) }))));
+      el("dd", {}, el("b", { class: `pct ${toneOf(p)}`, text: `${p} %` }), el("small", { text: t("x_review_count", { n: num(n) }) }))));
     if (best && best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
     for (const e of es) {
       if (e.reviews) reviewed(storeName(e.p), e.reviews);

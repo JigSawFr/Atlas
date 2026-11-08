@@ -116,6 +116,7 @@
   "x_trend": "Tendenza",
   "x_critics": "Critica",
   "x_reviews": "{n} recensioni, {p} % positive",
+  "x_review_count": "{n} recensioni",
   "x_release": "Uscita",
   "x_coming": "Esce il {date}",
   "x_players_rating": "Voto dei giocatori",

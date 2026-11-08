@@ -116,6 +116,7 @@
   "x_trend": "トレンド",
   "x_critics": "批評",
   "x_reviews": "レビュー {n} 件、{p} % が好評",
+  "x_review_count": "レビュー {n} 件",
   "x_release": "発売",
   "x_coming": "{date} 発売予定",
   "x_players_rating": "プレイヤー評価",

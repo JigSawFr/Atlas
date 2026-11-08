@@ -116,6 +116,7 @@
   "x_trend": "趋势",
   "x_critics": "评论",
   "x_reviews": "{n} 条评测，{p}% 好评",
+  "x_review_count": "{n} 条评价",
   "x_release": "发售",
   "x_coming": "{date} 发售",
   "x_players_rating": "玩家评分",

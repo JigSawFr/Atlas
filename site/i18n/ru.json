@@ -116,6 +116,7 @@
   "x_trend": "Тренд",
   "x_critics": "Критики",
   "x_reviews": "Отзывов: {n}, {p} % положительных",
+  "x_review_count": "Отзывов: {n}",
   "x_release": "Выход",
   "x_coming": "Выходит {date}",
   "x_players_rating": "Оценка игроков",

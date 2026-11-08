@@ -116,6 +116,7 @@
   "x_trend": "Trend",
   "x_critics": "Critici",
   "x_reviews": "{n} recensies, {p} % positief",
+  "x_review_count": "{n} recensies",
   "x_release": "Release",
   "x_coming": "Komt uit op {date}",
   "x_players_rating": "Spelersscore",
