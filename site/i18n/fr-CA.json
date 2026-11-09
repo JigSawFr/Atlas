@@ -415,5 +415,7 @@
   "x_empty_browse": "Parcourir avec des filtres",
   "x_trailer": "Bande-annonce",
   "x_views_peak": "Pic : {n} lectures par semaine",
-  "x_views_ago": "Il y a {w} sem. : {n}"
+  "x_views_ago": "Il y a {w} sem. : {n}",
+  "x_share": "Partager",
+  "x_link_copied": "Lien copié"
 }

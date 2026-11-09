@@ -415,5 +415,7 @@
   "x_empty_browse": "Bladeren met filters",
   "x_trailer": "Trailer",
   "x_views_peak": "Piek: {n} keer gelezen per week",
-  "x_views_ago": "{w} wkn geleden: {n}"
+  "x_views_ago": "{w} wkn geleden: {n}",
+  "x_share": "Delen",
+  "x_link_copied": "Link gekopieerd"
 }

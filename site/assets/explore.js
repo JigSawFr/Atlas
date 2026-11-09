@@ -832,6 +832,24 @@
     return b;
   }
 
+  // The sheet's address, shared: the system's sheet where there is one (a phone), else copied; the button says so.
+  function share(m) {
+    const b = el("button", { type: "button", class: "share fab", "aria-label": t("x_share"), title: t("x_share") }, icon("i-ui-share-2"));
+    let timer = 0;
+    b.addEventListener("click", async () => {
+      const url = location.href;
+      try {
+        if (navigator.share) { await navigator.share({ title: m.name || "", url }); return; }
+        await navigator.clipboard.writeText(url);
+        b.title = t("x_link_copied");
+        b.classList.add("done");
+        clearTimeout(timer);
+        timer = setTimeout(() => { b.classList.remove("done"); b.title = t("x_share"); }, 1800);
+      } catch (e) { /* cancelled, or no clipboard: nothing to say */ }
+    });
+    return b;
+  }
+
   function renderSheet(m, backHref) {
     if (barOff) barOff();
     sheet.replaceChildren();
@@ -897,7 +915,7 @@
     sheet.classList.toggle("with-backdrop", !!wide);
     // The way back, the steps through the list and the heart float in the window's corners and bottom; outside the
     // head, whose entrance animation would make it their frame.
-    sheet.append(...[back, pager(es), heart(m, es), head].filter(Boolean));
+    sheet.append(...[back, pager(es), heart(m, es), share(m), head].filter(Boolean));
     if (!multi) {
       sheet.append(el("span", { class: "sheet-wm", "aria-hidden": "true" }, icon(PC.has(es[0].p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[es[0].p] || es[0].p.toUpperCase() })));
     }

@@ -1034,3 +1034,13 @@ a.chip.store-link { border-color: color-mix(in srgb, var(--tint, #33bbff) 55%, t
 .views-tip { position: absolute; top: -6px; translate: -50% -100%; padding: 4px 8px; border-radius: 8px; background: var(--snow); color: var(--abyss); font: 600 0.75rem var(--mono); white-space: nowrap; pointer-events: none; }
 .views-tip[hidden] { display: none; }
 .sheet .links li code { font-size: 0.75rem; color: var(--mist); }
+
+/* Share: a round button beside the heart; "done" when the address was copied. */
+.share.fab { position: fixed; z-index: 25; right: calc(clamp(12px, 2vw, 28px) + 58px); bottom: clamp(14px, 3vh, 28px); display: inline-grid; place-items: center; width: 48px; height: 48px; min-height: 0; padding: 0; border-radius: 50%; border: 1px solid var(--night-line); background: rgb(11 18 32 / 0.9); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--snow); cursor: pointer; box-shadow: 0 6px 18px rgb(0 0 0 / 0.4); }
+.share.fab .ico { width: 1.25rem; height: 1.25rem; }
+.share.fab:hover, .share.fab:focus-visible { border-color: var(--mist); }
+.share.fab.done { border-color: var(--aurora); color: var(--aurora); }
+/* A row of cards that scrolls sideways fades at its edge on a phone: there is more. */
+@media (max-width: 699px) {
+  .cardgrid.carousel { -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); mask-image: linear-gradient(to right, #000 88%, transparent); }
+}

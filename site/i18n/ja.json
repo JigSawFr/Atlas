@@ -415,5 +415,7 @@
   "x_empty_browse": "フィルターで探す",
   "x_trailer": "トレーラー",
   "x_views_peak": "ピーク：週 {n} 回",
-  "x_views_ago": "{w} 週間前：{n}"
+  "x_views_ago": "{w} 週間前：{n}",
+  "x_share": "共有",
+  "x_link_copied": "リンクをコピーしました"
 }
