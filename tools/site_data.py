@@ -6,6 +6,8 @@ holds them cut for a phone, one platform a folder:
   the trending, the coming soon), each game with its name;
 - x/<platform>/days.json: for each day of the year (MMDD) the best known games released that day in an earlier
   year, for the first page's "On this day"; lists.json also holds the games out in the last RECENT_DAYS days;
+- g/<platform>/<id>/index.html: for each platform's SHARE_LIST best known games a page that gives a link preview
+  (title, Steam's header) and opens the game's sheet, for the share button;
 - x/<platform>/names.json: every game with a name, for the search (an edition is found by its name and opens its game);
 - x/<platform>/facets.json: for each facet (genres, modes, series,
   developers, publishers, themes, perspectives, tags, year) its values with
@@ -23,8 +25,10 @@ holds them cut for a phone, one platform a folder:
 Python's standard library only. Usage: see tools/build_site.py.
 """
 import datetime
+import html
 import json
 import os
+import re
 from bisect import bisect_left
 
 from common import SCHEMA
@@ -40,6 +44,8 @@ LIST = 200              # games a list holds
 RECENT_DAYS = 60        # days back the "just out" list reaches (the page shows the last week or two of them)
 RECENT_LIST = 40        # games it holds
 DAY_LIST = 4            # games a day of the year holds in days.json
+SHARE_LIST = 60         # best known games a platform has a page of their own for, so a shared link has a preview (explore.js SHARE_LIST)
+SHARE_ID = re.compile(r"^[A-Za-z0-9_.-]+$")
 PAGE = 5000             # games a page of the browse index holds
 FACETS = ("genres", "themes", "modes", "perspectives", "styles", "moods", "gameplay", "content", "access",
           "series", "developers", "publishers", "tags")
@@ -218,6 +224,21 @@ def by_release(scores: dict, games: dict, editions: dict, generated) -> tuple:
     recent.sort()
     return ([(g, r) for _, g, r in recent],
             {day: [(g, r) for _, g, r in sorted(rows)[:DAY_LIST]] for day, rows in sorted(days.items())})
+
+
+def share_page(platform: str, gid: str, name: str) -> str:
+    """The page a shared link opens on: the name and a picture for the preview of chat apps and social sites, then
+    the game's sheet in the explorer (g/<platform>/<id>/index.html, three folders under the site's root)."""
+    target = f"../../../explore/#{platform}/game/{gid}"
+    title = html.escape(f"{name} · Atlas")
+    image = (f'<meta property="og:image" content="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{gid}/header.jpg">'
+             if platform == "steam" and gid.isdigit() else "")
+    return (f'<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+            f'<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex">'
+            f'<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src \'none\'; base-uri \'none\'; form-action \'none\'">'
+            f'<title>{title}</title><meta property="og:type" content="website"><meta property="og:site_name" content="Atlas">'
+            f'<meta property="og:title" content="{title}"><meta property="og:description" content="Scores, traits and alike games.">{image}'
+            f'<meta http-equiv="refresh" content="0; url={target}"></head>\n<body><p><a href="{target}">{title}</a></p></body></html>\n')
 
 
 def picture(platform: str, gid: str, game, link, store: dict, long_ok: bool) -> str:
@@ -632,6 +653,12 @@ def build(data_dir: str, out_dir: str) -> dict:
             "upcoming": [with_pic([g, names.get(g, ""), r[0], r[2] if len(r) > 2 else 0], g) for g, r in soon[:LIST]],
             "recent": [with_pic([g, names[g], r, scores[g][0]], g) for g, r in recent if names.get(g)][:RECENT_LIST],
         }
+        for gid, _ in best[:SHARE_LIST]:
+            if names.get(gid) and SHARE_ID.match(gid):
+                folder = os.path.join(out_dir, "g", platform, gid)
+                os.makedirs(folder, exist_ok=True)
+                with open(os.path.join(folder, "index.html"), "w", encoding="utf-8") as f:
+                    f.write(share_page(platform, gid, names[gid]))
         write(os.path.join(base, "days.json"), {"platform": platform, "days": {
             day: [with_pic([g, names[g], r, scores[g][0]], g) for g, r in rows if names.get(g)] for day, rows in days.items()}})
         write(os.path.join(base, "names.json"),

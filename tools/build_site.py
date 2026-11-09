@@ -375,6 +375,7 @@ def main() -> None:
     out.mkdir(parents=True)
     shutil.copytree(SITE / "assets", out / "assets")
     shutil.copy(SITE / "assets" / "favicon.ico", out / "favicon.ico")  # asked for at the root by old browsers
+    shutil.move(out / "assets" / "sw.js", out / "sw.js")              # a worker acts for the folder it is served from
     boreale.copy_assets(out)
     summary, index, report = {}, {}, {}
     if data:

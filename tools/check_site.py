@@ -110,7 +110,7 @@ def main() -> None:
         sys.exit(__doc__)
     site = Path(sys.argv[1])
     errors = boreale.check_catalogs(ROOT / "site" / "i18n")
-    found, pages = check.pages(site, boreale.Site("atlas", os.environ.get("SITE_URL")), skip=("assets", "data", "x"), chrome=True)
+    found, pages = check.pages(site, boreale.Site("atlas", os.environ.get("SITE_URL")), skip=("assets", "data", "x", "g"), chrome=True)
     errors += found
 
     try:

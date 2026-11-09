@@ -106,6 +106,7 @@
 
   // The address, read and written.
   // The platform last visited is where an empty address opens (kept in this browser only).
+  const SHARE_LIST = 60;   // the best known games that have a page for a shared link (site_data.py)
   const HOME_KEY = "atlas-platform";
   let home = PLATFORMS[0];
   try { const kept = localStorage.getItem(HOME_KEY); if (PLATFORMS.includes(kept)) home = kept; } catch (e) { /* no storage: the first platform */ }
@@ -957,9 +958,16 @@
   // The sheet's address, shared: the system's sheet where there is one (a phone), else copied; the button says so.
   function share(m) {
     const b = el("button", { type: "button", class: "share fab", "aria-label": t("x_share"), title: t("x_share") }, icon("i-ui-share-2"));
-    let timer = 0;
+    let timer = 0, link = "";
+    // A best known game of one platform has a page of its own that gives a preview in chats (g/…, SHARE_LIST in site_data.py).
+    const only = m.platforms.length === 1 ? m.platforms[0] : null;
+    if (only && /^[A-Za-z0-9_.-]+$/.test(String(only.id))) {
+      get(`x/${only.p}/lists.json`).then((l) => {
+        if ((l.popular || []).slice(0, SHARE_LIST).some((r) => r[0] === only.id)) link = new URL(`${ROOT}g/${only.p}/${only.id}/`, location.href).href;
+      }, () => {});
+    }
     b.addEventListener("click", async () => {
-      const url = location.href;
+      const url = link || location.href;
       try {
         if (navigator.share) { await navigator.share({ title: m.name || "", url }); return; }
         await navigator.clipboard.writeText(url);
@@ -2345,4 +2353,8 @@
   window.addEventListener("hashchange", show);
   countFavs();
   show();
+  // Offline: the worker keeps what has been seen (sw.js at the site's root) so it opens again without a network.
+  if ("serviceWorker" in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register(new URL(`${ROOT}sw.js`, location.href)).catch(() => {});
+  }
 })();
