@@ -278,7 +278,7 @@ class SiteData(unittest.TestCase):
         summary = site_data.build(self.data, self.out)
         page = self.page("steam")
         self.assertEqual([r[:2] for r in page["games"]], [["900010", "Amber Lantern"], ["900020", "Moss & Märchen"], ["900030", "Old Stone"]])
-        self.assertEqual(page["games"][0], ["900010", "Amber Lantern", 70, 5, 0, 2024])      # no trademark sign
+        self.assertEqual(page["games"][0], ["900010", "Amber Lantern", 70, 5, 0, 2024, 0])   # no trademark sign, no signal for an Atlas score
         facets = self.facets("steam")
         self.assertEqual((facets["pages"], facets["games"]), (1, 3))
         self.assertEqual(facets["facets"]["genres"], [["action", 3]])                        # the tag is the genre; "puzzle" has one game
@@ -290,6 +290,14 @@ class SiteData(unittest.TestCase):
         self.assertEqual(self.rows_of("steam", "modes", "single"), [0, 2])
         self.assertEqual(self.rows_of("steam", "year", "2024"), [0, 1])
         self.assertEqual((summary["steam"]["browse"], summary["steam"]["pages"]), (3, 1))
+
+    def test_the_atlas_score_of_a_row(self):
+        # The same weights as atlasScore() of explore.js (worked out by hand: 28 + 12.64 + 16 over 0.7).
+        self.assertEqual(site_data.atlas_score([64, 0, 80], {"reviews": [100, 90]}), 81)
+        self.assertEqual(site_data.atlas_score([64, 0, 0], {}), 0)                    # renown alone is no quality signal
+        self.assertEqual(site_data.atlas_score([0, 0, 0], {"igdb_rating": [80, 10]}), 0)   # under 20 ratings
+        self.assertEqual(site_data.atlas_score([0, 0, 0], {"igdb_rating": [80, 30]}), 75)  # (30*80+30*70)/60, alone
+        self.assertEqual(site_data.atlas_score([50], None), 0)
 
     def test_the_tags_the_taxonomy_names_and_a_genre_in_its_parents(self):
         put(self.data, "platforms/steam/games.json", {"schema": 1, "tags": {"1": "Pixel Graphics", "2": "Cozy", "3": "Indie", "4": "Violent"}, "games": {
