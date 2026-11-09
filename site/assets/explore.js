@@ -88,6 +88,8 @@
     return svg;
   }
   const iconOf = (kind, value) => icon(NOTION[kind] ? `i-${NOTION[kind]}-${value}` : null);
+  // What the game is, then who made it: the traits fall in two groups, a gap between them.
+  const MAKERS_KINDS = new Set(["series", "developers", "publishers"]);
   const BROWSABLE = ["genres", "themes", "modes", "perspectives", "styles", "moods", "gameplay", "content", "access", "series", "developers", "publishers"];
   const chip = (kind, value, href) => el(href ? "a" : "span", href ? { class: "chip", href } : { class: "chip" }, iconOf(kind, value), labelOf(kind, value));
 
@@ -662,8 +664,10 @@
   // between the first and the last, the date); the dot is for the eye, the names and dates are the text.
   function timeline(es) {
     const dated = es.filter((e) => e.release).sort((x, y) => x.release - y.release || x.p.localeCompare(y.p));
-    if (dated.length < 2 || dated[0].release === dated[dated.length - 1].release) return null;
+    if (dated.length < 2) return null;
     const a = dayOf(dated[0].release), span = dayOf(dated[dated.length - 1].release) - a;
+    // Dates a few days apart say no more than the tiles' own ("+1 day"): a line is for a real gap.
+    if (span < 14) return null;
     return el("figure", { class: "timeline" }, el("figcaption", { text: t("x_timeline") }),
       el("ol", {}, ...dated.map((e) => {
         const dot = el("i", {});
@@ -961,7 +965,7 @@
     if (m.traits) {
       const dl = el("dl", { class: "traits" });
       for (const [kind, names] of Object.entries(m.traits)) {
-        dl.append(el("div", {}, el("dt", {}, icon(`i-k-${kind}`), t(`x_${kind}`)), el("dd", {}, ...names.map((n) => {
+        dl.append(el("div", { class: MAKERS_KINDS.has(kind) ? "makers" : "" }, el("dt", {}, icon(`i-k-${kind}`), t(`x_${kind}`)), el("dd", {}, ...names.map((n) => {
           const c = chip(kind, n, traitHref(kind, n));
           if (c.href) { c.dataset.kind = kind; c.dataset.value = n; }
           return c;
@@ -1018,13 +1022,44 @@
       const line = document.createElementNS(SVG, "polyline");
       for (const [k, v] of [["points", points.join(" ")], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "2"], ["stroke-linejoin", "round"]]) line.setAttribute(k, v);
       svg.append(area, line);
-      main.append(section(t("x_views_title"), el("div", { class: "views" }, svg,
-        el("p", { class: "dim", text: t("x_views_curve", { n: curve.length, first: num(curve[0]), last: num(curve[curve.length - 1]) }) }))));
+      // The peak and the latest week are marked; a pointer over the curve reads the week under it.
+      const mark = (i, cls) => {
+        const dot = document.createElementNS(SVG, "circle");
+        for (const [k, v] of [["cx", (i * step).toFixed(1)], ["cy", (H - 3 - (curve[i] / top) * (H - 8)).toFixed(1)], ["r", "3"], ["class", cls]]) dot.setAttribute(k, v);
+        svg.append(dot);
+      };
+      mark(curve.indexOf(top), "peak");
+      if (curve.indexOf(top) !== curve.length - 1) mark(curve.length - 1, "now");
+      const tipText = el("span", { class: "views-tip", "aria-hidden": "true", hidden: "" });
+      const wrap = el("div", { class: "views" }, svg, tipText);
+      svg.addEventListener("pointermove", (ev) => {
+        const box = svg.getBoundingClientRect(), i = Math.max(0, Math.min(curve.length - 1, Math.round(((ev.clientX - box.left) / box.width) * (curve.length - 1))));
+        const ago = curve.length - 1 - i;
+        tipText.textContent = ago ? t("x_views_ago", { w: String(ago), n: num(curve[i]) }) : num(curve[i]);
+        tipText.style.setProperty("left", `${((i * step) / W) * 100}%`);
+        tipText.hidden = false;
+      });
+      svg.addEventListener("pointerleave", () => { tipText.hidden = true; });
+      main.append(section(t("x_views_title"), el("div", { class: "views-box" }, wrap,
+        el("p", { class: "dim", text: `${t("x_views_peak", { n: num(top) })} · ${t("x_views_curve", { n: curve.length, first: num(curve[0]), last: num(curve[curve.length - 1]) })}` }))));
     }
 
     const won = m.wd && m.wd.awards;
     if (won && won.length) {
-      main.append(section(t("x_awards"), el("ul", { class: "awards" }, ...won.map(([name, year]) => el("li", {}, el("span", { class: "chip", text: year ? `${name} (${year})` : name }))))));
+      // Four are shown, the others fold behind "See all n".
+      const list = el("ul", { class: "awards" }, ...won.map(([name, year], i) => el("li", i >= 4 ? { class: "extra", hidden: "" } : {}, el("span", { class: "chip", text: year ? `${name} (${year})` : name }))));
+      const sect = section(t("x_awards"), list);
+      if (won.length > 5) {
+        const more = el("button", { type: "button", class: "see", "aria-expanded": "false", text: t("x_see_all", { n: num(won.length) }) });
+        more.addEventListener("click", () => {
+          const open = more.getAttribute("aria-expanded") !== "true";
+          for (const li of list.querySelectorAll("li.extra")) li.hidden = !open;
+          more.setAttribute("aria-expanded", String(open));
+          more.textContent = open ? t("x_see_less") : t("x_see_all", { n: num(won.length) });
+        });
+        sect.append(more);
+      } else for (const li of list.querySelectorAll("li.extra")) li.hidden = false;
+      main.append(sect);
     }
 
     const team = m.wd && m.wd.team;
@@ -1075,14 +1110,14 @@
     const outside = [];
     const open = (label, href) => outside.push(el("li", {}, el("a", { class: "out-link", href, rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: `${label} ↗` })));
     if (wd.web) open(t("x_official_site"), wd.web);
-    if (/^Q\d+$/.test(m.qid || "")) open(`Wikidata · ${m.qid}`, `https://www.wikidata.org/wiki/${m.qid}`);
+    if (/^Q\d+$/.test(m.qid || "")) open("Wikidata", `https://www.wikidata.org/wiki/${m.qid}`);
     if (wd.wiki) {
       // The visitor's language first (the catalogs' es-419, fr-CA, pt-BR… are Spanish, French, Portuguese), English after.
       const own = LANG.split("-")[0], langs = [own, "en"].filter((l, i, all) => wd.wiki[l] && all.indexOf(l) === i);
       for (const l of langs) open(langs.length > 1 ? `Wikipedia (${l})` : "Wikipedia", `https://${l}.wikipedia.org/wiki/${wd.wiki[l]}`);
     }
     if (wd.pcgw) open("PCGamingWiki", `https://www.pcgamingwiki.com/wiki/${encodeURIComponent(wd.pcgw)}`);
-    (wd.yt || []).forEach((id, i, all) => open(all.length > 1 ? `YouTube ${i + 1}` : "YouTube", `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`));
+    (wd.yt || []).forEach((id, i, all) => open(all.length > 1 ? `${t("x_trailer")} ${i + 1}` : t("x_trailer"), `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`));
     if (outside.length) side.append(section(t("x_links"), el("ul", { class: "links" }, ...outside)));
     if (m.links && Object.keys(m.links).length) {
       const items = [];

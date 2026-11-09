@@ -412,5 +412,8 @@
   "x_suggestions": "Suggestions",
   "x_empty_hint": "Try fewer filters or another spelling.",
   "x_empty_all": "Search every platform",
-  "x_empty_browse": "Browse with filters"
+  "x_empty_browse": "Browse with filters",
+  "x_trailer": "Trailer",
+  "x_views_peak": "Peak: {n} reads a week",
+  "x_views_ago": "{w} weeks ago: {n}"
 }
