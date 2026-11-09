@@ -871,7 +871,12 @@
       !multi && es[0].gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null,
       !multi && es[0].tech && es[0].tech.deck >= 2 ? el("span", { class: "chip", text: `Steam Deck · ${t(`x_deck_${es[0].tech.deck}`)}` }) : null,
       !m.name ? el("small", { text: t("x_no_name") }) : null);
-    const info = el("div", { class: "info" }, logo, title, ids.childElementCount ? ids : null,
+    // One line under the title that says what the game is, from what the sheet already holds: genres, studio, year.
+    const tr = m.traits || {}, born = es.map((e) => e.release).filter(realDay);
+    const tag = [(tr.genres || []).slice(0, 2).map((g) => labelOf("genres", g)).join(", "), (tr.developers || [])[0],
+      born.length ? String(Math.floor(Math.min(...born) / 10000)) : ""].filter(Boolean).join(" · ");
+    const tagline = tag ? el("p", { class: "tagline", text: tag }) : null;
+    const info = el("div", { class: "info" }, logo, title, tagline, ids.childElementCount ? ids : null,
       rings.childElementCount ? rings : null, null);
     // On a platform's own sheet: its store, and the way back to the game's sheet of all its platforms.
     const p1 = es[0], shop = !multi && storePage(p1)
@@ -1711,7 +1716,6 @@
     const { platform, view, arg, query } = route();
     // On a sheet the page's own heading folds to a line: the sheet is what is read.
     document.body.classList.toggle("x-on-sheet", view === "game" || view === "ugame" || view === "compare");
-    if (!document.body.classList.contains("x-on-sheet")) { document.body.classList.remove("x-controls-open"); foldBtn.setAttribute("aria-expanded", "false"); foldBtn.textContent = `${t("x_platform")} ▾`; }
     if (barOff && view !== "game" && view !== "ugame") barOff();
     const tr = trail();
     restore = tr && tr.hash === location.hash && !["game", "ugame", "compare", "favorites"].includes(view) ? tr : null;
@@ -1743,15 +1747,6 @@
       setStatus(t("x_error"));
     }
   }
-
-  // On a sheet the platforms, machines and views fold behind a button (the CSS does it; the search stays).
-  const foldBtn = el("button", { type: "button", class: "chip controls-toggle", "aria-expanded": "false", "aria-controls": "x-platforms", text: `${t("x_platform")} ▾` });
-  foldBtn.addEventListener("click", () => {
-    const open = document.body.classList.toggle("x-controls-open");
-    foldBtn.setAttribute("aria-expanded", String(open));
-    foldBtn.textContent = `${t("x_platform")} ${open ? "▴" : "▾"}`;
-  });
-  document.querySelector(".controls").prepend(foldBtn);
 
   const layout = document.getElementById("x-layout");
   function syncLayout() {

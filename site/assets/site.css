@@ -959,11 +959,7 @@ a.chip.store-link { border-color: color-mix(in srgb, var(--tint, #33bbff) 55%, t
 .ring-note { margin: 0.4rem 0 0; font-size: 0.8125rem; }
 
 /* On a sheet the game comes first: the platforms, machines and views fold behind one button; the search stays. */
-.controls-toggle { display: none; justify-self: start; }
-.x-on-sheet .controls-toggle { display: inline-flex; cursor: pointer; font: inherit; color: var(--snow); }
-.x-on-sheet:not(.x-controls-open) #x-platforms,
-.x-on-sheet:not(.x-controls-open) #x-machine-field,
-.x-on-sheet:not(.x-controls-open) #x-views { display: none; }
+.x-on-sheet #x-views { display: none; }
 
 /* Placeholders while a list is read (explore.js adds them after a beat): same footprint as a row, or a card. */
 .results li.skeleton { counter-increment: none; list-style: none; min-height: 64px; border-radius: 14px; border: 1px solid var(--night-line); background: var(--night); overflow: hidden; }
@@ -1005,3 +1001,20 @@ a.chip.store-link { border-color: color-mix(in srgb, var(--tint, #33bbff) 55%, t
 .xmini .ico { width: 1.125rem; height: 1.125rem; }
 @media (min-width: 900px) { .xmini { display: none !important; } }
 @media (prefers-reduced-motion: no-preference) { .xmini:not([hidden]) { animation: drop 0.2s ease-out; } @keyframes drop { from { transform: translateY(-100%); } to { transform: none; } } }
+
+/* A sheet: the controls shrink to the search (the platform is the sheet's), the line under the title, the figures in
+   one even row, and the Atlas score's recipe as a quiet link rather than a bar. */
+@media (max-width: 899px) {
+  .x-on-sheet .picker, .x-on-sheet .searchbar button, .x-on-sheet .searchbar kbd { display: none; }
+  .x-on-sheet .xc-top { gap: 0; }
+  .x-on-sheet .searchbar input { min-height: 40px; }
+}
+.tagline { margin: 2px 0 0; font: 500 0.9375rem var(--body); color: var(--mist); }
+.sheet > .stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); max-width: 640px; }
+.sheet > .stats div { align-content: start; min-height: 84px; }
+.sheet > .stats dd { font-size: 1.0625rem; line-height: 1.25; }
+.recipe { border: 0; background: none; padding: 0; }
+.recipe summary { display: inline-flex; min-height: 28px; font: 500 0.8125rem var(--body); color: var(--mist); cursor: pointer; text-decoration: underline; text-decoration-color: var(--night-line); text-underline-offset: 4px; }
+.recipe summary:hover { color: var(--snow); }
+.recipe[open] { border: 1px solid var(--night-line); border-radius: 14px; background: var(--abyss); padding: 10px 14px; }
+.recipe[open] summary { color: var(--snow); text-decoration: none; font-weight: 600; }
