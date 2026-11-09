@@ -48,7 +48,17 @@ SITE_URL = ATLAS.url
 GITHUB = "https://github.com/JigSawFr/Atlas"
 # The platforms, in their order: those the data has are live, the others coming.
 PLATFORMS = [(p[0], p[1]) for p in platforms.STORES + platforms.CONSOLES] + [(p[0], p[1]) for p in platforms.RETRO]
-STORE_IDS = {p[0] for p in platforms.STORES + platforms.CONSOLES}   # a button each; the old machines in a list
+STORE_IDS = {p[0] for p in platforms.STORES + platforms.CONSOLES}   # the first group of the platform picker
+# The old machines in the picker, by maker (brand names, not translated); the rest of RETRO is "Other".
+MAKERS = [
+    ("Nintendo", ["nes", "fds", "snes", "n64", "gamecube", "wii", "wiiu", "gb", "gbc", "gba", "nds"]),
+    ("PlayStation", ["ps1", "ps2", "ps3", "psp", "psv"]),
+    ("Xbox", ["xbox-og", "xbox360"]),
+    ("Sega", ["sms", "genesis", "segacd", "gamegear", "saturn", "dreamcast"]),
+    ("Atari", ["atari2600", "atarist"]),
+    ("x_plat_computers", ["c64", "amiga", "zxspectrum", "amstradcpc", "msx", "apple2", "dos"]),
+]
+UI_ICONS = ["search", "chevron-down", "sliders-horizontal", "layout-grid", "list", "ellipsis", "x", "arrow-up", "arrow-down"]
 MACHINES = "|".join(re.escape(p[0]) for p in platforms.RETRO)
 # The pages, by their path under each language's folder.
 PAGES = {"": "home", "explore/": "explore", "status/": "status"}
@@ -108,6 +118,26 @@ def platform_cards(language: str, catalog: dict, root: str, summary: dict) -> st
         cards.append(f'      <li class="card platform{" soon" if not live else ""}"><div class="head"><h3>{name}</h3>{state}</div>'
                      f'<p>{catalog[f"platform_{key}_text"]}</p>{facts}{more}</li>')
     return "\n".join(cards)
+
+
+def platform_picker(language: str, catalog: dict, summary: dict) -> str:
+    """The platform picker's groups: the stores and consoles, then the old machines by maker. A button each,
+    with its game count (the explorer's script presses the current one and closes the panel)."""
+    names = dict(PLATFORMS)
+    def group(title: str, keys: list) -> str:
+        keys = [k for k in keys if k in summary]
+        if not keys:
+            return ""
+        buttons = "".join(
+            f'<button type="button" data-platform="{k}"><span>{html.escape(names[k])}</span>'
+            f'<small>{number(summary[k]["games"], language)}</small></button>' for k in keys)
+        return f'        <section class="plat-group"><h3>{html.escape(title)}</h3><div class="plat-list">{buttons}</div></section>'
+    retro = [k for k, _ in PLATFORMS if k not in STORE_IDS]
+    placed = {k for _, keys in MAKERS for k in keys}
+    groups = [group(catalog["x_plat_current"], [k for k, _ in PLATFORMS if k in STORE_IDS])]
+    groups += [group(catalog.get(maker, maker), keys) for maker, keys in MAKERS]
+    groups.append(group(catalog["x_plat_other"], [k for k in retro if k not in placed]))
+    return "\n".join(g for g in groups if g)
 
 
 def file_kind(name: str) -> str:
@@ -284,6 +314,8 @@ def icon_sprite() -> str:
     symbols += [(f"i-k-{kind}", icon) for kind, icon in taxonomy.KIND_ICONS.items()]
     # A platform's kind, drawn faintly behind its tile on a sheet: a computer's stores and machines, else a console.
     symbols += [("i-d-pc", "monitor"), ("i-d-console", "gamepad-2")]
+    # The explorer's controls (i-ui-<name>).
+    symbols += [(f"i-ui-{name}", name) for name in UI_ICONS]
     return "".join(f'<symbol id="{name}" viewBox="0 0 24 24">{drawing(icon)}</symbol>' for name, icon in symbols)
 
 
@@ -325,13 +357,7 @@ def page_html(template: str, language: str, catalog: dict, path: str, page: str,
         "hero": hero(page, catalog, root, language),
         "platform_cards": platform_cards(language, catalog, root, summary) if page == "home" else "",
         "file_rows": file_rows(language, catalog, index) if page == "home" else "",
-        "platform_buttons": "\n".join(
-            f'        <button type="button" data-platform="{k}">{n}</button>' for k, n in PLATFORMS
-            if k in summary and k in STORE_IDS) if page == "explore" else "",
-        "machine_hidden": "" if any(k in summary and k not in STORE_IDS for k, _ in PLATFORMS) else " hidden",
-        "machine_options": "\n".join(
-            f'          <option value="{k}">{html.escape(n)}</option>' for k, n in PLATFORMS
-            if k in summary and k not in STORE_IDS) if page == "explore" else "",
+        "platform_picker": platform_picker(language, catalog, summary) if page == "explore" else "",
         "strings": strings(catalog, language, summary) if page == "explore" else "",
         "icons": icon_sprite() if page == "explore" else "",
     })
