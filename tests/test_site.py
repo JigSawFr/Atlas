@@ -77,6 +77,22 @@ class SiteData(unittest.TestCase):
         self.assertEqual(self.sheet("switch", "0100F0F0F0F0F000")["edition_of"], ["0100A1B2C3D4E000", ""])
         self.assertEqual(self.sheet("steam", "900010")["traits"], {"genres": ["action"]})    # the tag "Action" is the genre
 
+    def test_a_gog_sheet_keeps_the_slug_for_its_store_page(self):
+        # GOG's games are keyed by number; the store page wants the slug.
+        with tempfile.TemporaryDirectory() as tmp:
+            data, out = os.path.join(tmp, "data"), os.path.join(tmp, "out")
+            sample(data)
+            put(data, "platforms/gog/popular.json", {"schema": 1, "generated": "2026-11-02", "games": {"1207000001": [50, 0, 0]}})
+            put(data, "platforms/gog/games.json", {"schema": 1, "games": {
+                "1207000001": {"name": "Amber Lantern", "slug": "amber_lantern", "qid": "Q900001"}}})
+            site_data.build(data, out)
+            lists = json.load(open(os.path.join(out, "x/gog/lists.json"), encoding="utf-8"))
+            shard = json.load(open(os.path.join(out, f"x/gog/g/{site_data.shard('1207000001', lists['shards'])}.json"), encoding="utf-8"))
+            self.assertEqual(shard["1207000001"]["slug"], "amber_lantern")
+            meta = json.load(open(os.path.join(out, "x/u/meta.json"), encoding="utf-8"))
+            unified = json.load(open(os.path.join(out, f"x/u/{site_data.shard('Q900001', meta['shards'])}.json"), encoding="utf-8"))["Q900001"]
+            self.assertEqual([e["slug"] for e in unified["platforms"] if e["p"] == "gog"], ["amber_lantern"])
+
     def unified(self, qid):
         meta = self.read("x/u/meta.json")
         return self.read(f"x/u/{site_data.shard(qid, meta['shards'])}.json")[qid]
@@ -262,7 +278,7 @@ class SiteData(unittest.TestCase):
         summary = site_data.build(self.data, self.out)
         page = self.page("steam")
         self.assertEqual([r[:2] for r in page["games"]], [["900010", "Amber Lantern"], ["900020", "Moss & Märchen"], ["900030", "Old Stone"]])
-        self.assertEqual(page["games"][0], ["900010", "Amber Lantern", 70, 5, 0, 2024])      # no trademark sign
+        self.assertEqual(page["games"][0], ["900010", "Amber Lantern", 70, 5, 0, 2024, 0])   # no trademark sign, no signal for an Atlas score
         facets = self.facets("steam")
         self.assertEqual((facets["pages"], facets["games"]), (1, 3))
         self.assertEqual(facets["facets"]["genres"], [["action", 3]])                        # the tag is the genre; "puzzle" has one game
@@ -274,6 +290,14 @@ class SiteData(unittest.TestCase):
         self.assertEqual(self.rows_of("steam", "modes", "single"), [0, 2])
         self.assertEqual(self.rows_of("steam", "year", "2024"), [0, 1])
         self.assertEqual((summary["steam"]["browse"], summary["steam"]["pages"]), (3, 1))
+
+    def test_the_atlas_score_of_a_row(self):
+        # The same weights as atlasScore() of explore.js (worked out by hand: 28 + 12.64 + 16 over 0.7).
+        self.assertEqual(site_data.atlas_score([64, 0, 80], {"reviews": [100, 90]}), 81)
+        self.assertEqual(site_data.atlas_score([64, 0, 0], {}), 0)                    # renown alone is no quality signal
+        self.assertEqual(site_data.atlas_score([0, 0, 0], {"igdb_rating": [80, 10]}), 0)   # under 20 ratings
+        self.assertEqual(site_data.atlas_score([0, 0, 0], {"igdb_rating": [80, 30]}), 75)  # (30*80+30*70)/60, alone
+        self.assertEqual(site_data.atlas_score([50], None), 0)
 
     def test_the_tags_the_taxonomy_names_and_a_genre_in_its_parents(self):
         put(self.data, "platforms/steam/games.json", {"schema": 1, "tags": {"1": "Pixel Graphics", "2": "Cozy", "3": "Indie", "4": "Violent"}, "games": {

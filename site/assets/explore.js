@@ -21,6 +21,11 @@
     gog: (id) => `https://www.gog.com/game/${id}`,
     epic: (id) => `https://store.epicgames.com/p/${id}`,
   };
+  // A game's page at its store: GOG's wants the slug, not the number the games are keyed by.
+  const storePage = (e) => {
+    const key = e.p === "gog" ? e.slug : e.id;
+    return STORES[e.p] && key && /^[\w-]+$/.test(key) ? STORES[e.p](key) : null;
+  };
   const STORE_NAMES = { switch: "Nintendo Switch", steam: "Steam", ps: "PlayStation", ps_product: "PlayStation",
     ps4: "PlayStation 4", ps5: "PlayStation 5", "3ds": "Nintendo 3DS",
     xbox: "Xbox", gog: "GOG", epic: "Epic Games" };
@@ -51,8 +56,10 @@
   };
   const nf = new Intl.NumberFormat(LANG);
   const num = (n) => nf.format(n);
+  // Stores park a game without a date far in the future (9998-12-31, 9999-12-31): that is no date.
+  const realDay = (n) => (n && n < 90000000 ? n : 0);
   const ymd = (n) => {
-    if (!n) return "";
+    if (!realDay(n)) return "";
     const s = String(n);
     const d = new Date(Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)));
     return new Intl.DateTimeFormat(LANG, { dateStyle: "medium", timeZone: "UTC" }).format(d);
@@ -634,7 +641,7 @@
       if (rev || extras.length) lines.push(el("span", { class: "plat-more" }, rev ? el("span", { class: "dim", text: t("x_reviews", { n: num(rev[0]), p: rev[1] }) }) : null, ...extras));
       const main = el("a", { class: `plat-main${e.popular ? " has-ring" : ""}`, href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
         e.popular ? miniRing(e.popular[0], t("x_score")) : null, ...lines, el("span", { class: "out", "aria-hidden": "true", text: "→" }));
-      const shop = STORES[e.p] && /^[\w-]+$/.test(e.id) ? el("a", { class: "store", href: STORES[e.p](e.id), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank",
+      const shop = storePage(e) ? el("a", { class: "store", href: storePage(e), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank",
         title: t("x_open_store", { store: name }), "aria-label": t("x_open_store", { store: name }), text: "↗" }) : null;
       const li = platTile(e.p, main, shop);
       if (top === e && es.filter((x) => x.popular).length > 1) li.classList.add("best");
@@ -859,8 +866,8 @@
     const info = el("div", { class: "info" }, logo, title, ids.childElementCount ? ids : null,
       rings.childElementCount ? rings : null, rings.childElementCount ? ringHelp : null);
     // On a platform's own sheet: its store, and the way back to the game's sheet of all its platforms.
-    const p1 = es[0], shop = !multi && STORES[p1.p] && /^[\w-]+$/.test(p1.id)
-      ? el("a", { class: "chip store-link", href: STORES[p1.p](p1.id), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", text: `${t("x_open_store", { store: storeName(p1.p) })} ↗` }) : null;
+    const p1 = es[0], shop = !multi && storePage(p1)
+      ? el("a", { class: "chip store-link", href: storePage(p1), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", text: `${t("x_open_store", { store: storeName(p1.p) })} ↗` }) : null;
     const whole = !multi && m.unified ? el("a", { class: "chip whole", href: gameHref("u", m.unified), text: `◂ ${t("x_global_sheet")}` }) : null;
     const top = whole || shop ? el("div", { class: "topline" }, whole, shop) : null;
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
@@ -873,7 +880,7 @@
     sheet.classList.toggle("with-backdrop", !!wide);
     // The way back, the steps through the list and the heart float in the window's corners and bottom; outside the
     // head, whose entrance animation would make it their frame.
-    sheet.append(back, pager(es), heart(m, es), head);
+    sheet.append(...[back, pager(es), heart(m, es), head].filter(Boolean));
     if (!multi) {
       sheet.append(el("span", { class: "sheet-wm", "aria-hidden": "true" }, icon(PC.has(es[0].p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[es[0].p] || es[0].p.toUpperCase() })));
     }
@@ -887,7 +894,6 @@
       let n = 0, sum = 0;
       for (const e of es) for (const r of [e.reviews, e.rating]) if (r && r[0]) { n += r[0]; sum += r[0] * r[1]; }
       if (n) stat(t("x_pooled_label"), t("x_pooled_value", { p: num(Math.round(sum / n)), n: num(n) }));
-      stat(t("x_platforms_count"), num(es.length));
       const known = es.map((e) => (e.popular ? e.popular[0] : 0)).filter(Boolean);
       if (known.length) stat(t("x_score_avg"), fmt1.format(known.reduce((a, b) => a + b, 0) / known.length));
     } else {
@@ -967,7 +973,9 @@
     if (technical) side.append(technical);
 
     if (es.length > 1) {
-      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...platformTiles(es)), timeline(es)));
+      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...platformTiles(es)),
+        // The rings on the tiles are the game's renown on that platform (not a rating): said once, under them.
+        es.some((e) => e.popular) ? el("p", { class: "dim ring-note", text: `${t("x_score")} / 100` }) : null, timeline(es)));
     }
 
     // The first lines of the Wikipedia page, in the visitor's language else English, with its credit (CC BY-SA 4.0).
@@ -1019,7 +1027,7 @@
     if (m.family && m.family[1].length > 1) {
       main.append(section(`${t("x_series")} · ${labelOf("series", m.family[0])}`, el("ul", { class: "cardgrid family carousel" }, ...m.family[1].map(([kind, ref, name, when, pic]) => {
         const here = es.some((e) => e.p === kind && e.id === ref);
-        const c = card(gameHref(kind, ref), kind, ref, name, when ? [el("span", { class: "dim", text: String(Math.floor(when / 10000)) })] : [], pic);
+        const c = card(gameHref(kind, ref), kind, ref, name, realDay(when) ? [el("span", { class: "dim", text: String(Math.floor(when / 10000)) })] : [], pic);
         if (here) { c.setAttribute("aria-current", "page"); c.classList.add("here"); }
         return el("li", {}, c);
       }))));
@@ -1030,7 +1038,9 @@
     // Nor the games of its series, which have their own row above.
     const kin = new Set(), kinNames = new Set();
     for (const [k, r, n] of (m.family && m.family[1]) || []) { kin.add(`${k}/${r}`); if (n) kinNames.add(fold(n)); }
-    const alike = (m.similar || []).filter(([kind, ref, name]) => !(kind === "u" && ref === m.qid) && !es.some((e) => e.p === kind && e.id === ref)
+    // Below ALIKE_MIN % it is a stretch, not a game like it: left out (no row at all if none is left).
+    const ALIKE_MIN = 30;
+    const alike = (m.similar || []).filter(([kind, ref, name, s]) => s >= ALIKE_MIN && !(kind === "u" && ref === m.qid) && !es.some((e) => e.p === kind && e.id === ref)
       && !(name && m.name && fold(name) === fold(m.name)) && !kin.has(`${kind}/${ref}`) && !(name && kinNames.has(fold(name))));
     if (alike.length) {
       // On a sheet of several platforms a game that is on one only says which; the figure is how alike, not how known.
@@ -1067,8 +1077,12 @@
         if (p === "ps_product") continue;
         for (const other of ids) {
           const inData = PLATFORMS.includes(p) && !es.some((e) => e.p === p);
-          items.push(el("li", {}, el("span", { class: "badge", text: STORE_NAMES[p] || p }),
-            inData ? el("a", { href: gameHref(p, other) }, el("code", { text: other })) : el("code", { text: other }),
+          // A machine's id is the game's Wikidata item, shown on the platform's own sheet: the link says where it goes,
+          // not the id. The PlayStation's ids are those of its store (concepts, products), not of a machine.
+          const label = /^ps(_product)?$/.test(p) ? "PlayStation Store" : STORE_NAMES[p] || p;
+          if (inData) { items.push(el("li", {}, el("a", { class: "out-link", href: gameHref(p, other), text: `${label} →` }))); continue; }
+          items.push(el("li", {}, el("span", { class: "badge", text: label }),
+            el("code", { text: other }),
             STORES[p] ? el("a", { class: "out", href: STORES[p](other), rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: "↗", "aria-label": `${STORE_NAMES[p]} ${other}` }) : null));
         }
       }
@@ -1246,7 +1260,7 @@
   // The sheet of one platform's game, as renderSheet and the comparison take it.
   function platformSheet(platform, id, g) {
     const entry = { p: platform, id };
-    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
+    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of", "slug"]) if (g[k]) entry[k] = g[k];
     return { name: g.name, id, qid: g.qid, unified: g.unified ? g.qid : "", wd: g.wd, platforms: [entry], traits: g.traits,
       similar: (g.similar || []).map(([o, name, s, pic, shared]) => [platform, o, name, s, pic, shared]),
       family: g.family ? [g.family[0], g.family[1].map((r) => [platform, ...r])] : null, links: g.links };
@@ -1349,7 +1363,7 @@
   // first, a page at a time. Every filter narrows (a game must have all the
   // values picked); the rows are filtered here, in the browser.
   const FACETS = ["genres", "themes", "modes", "perspectives", "styles", "moods", "gameplay", "content", "access", "series", "developers", "publishers", "tags", "year"];
-  const SORTS = ["popular", "trending", "critics", "year", "name"];
+  const SORTS = ["popular", "atlas", "trending", "critics", "year", "name"];
   const STEP = 50;
   const FEW = 6;           // the values a facet shows before its "See all"
   let B = null;            // what is loaded of the platform being browsed
@@ -1489,7 +1503,7 @@
       const c = new Intl.Collator(LANG);
       return ids.slice().sort((x, y) => c.compare(R[x][1], R[y][1]) || x - y);
     }
-    const col = { trending: 3, critics: 4, year: 5 }[how];
+    const col = { trending: 3, critics: 4, year: 5, atlas: 6 }[how];
     return ids.slice().sort((x, y) => (R[y][col] - R[x][col]) || x - y);
   }
 
@@ -1548,7 +1562,7 @@
   function draw(b) {
     const { ids, found, how } = V;
     results.replaceChildren(...ids.slice(0, limit).map((i) => {
-      const [id, name, s, tr, critics, year, pic] = b.rows[i];
+      const [id, name, s, tr, critics, year, , pic] = b.rows[i];
       return row(b.platform, id, name, [score(s), trend(tr),
         crit(critics),
         year ? el("span", { class: "dim", text: String(year) }) : null], pic);
@@ -1682,6 +1696,7 @@
     const { platform, view, arg, query } = route();
     // On a sheet the page's own heading folds to a line: the sheet is what is read.
     document.body.classList.toggle("x-on-sheet", view === "game" || view === "ugame" || view === "compare");
+    if (!document.body.classList.contains("x-on-sheet")) { document.body.classList.remove("x-controls-open"); foldBtn.setAttribute("aria-expanded", "false"); foldBtn.textContent = `${t("x_platform")} ▾`; }
     if (barOff && view !== "game" && view !== "ugame") barOff();
     const tr = trail();
     restore = tr && tr.hash === location.hash && !["game", "ugame", "compare", "favorites"].includes(view) ? tr : null;
@@ -1708,6 +1723,15 @@
       setStatus(t("x_error"));
     }
   }
+
+  // On a sheet the platforms, machines and views fold behind a button (the CSS does it; the search stays).
+  const foldBtn = el("button", { type: "button", class: "chip controls-toggle", "aria-expanded": "false", "aria-controls": "x-platforms", text: `${t("x_platform")} ▾` });
+  foldBtn.addEventListener("click", () => {
+    const open = document.body.classList.toggle("x-controls-open");
+    foldBtn.setAttribute("aria-expanded", String(open));
+    foldBtn.textContent = `${t("x_platform")} ${open ? "▴" : "▾"}`;
+  });
+  document.querySelector(".controls").prepend(foldBtn);
 
   const layout = document.getElementById("x-layout");
   function syncLayout() {

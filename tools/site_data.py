@@ -208,9 +208,38 @@ def picture(platform: str, gid: str, game, link, store: dict, long_ok: bool) -> 
     return ""
 
 
+def atlas_score(score: list, game) -> int:
+    """The Atlas score of a game on one platform, 0 when no signal backs it: the same weights as `atlasScore()` of
+    explore.js, which pools a game's platforms (the list scores a platform's own).
+      critics 35 %  the critics' score, store 30 %  the stores' good reviews pulled toward 70 as if 40 more were read,
+      players 15 %  IGDB's players' rating (20 ratings or more) pulled toward 70 as if 30 more were read,
+      reach 20 %  the square root of the renown back on 100; the weights are worked out over the signals there are,
+      and one of the three quality signals at least is needed."""
+    game = game if isinstance(game, dict) else {}
+    parts = []                                                  # [value, weight]
+    if len(score) > 2 and score[2]:
+        parts.append((score[2], 0.35))
+    n = total = 0
+    for r in (game.get("reviews"), game.get("rating")):
+        if r and r[0]:
+            n += r[0]
+            total += r[0] * r[1]
+    if n:
+        parts.append(((total + 40 * 70) / (n + 40), 0.3 * (n / (n + 100))))
+    rating = game.get("igdb_rating")
+    if rating and rating[1] >= 20:
+        parts.append(((rating[1] * rating[0] + 30 * 70) / (rating[1] + 30), 0.15 * (rating[1] / (rating[1] + 30))))
+    if not parts:
+        return 0
+    if score and score[0] > 0:
+        parts.append((100 * (score[0] / 100) ** 0.5, 0.2))
+    weights = sum(w for _, w in parts)
+    return int(sum(v * w for v, w in parts) / weights + 0.5)
+
+
 def browse(best: list, games: dict, names: dict, tags: dict, spelled: dict = None, pic=None) -> tuple:
     """The browse index of the named games in `best` ([(id, [score, trend, critics])],
-    best first): (facets, pages), the facets as {facet: [[value, count]]} and
+    best first): (facets, pages), a row being [id, name, score, trend, critics, year, Atlas score, picture], and the facets as {facet: [[value, count]]} and
     each page as {"games": rows, "facets": {facet: [[value number, row gaps]]}}."""
     rows, found = [], {k: {} for k in (*FACETS, "year")}
     for gid, score in [b for b in best if names.get(b[0])]:
@@ -227,7 +256,7 @@ def browse(best: list, games: dict, names: dict, tags: dict, spelled: dict = Non
                     found[kind].setdefault(value, []).append(len(rows))
             if year:
                 found["year"].setdefault(str(year), []).append(len(rows))
-        row = [gid, names[gid], *(list(score) + [0, 0, 0])[:3], year]
+        row = [gid, names[gid], *(list(score) + [0, 0, 0])[:3], year, atlas_score(list(score), game)]
         ref = pic(gid, False) if pic else ""
         rows.append(row + [ref] if ref else row)
     kept = {}
@@ -440,7 +469,7 @@ def unify(entries: dict, similar_of: dict) -> dict:
     for p in order:
         gid, sheet = entries[p]
         entry = {"p": p, "id": gid}
-        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of"):
+        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of", "slug"):
             if k in sheet:
                 entry[k] = sheet[k]
         out["platforms"].append(entry)
@@ -604,7 +633,7 @@ def build(data_dir: str, out_dir: str) -> dict:
                 traits = trait_names(game, tags, spelled)
                 if traits:
                     sheet["traits"] = traits
-                for k in ("release", "reviews", "rating", "gamepass", "qid", "igdb_rating", "igdb_cover", "igdb_art"):
+                for k in ("release", "reviews", "rating", "gamepass", "qid", "slug", "igdb_rating", "igdb_cover", "igdb_art"):
                     if game.get(k):
                         sheet[k] = game[k]
                 if isinstance(game.get("steam"), dict):
