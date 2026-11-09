@@ -579,6 +579,24 @@ button.layout:hover { color: var(--snow); }
   .sortbox select { width: 100%; }
 }
 
+/* On a phone a row's picture is its backdrop, under a shade that darkens toward the rank and the name, a little
+   blurred: the left column it took is the name's and the figures'. */
+@media (max-width: 700px) {
+  .results:not(.cards) li:not(.fav-item) > a { position: relative; isolation: isolate; overflow: hidden; grid-template-columns: 2rem minmax(0, 1fr); min-height: 76px; padding: 12px 14px 12px 8px; }
+  .results:not(.cards) li:not(.fav-item) > a .cover.thumb { position: absolute; inset: 0; z-index: -2; grid-row: auto; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; }
+  .results:not(.cards) li:not(.fav-item) > a .cover.thumb :is(img, svg) { filter: blur(2px) saturate(1.1); transform: scale(1.08); }
+  .results:not(.cards) li:not(.fav-item) > a::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(90deg, rgb(8 14 30 / 0.97) 0%, rgb(8 14 30 / 0.84) 48%, rgb(8 14 30 / 0.42) 100%);
+  }
+  .results:not(.cards) li:not(.fav-item) > a .name { text-shadow: 0 1px 8px rgb(0 0 0 / 0.8); }
+  .results:not(.cards) li:not(.fav-item) > a { min-height: 64px; padding-block: 10px; }
+  .results:not(.cards) li:not(.fav-item) > a .meta { flex-wrap: nowrap; gap: 4px 10px; }
+  .results:not(.cards) li:not(.fav-item) > a .meta .bar { width: 52px; }
+  .results:not(.cards) li:not(.fav-item) > a .meta :is(.trend, .crit) { min-width: 0; }
+  .results:not(.cards) li:not(.fav-item) > a .meta .crit { gap: 5px; padding-inline: 6px; }
+}
+
 /* The explorer's heading is short: the controls come up the screen. */
 .hero.small { padding-block: clamp(20px, 3.5vw, 36px) clamp(12px, 2vw, 20px); gap: 8px; }
 .hero.small h1 { font-size: clamp(1.75rem, 4.2vw, 2.5rem); max-width: none; }
