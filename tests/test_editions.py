@@ -25,6 +25,11 @@ class Editions(unittest.TestCase):
         self.assertEqual(editions.core("Hollow Manor Remastered"), "hollow manor remastered")
         self.assertEqual(editions.core("Fight Night Special"), "fight night special")
         self.assertEqual(editions.core("Lanterns + Embers"), "lanterns embers")
+        # A machine in brackets is the same game; other brackets are part of the name.
+        self.assertEqual(editions.core("Hollow Manor (Xbox Series X|S)"), "hollow manor")
+        self.assertEqual(editions.core("Hollow Manor [PlayStation 5]"), "hollow manor")
+        self.assertEqual(editions.core("Hollow Manor (Switch)"), "hollow manor")
+        self.assertEqual(editions.core("Hollow Manor (2004)"), "hollow manor 2004")
 
     def test_editions(self):
         titles = {
