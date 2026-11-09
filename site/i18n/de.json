@@ -417,5 +417,12 @@
   "x_views_peak": "Spitze: {n} Aufrufe pro Woche",
   "x_views_ago": "Vor {w} Wo.: {n}",
   "x_share": "Teilen",
-  "x_link_copied": "Link kopiert"
+  "x_link_copied": "Link kopiert",
+  "x_recent": "Zuletzt gesehen",
+  "x_help_title": "Tastenkürzel",
+  "x_help_search": "Suchen",
+  "x_help_list": "Durch die Liste gehen",
+  "x_help_sheet": "Vorheriges oder nächstes Spiel auf einer Seite",
+  "x_help_esc": "Schließen oder Suche leeren",
+  "x_fav_export": "Exportieren"
 }

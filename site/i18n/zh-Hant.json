@@ -417,5 +417,12 @@
   "x_views_peak": "峰值：每週 {n} 次",
   "x_views_ago": "{w} 週前：{n}",
   "x_share": "分享",
-  "x_link_copied": "連結已複製"
+  "x_link_copied": "連結已複製",
+  "x_recent": "最近瀏覽",
+  "x_help_title": "鍵盤快速鍵",
+  "x_help_search": "搜尋",
+  "x_help_list": "在清單中移動",
+  "x_help_sheet": "在詳情頁切換上一個或下一個遊戲",
+  "x_help_esc": "關閉或清空搜尋",
+  "x_fav_export": "匯出"
 }
