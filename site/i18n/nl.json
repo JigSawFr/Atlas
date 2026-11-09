@@ -424,5 +424,6 @@
   "x_help_list": "Door de lijst bewegen",
   "x_help_sheet": "Vorig of volgend spel op een pagina",
   "x_help_esc": "Sluiten of zoekveld legen",
-  "x_fav_export": "Exporteren"
+  "x_fav_export": "Exporteren",
+  "x_compare_with": "Vergelijk met…"
 }

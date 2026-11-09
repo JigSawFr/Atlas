@@ -424,5 +424,6 @@
   "x_help_list": "목록 이동",
   "x_help_sheet": "시트에서 이전·다음 게임",
   "x_help_esc": "닫기 또는 검색어 지우기",
-  "x_fav_export": "내보내기"
+  "x_fav_export": "내보내기",
+  "x_compare_with": "비교하기…"
 }

@@ -424,5 +424,6 @@
   "x_help_list": "Move through the list",
   "x_help_sheet": "Previous or next game on a sheet",
   "x_help_esc": "Close, or empty the search",
-  "x_fav_export": "Export"
+  "x_fav_export": "Export",
+  "x_compare_with": "Compare with…"
 }
