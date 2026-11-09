@@ -17,6 +17,8 @@ from taxonomy import company_key
 EDITION = re.compile(r"""\s*(?:[-:–—(]\s*)?(?:the\s+)?(?:digital\s+)?
   (?:deluxe|complete|definitive|ultimate|gold|premium|collector'?s|game\s+of\s+the\s+year|goty|anniversary|season\s+pass|expanded|standard)
   (?:\s+(?:edition|bundle|pack|version))?\)?\s*$""", re.I | re.X)
+# A platform in brackets after the name ("Grand Theft Auto V (Xbox Series X|S)"): the same game on its machine.
+PLATFORM_TAG = re.compile(r"\s*[(\[]\s*(?:xbox\b|playstation\s*[45]|ps\s*[45]\b|pc\b|windows\b|nintendo switch|switch\b|steam\b)[^)\]]*[)\]]\s*$", re.I)
 PLUS_DLC = re.compile(r"\s*\+\s*[^+]*\b(?:dlc|pack|expansion|season pass|add-?ons?)\b.*$", re.I)
 
 
@@ -24,6 +26,7 @@ def core(name):
     """A name without its edition words, folded for comparing."""
     n = re.sub(r"[™®©]", "", name or "").strip()
     n = PLUS_DLC.sub("", n)
+    n = PLATFORM_TAG.sub("", n)
     for _ in range(2):
         n = EDITION.sub("", n).strip(" -:–—")
     n = re.sub(r"\s+(?:edition|bundle)$", "", n, flags=re.I)

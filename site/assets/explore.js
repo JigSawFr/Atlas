@@ -55,8 +55,10 @@
   };
   const nf = new Intl.NumberFormat(LANG);
   const num = (n) => nf.format(n);
+  // Stores park a game without a date far in the future (9998-12-31, 9999-12-31): that is no date.
+  const realDay = (n) => (n && n < 90000000 ? n : 0);
   const ymd = (n) => {
-    if (!n) return "";
+    if (!realDay(n)) return "";
     const s = String(n);
     const d = new Date(Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)));
     return new Intl.DateTimeFormat(LANG, { dateStyle: "medium", timeZone: "UTC" }).format(d);
@@ -870,7 +872,7 @@
     sheet.classList.toggle("with-backdrop", !!wide);
     // The way back, the steps through the list and the heart float in the window's corners and bottom; outside the
     // head, whose entrance animation would make it their frame.
-    sheet.append(back, pager(es), heart(m, es), head);
+    sheet.append(...[back, pager(es), heart(m, es), head].filter(Boolean));
     if (!multi) {
       sheet.append(el("span", { class: "sheet-wm", "aria-hidden": "true" }, icon(PC.has(es[0].p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[es[0].p] || es[0].p.toUpperCase() })));
     }
@@ -964,7 +966,9 @@
     if (technical) side.append(technical);
 
     if (es.length > 1) {
-      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...platformTiles(es)), timeline(es)));
+      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...platformTiles(es)),
+        // The rings on the tiles are the game's renown on that platform (not a rating): said once, under them.
+        es.some((e) => e.popular) ? el("p", { class: "dim ring-note", text: `${t("x_score")} / 100` }) : null, timeline(es)));
     }
 
     // The first lines of the Wikipedia page, in the visitor's language else English, with its credit (CC BY-SA 4.0).
@@ -1016,7 +1020,7 @@
     if (m.family && m.family[1].length > 1) {
       main.append(section(`${t("x_series")} · ${labelOf("series", m.family[0])}`, el("ul", { class: "cardgrid family carousel" }, ...m.family[1].map(([kind, ref, name, when, pic]) => {
         const here = es.some((e) => e.p === kind && e.id === ref);
-        const c = card(gameHref(kind, ref), kind, ref, name, when ? [el("span", { class: "dim", text: String(Math.floor(when / 10000)) })] : [], pic);
+        const c = card(gameHref(kind, ref), kind, ref, name, realDay(when) ? [el("span", { class: "dim", text: String(Math.floor(when / 10000)) })] : [], pic);
         if (here) { c.setAttribute("aria-current", "page"); c.classList.add("here"); }
         return el("li", {}, c);
       }))));
@@ -1064,8 +1068,12 @@
         if (p === "ps_product") continue;
         for (const other of ids) {
           const inData = PLATFORMS.includes(p) && !es.some((e) => e.p === p);
-          items.push(el("li", {}, el("span", { class: "badge", text: STORE_NAMES[p] || p }),
-            inData ? el("a", { href: gameHref(p, other) }, el("code", { text: other })) : el("code", { text: other }),
+          // A machine's id is the game's Wikidata item, shown on the platform's own sheet: the link says where it goes,
+          // not the id. The PlayStation's ids are those of its store (concepts, products), not of a machine.
+          const label = /^ps(_product)?$/.test(p) ? "PlayStation Store" : STORE_NAMES[p] || p;
+          if (inData) { items.push(el("li", {}, el("a", { class: "out-link", href: gameHref(p, other), text: `${label} →` }))); continue; }
+          items.push(el("li", {}, el("span", { class: "badge", text: label }),
+            el("code", { text: other }),
             STORES[p] ? el("a", { class: "out", href: STORES[p](other), rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: "↗", "aria-label": `${STORE_NAMES[p]} ${other}` }) : null));
         }
       }
