@@ -16,9 +16,10 @@
         </div>
         <div class="searchbar">
           <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-search"></use></svg>
-          <input id="x-search" type="search" autocomplete="off" spellcheck="false" placeholder="{{x_search_hint}}" aria-label="{{x_search}}">
+          <input id="x-search" type="search" autocomplete="off" spellcheck="false" placeholder="{{x_search_hint}}" aria-label="{{x_search}}" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="x-suggest">
           <kbd aria-hidden="true">/</kbd>
           <button type="button" id="x-search-all" aria-pressed="false">{{x_search_all}}</button>
+          <ul class="suggest" id="x-suggest" role="listbox" aria-label="{{x_suggestions}}" hidden></ul>
         </div>
       </div>
       <div class="tabs" role="group" aria-label="{{x_view}}" id="x-views">
@@ -67,6 +68,10 @@
           </div>
         </div>
         <ol class="results" id="x-results"></ol>
+        <div class="empty" id="x-empty" hidden>
+          <p><strong>{{x_nothing}}</strong> <span class="dim">{{x_empty_hint}}</span></p>
+          <p class="empty-actions" id="x-empty-actions"></p>
+        </div>
         <p class="foot dim" id="x-foot"></p>
         <button type="button" class="more" id="x-more" hidden>{{x_more}}</button>
         <article class="sheet" id="x-sheet" hidden></article>
