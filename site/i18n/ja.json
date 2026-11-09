@@ -439,5 +439,7 @@
   "x_list_delete": "このリストを削除",
   "x_see_sheet": "詳細を見る",
   "x_roulette": "ゲームを抽選中…",
-  "x_fav_today": "本日発売：{name}"
+  "x_fav_today": "本日発売：{name}",
+  "x_palette": "ゲーム・プラットフォーム・表示へ移動",
+  "x_help_palette": "ゲーム・プラットフォーム・表示へ移動"
 }

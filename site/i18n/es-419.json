@@ -439,5 +439,7 @@
   "x_list_delete": "Eliminar esta lista",
   "x_see_sheet": "Ver la ficha",
   "x_roulette": "Sorteando un juego…",
-  "x_fav_today": "Sale hoy: {name}"
+  "x_fav_today": "Sale hoy: {name}",
+  "x_palette": "Ir a un juego, una plataforma o una vista",
+  "x_help_palette": "Ir a un juego, una plataforma o una vista"
 }

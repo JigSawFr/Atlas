@@ -439,5 +439,7 @@
   "x_list_delete": "이 목록 삭제",
   "x_see_sheet": "상세 보기",
   "x_roulette": "게임을 뽑는 중…",
-  "x_fav_today": "오늘 출시: {name}"
+  "x_fav_today": "오늘 출시: {name}",
+  "x_palette": "게임, 플랫폼, 보기로 이동",
+  "x_help_palette": "게임, 플랫폼, 보기로 이동"
 }

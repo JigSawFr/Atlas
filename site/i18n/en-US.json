@@ -439,5 +439,7 @@
   "x_list_delete": "Delete this list",
   "x_see_sheet": "See the sheet",
   "x_roulette": "Drawing a game…",
-  "x_fav_today": "Out today: {name}"
+  "x_fav_today": "Out today: {name}",
+  "x_palette": "Jump to a game, a platform or a view",
+  "x_help_palette": "Jump to a game, a platform or a view"
 }
