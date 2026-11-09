@@ -417,5 +417,12 @@
   "x_views_peak": "Peak: {n} reads a week",
   "x_views_ago": "{w} weeks ago: {n}",
   "x_share": "Share",
-  "x_link_copied": "Link copied"
+  "x_link_copied": "Link copied",
+  "x_recent": "Seen recently",
+  "x_help_title": "Keyboard shortcuts",
+  "x_help_search": "Search",
+  "x_help_list": "Move through the list",
+  "x_help_sheet": "Previous or next game on a sheet",
+  "x_help_esc": "Close, or empty the search",
+  "x_fav_export": "Export"
 }

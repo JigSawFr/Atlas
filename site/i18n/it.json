@@ -417,5 +417,12 @@
   "x_views_peak": "Picco: {n} letture a settimana",
   "x_views_ago": "{w} sett. fa: {n}",
   "x_share": "Condividi",
-  "x_link_copied": "Link copiato"
+  "x_link_copied": "Link copiato",
+  "x_recent": "Visti di recente",
+  "x_help_title": "Scorciatoie da tastiera",
+  "x_help_search": "Cerca",
+  "x_help_list": "Scorrere l'elenco",
+  "x_help_sheet": "Gioco precedente o successivo in una scheda",
+  "x_help_esc": "Chiudere o svuotare la ricerca",
+  "x_fav_export": "Esporta"
 }

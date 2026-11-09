@@ -809,12 +809,26 @@
     } catch (e) { return []; }
   };
   const keepFavs = (list) => { try { localStorage.setItem(FAVS, JSON.stringify(list.slice(-60))); } catch (e) { /* no storage: nothing kept */ } };
+  // The sheets opened last (this browser only): offered when the search box is focused and empty.
+  const RECENT = "atlas-recent";
+  const recents = () => {
+    try {
+      const list = JSON.parse(localStorage.getItem(RECENT) || "[]");
+      return Array.isArray(list) ? list.filter((f) => f && typeof f.k === "string" && f.k.includes("/")) : [];
+    } catch (e) { return []; }
+  };
+  const sheetKey = (m, es) => (es.length > 1 ? (m.qid ? `u/${m.qid}` : "") : `${es[0].p}/${es[0].id}`);
+  function noteRecent(m, es) {
+    const k = sheetKey(m, es);
+    if (!k) return;
+    try { localStorage.setItem(RECENT, JSON.stringify(recents().filter((r) => r.k !== k).concat({ k, name: m.name || m.id || "" }).slice(-12))); } catch (e) { /* not kept */ }
+  }
   const favHref = (k) => { const at = k.indexOf("/"); return gameHref(k.slice(0, at), k.slice(at + 1)); };
   const favButton = $("x-fav");
   const countFavs = () => { const n = favs().length; favButton.replaceChildren(t("x_favorites"), n ? el("span", { class: "n", text: num(n) }) : ""); };
   function heart(m, es) {
-    if (es.length > 1 && !m.qid) return null;
-    const k = es.length > 1 ? `u/${m.qid}` : `${es[0].p}/${es[0].id}`;
+    const k = sheetKey(m, es);
+    if (!k) return null;
     const b = el("button", { type: "button", class: "fav fab" });
     const draw = () => {
       const on = favs().some((f) => f.k === k), label = t(on ? "x_fav_remove" : "x_fav_add");
@@ -913,6 +927,7 @@
     }
     if (wide) sheet.append(backdrop(shown.backdrops, shown.poster));
     sheet.classList.toggle("with-backdrop", !!wide);
+    noteRecent(m, es);
     // The way back, the steps through the list and the heart float in the window's corners and bottom; outside the
     // head, whose entrance animation would make it their frame.
     sheet.append(...[back, pager(es), heart(m, es), share(m), head].filter(Boolean));
@@ -1345,6 +1360,18 @@
       return;
     }
     const picked = new Set(), boxes = [];
+    const exportBtn = el("button", { type: "button", class: "compare", text: t("x_fav_export") });
+    exportBtn.addEventListener("click", () => {
+      // A document read elsewhere carries its `schema` (an integer, as the data's formats do).
+      const base = location.origin + location.pathname;
+      const doc = { schema: 1, games: list.map((f) => ({ name: f.name || "", key: f.k, url: base + favHref(f.k) })) };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }));
+      const a = el("a", { href: url, download: "atlas-favorites.json" });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
     const compare = el("button", { type: "button", class: "compare", disabled: "", text: t("x_compare_pick") });
     const sync = () => {
       compare.disabled = picked.size < 2;
@@ -1361,7 +1388,7 @@
       drop.addEventListener("click", () => { keepFavs(favs().filter((x) => x.k !== f.k)); countFavs(); favoritesView(); });
       return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), drop);
     });
-    results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), compare), ...items);
+    results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, exportBtn, compare)), ...items);
     setStatus(`${t("x_favorites")} · ${num(list.length)}`);
   }
 
@@ -1765,7 +1792,24 @@
     draw(B);
   }));
 
+  // From a list to a game's sheet, the picture pressed grows into the sheet's (View Transitions, for visitors who have
+  // not asked for less motion); elsewhere the page changes as ever.
+  let flying = null;
   async function show() {
+    const { view } = route(), toSheet = view === "game" || view === "ugame";
+    if (!flying || !toSheet || !document.startViewTransition || !MOTION.matches) { flying = null; return render(); }
+    const pic = flying;
+    flying = null;
+    const move = document.startViewTransition(async () => {
+      await render();
+      pic.style.removeProperty("view-transition-name");
+      const target = sheet.querySelector(".backdrop, .cover");
+      if (target) target.style.setProperty("view-transition-name", "game-pic");
+    });
+    move.finished.finally(() => { const t2 = sheet.querySelector("[style*='game-pic']"); if (t2) t2.style.removeProperty("view-transition-name"); });
+  }
+
+  async function render() {
     const { platform, view, arg, query } = route();
     // On a sheet the page's own heading folds to a line: the sheet is what is read.
     document.body.classList.toggle("x-on-sheet", view === "game" || view === "ugame" || view === "compare");
@@ -1939,6 +1983,8 @@
     if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || !/^#(game|[\w-]+\/game)\//.test(a.getAttribute("href"))) return;
     const rows = [...results.querySelectorAll("a[href^='#']")].filter((x) => /^#(game|[\w-]+\/game)\//.test(x.getAttribute("href"))).slice(0, 400)
       .map((x) => [x.getAttribute("href"), ((x.querySelector(".name") || x).textContent || "").trim()]);
+    const pic = a.querySelector("figure, img");
+    if (pic && document.startViewTransition) { pic.style.setProperty("view-transition-name", "game-pic"); flying = pic; }
     try { sessionStorage.setItem(TRAIL, JSON.stringify({ hash: location.hash, y: Math.round(window.scrollY), n: results.children.length, rows })); } catch (err) { /* no storage: no trail */ }
   });
   // The arrows step through the list a sheet was opened from.
@@ -1994,6 +2040,22 @@
   }
   async function suggest() {
     const word = search.value.trim(), q = fold(word), r = route();
+    if (!q) {
+      const last = recents().slice().reverse().slice(0, 6);
+      if (!last.length || r.view === "searchall") return suggestClose();
+      suggestAt = -1;
+      search.removeAttribute("aria-activedescendant");
+      suggestBox.dataset.title = t("x_recent");
+      suggestBox.replaceChildren(...last.map((f, i) => {
+        const li = el("li", { role: "option", id: `x-sug-${i}`, "aria-selected": "false", text: f.name || f.k });
+        li.addEventListener("click", () => { suggestClose(); go(favHref(f.k)); });
+        return li;
+      }));
+      suggestBox.hidden = false;
+      search.setAttribute("aria-expanded", "true");
+      return;
+    }
+    suggestBox.dataset.title = "";
     if (q.length < 2 || r.view === "searchall" || /^[0-9a-f]{16}$/i.test(q)) return suggestClose();
     let names;
     try { names = await get(`x/${r.platform}/names.json`); } catch (e) { return suggestClose(); }
@@ -2019,6 +2081,7 @@
     suggestBox.hidden = false;
     search.setAttribute("aria-expanded", "true");
   }
+  search.addEventListener("focus", () => { if (!search.value.trim()) suggest(); });
   suggestBox.addEventListener("pointerdown", (e) => e.preventDefault());       // the box keeps focus while a line is pressed
   search.addEventListener("blur", suggestClose);
   window.addEventListener("hashchange", () => { if (!/\/search\//.test(location.hash)) suggestClose(); });
@@ -2079,6 +2142,23 @@
   WIDE.addEventListener("change", syncMini);
   window.addEventListener("hashchange", () => requestAnimationFrame(syncMini));
   new MutationObserver(syncMini).observe(filtersBtn, { attributes: true, childList: true, subtree: true, attributeFilter: ["hidden"] });
+
+  // "?" lists the keys.
+  let help = null;
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "?" || e.ctrlKey || e.metaKey || e.altKey || e.target.closest("input, select, textarea, [contenteditable], dialog") || typeof HTMLDialogElement === "undefined") return;
+    e.preventDefault();
+    if (!help) {
+      const rows = [["/", "x_help_search"], ["↑ ↓", "x_help_list"], ["← →", "x_help_sheet"], ["Esc", "x_help_esc"], ["?", "x_help_title"]];
+      const close = el("button", { type: "button", class: "viewer-btn close", "aria-label": t("x_close"), text: "✕" });
+      help = el("dialog", { class: "help", "aria-label": t("x_help_title") }, el("h3", { text: t("x_help_title") }),
+        el("dl", {}, ...rows.map(([key, text]) => el("div", {}, el("dt", {}, el("kbd", { text: key })), el("dd", { text: t(text) })))), close);
+      close.addEventListener("click", () => help.close());
+      help.addEventListener("click", (ev) => { if (ev.target === help) help.close(); });
+      document.body.append(help);
+    }
+    help.showModal();
+  });
 
   window.addEventListener("hashchange", show);
   countFavs();

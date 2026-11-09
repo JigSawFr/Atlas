@@ -417,5 +417,12 @@
   "x_views_peak": "최고: 주당 {n}회",
   "x_views_ago": "{w}주 전: {n}",
   "x_share": "공유",
-  "x_link_copied": "링크를 복사했습니다"
+  "x_link_copied": "링크를 복사했습니다",
+  "x_recent": "최근 본 게임",
+  "x_help_title": "키보드 단축키",
+  "x_help_search": "검색",
+  "x_help_list": "목록 이동",
+  "x_help_sheet": "시트에서 이전·다음 게임",
+  "x_help_esc": "닫기 또는 검색어 지우기",
+  "x_fav_export": "내보내기"
 }

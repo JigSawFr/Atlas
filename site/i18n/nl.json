@@ -417,5 +417,12 @@
   "x_views_peak": "Piek: {n} keer gelezen per week",
   "x_views_ago": "{w} wkn geleden: {n}",
   "x_share": "Delen",
-  "x_link_copied": "Link gekopieerd"
+  "x_link_copied": "Link gekopieerd",
+  "x_recent": "Recent bekeken",
+  "x_help_title": "Sneltoetsen",
+  "x_help_search": "Zoeken",
+  "x_help_list": "Door de lijst bewegen",
+  "x_help_sheet": "Vorig of volgend spel op een pagina",
+  "x_help_esc": "Sluiten of zoekveld legen",
+  "x_fav_export": "Exporteren"
 }

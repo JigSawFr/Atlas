@@ -1044,3 +1044,23 @@ a.chip.store-link { border-color: color-mix(in srgb, var(--tint, #33bbff) 55%, t
 @media (max-width: 699px) {
   .cardgrid.carousel { -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); mask-image: linear-gradient(to right, #000 88%, transparent); }
 }
+
+/* Seen recently: the suggestions' box, titled, when the search is focused and empty. */
+.suggest[data-title]:not([data-title=""])::before { content: attr(data-title); display: block; padding: 6px 12px 4px; font: 600 0.6875rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mist); }
+/* The screenshots' places hold a quiet shimmer until the pictures come. */
+.shots a { background: var(--night); border-radius: 12px; }
+@media (prefers-reduced-motion: no-preference) {
+  .shots a { background: linear-gradient(100deg, var(--night) 30%, color-mix(in srgb, var(--snow) 7%, var(--night)) 50%, var(--night) 70%) 0 0 / 200% 100%; animation: sweep 1.4s linear infinite; }
+}
+.fav-actions { display: inline-flex; gap: 8px; }
+/* The keys' help. */
+dialog.help { width: min(92vw, 28rem); padding: 20px 22px; border: 1px solid var(--night-line); border-radius: 16px; background: var(--night); color: var(--snow); }
+dialog.help::backdrop { background: rgb(2 6 16 / 0.7); }
+dialog.help h3 { margin: 0 0 12px; font: 600 1.125rem var(--display); }
+dialog.help dl { margin: 0; display: grid; gap: 10px; }
+dialog.help dl div { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: 12px; align-items: center; }
+dialog.help dt kbd { display: inline-block; min-width: 2rem; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--night-line); background: var(--abyss); font: 600 0.8125rem var(--mono); text-align: center; }
+dialog.help dd { margin: 0; color: var(--mist); }
+dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
+/* The picture of the game opened flies from the list to the sheet (a browser that has view transitions; explore.js names the two). */
+::view-transition-group(game-pic) { animation-duration: 0.35s; }
