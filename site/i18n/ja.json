@@ -450,5 +450,7 @@
   "x_note": "メモ",
   "x_fav_share": "リストを共有",
   "x_fav_shared": "共有されたリスト",
-  "x_fav_shared_add": "お気に入りに追加"
+  "x_fav_shared_add": "お気に入りに追加",
+  "x_st_timeline": "年ごとの発売",
+  "x_st_map": "ジャンルマップ"
 }

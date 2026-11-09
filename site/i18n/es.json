@@ -450,5 +450,7 @@
   "x_note": "Una nota",
   "x_fav_share": "Compartir la lista",
   "x_fav_shared": "Una lista compartida contigo",
-  "x_fav_shared_add": "Añadir a mis favoritos"
+  "x_fav_shared_add": "Añadir a mis favoritos",
+  "x_st_timeline": "Lanzamientos por año",
+  "x_st_map": "Mapa de géneros"
 }

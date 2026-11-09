@@ -1598,6 +1598,23 @@
       const ys = st.years.map(([y, n, c]) => [String(y), n, `${t("x_st_tip_year", { year: y, n: num(n) })}${c ? ` · ${avg(c)}` : ""}`]);
       parts.push(section(t("x_st_years"), ...columns(ys, 5, t("x_year"))));
     }
+    // The timeline: a track to scroll sideways, a column a year with its best known games.
+    if (st.by_year && st.years.length > 2) {
+      const cols = st.years.slice().reverse().map(([y, n]) => el("li", { class: "yr" }, el("h4", {}, el("span", { text: String(y) }), el("small", { text: t("x_count", { n: num(n) }) })),
+        el("ul", {}, ...(st.by_year[String(y)] || []).map(([id, name, r, pic]) => el("li", {}, card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [score(r)], pic))))));
+      parts.push(section(t("x_st_timeline"), el("ol", { class: "timeline-years", tabindex: "0", "aria-label": t("x_st_timeline") }, ...cols)));
+    }
+    // The genres as a map of bubbles: the area of each follows the number of games; a press opens the genre.
+    if (st.genres.length > 3) {
+      const top = Math.max(...st.genres.map((g) => g[1])), bubbles = st.genres.map(([g, n]) => {
+        const d = Math.round(72 + 96 * Math.sqrt(n / top));
+        const a = el("a", { class: "bubble", href: browseBy("genres", g), title: `${labelOf("genres", g)} · ${num(n)}` }, iconOf("genres", g), el("span", { class: "bn", text: labelOf("genres", g) }), el("small", { text: num(n) }));
+        a.style.setProperty("--d", `${d}px`);
+        a.style.setProperty("--h", String(hueOf(g)));
+        return a;
+      });
+      parts.push(section(t("x_st_map"), el("div", { class: "bubbles" }, ...bubbles)));
+    }
     const grid = el("div", { class: "fig-grid" });
     if (st.genres.length) grid.append(section(t("x_st_genres"), hbars(st.genres.map(([g, n, c]) => [labelOf("genres", g), n, avg(c), browseBy("genres", g), iconOf("genres", g)]))));
     if (st.modes && st.modes.length) grid.append(section(t("x_modes"), hbars(st.modes.map(([m, n]) => [labelOf("modes", m), n, "", browseBy("modes", m), iconOf("modes", m)]))));

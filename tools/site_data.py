@@ -363,6 +363,7 @@ def similar_row(o: str, name: str, score: int, pic: str, shared: list) -> list:
 
 STAT_TOP = 12           # genres, studios and publishers a platform's figures name
 STAT_LIST = 10          # games in its best rated and hidden gems
+STAT_YEAR_LIST = 3     # the best known games the timeline shows for a year
 STAT_YEARS = 30         # years of releases it counts, the latest
 
 
@@ -454,7 +455,7 @@ def stats(platform: str, best: list, games: dict, names: dict, tags: dict, spell
     hist = [0] * 10
     for c in critics:
         hist[min(9, max(0, int(c) // 10))] += 1
-    years, groups = {}, {"genres": {}, "developers": {}, "publishers": {}, "modes": {}}
+    years, groups, per_year = {}, {"genres": {}, "developers": {}, "publishers": {}, "modes": {}}, {}
     for gid, sc in rows:
         game = games.get(gid)
         if not isinstance(game, dict):
@@ -462,6 +463,7 @@ def stats(platform: str, best: list, games: dict, names: dict, tags: dict, spell
         year = year_of(game)
         if year:
             years.setdefault(year, []).append(sc[2])
+            per_year.setdefault(year, []).append((-sc[0], gid))
         traits = trait_names(game, tags, spelled)
         for kind, found in groups.items():
             for value in dict.fromkeys(traits.get(kind, ())):
@@ -491,6 +493,8 @@ def stats(platform: str, best: list, games: dict, names: dict, tags: dict, spell
         "critics": {"n": len(critics), "mean": mean(critics), "median": median(critics), "hist": hist},
         "renown": {"mean": mean(renown), "median": median(renown), "q": quantiles(renown)},
         "years": [[y, len(years[y]), mean([c for c in years[y] if c])] for y in latest],
+        # each of those years' best known games, for the timeline: {year: [[id, name, renown, picture], ...]}
+        "by_year": {str(y): [[g, names[g], -r, *([pic(g, False)] if pic(g, False) else [])] for r, g in sorted(per_year[y])[:STAT_YEAR_LIST]] for y in latest},
         "genres": top("genres"), "developers": top("developers", 3), "publishers": top("publishers", 3),
         "modes": [[v, len(scs)] for v, scs in sorted(groups["modes"].items(), key=lambda x: (-len(x[1]), x[0]))[:6]],
         "best": named(best_rated), "gems": named(gems),
