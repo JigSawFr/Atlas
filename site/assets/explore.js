@@ -717,6 +717,12 @@
     return bar;
   }
 
+  // The way back, a round button kept in the corner (the label says where it goes, when it is not the list).
+  function roundBack(href, where) {
+    const label = where ? `${t("x_back")} · ${where}` : t("x_back");
+    return el("a", { class: "back fab", href, title: label, "aria-label": label, text: "←" });
+  }
+
   // The Atlas score of a game on its platforms, worked out here from what the sheet already holds:
   //   critics  35 %  the mean of the critics' scores of its platforms
   //   store    30 %  the stores' shares of good reviews, pooled by how many reviews each has, pulled toward 70 as if
@@ -820,7 +826,7 @@
     sheet.classList.toggle("platform", !multi);
     if (multi) sheet.style.removeProperty("--tint"); else sheet.style.setProperty("--tint", TINTS[es[0].p] || `hsl(${hueOf(es[0].p)} 60% 50%)`);
     // The way back is a round button that stays in the corner of the window, not a link on the picture.
-    const back = el("a", { class: "back fab", href: backHref, title: t("x_back"), "aria-label": t("x_back"), text: "←" });
+    const back = roundBack(backHref);
     const shown = pictures(es);
     const wide = shown.backdrops.length || shown.poster;
     const cover = wide ? null : shown.hero ? pictureCover(m, shown.hero, "hero") : drawnCover(m);
@@ -1202,7 +1208,7 @@
     const part = await get(`x/u/${shard(qid, meta.shards)}.json`);
     const u = part[qid];
     if (!u) {
-      sheet.replaceChildren(el("a", { class: "back", href: backTo(from || PLATFORMS[0]) }, `← ${t("x_back")}`), el("p", { text: t("x_not_found") }));
+      sheet.replaceChildren(roundBack(backTo(from || PLATFORMS[0])), el("p", { text: t("x_not_found") }));
       sheet.hidden = false;
       setStatus("");
       return;
@@ -1232,7 +1238,7 @@
       return unified(g.qid);
     }
     if (!g) {
-      sheet.replaceChildren(el("a", { class: "back", href: backTo(platform) }, `← ${t("x_back")}`), el("p", { text: t("x_not_found") }));
+      sheet.replaceChildren(roundBack(backTo(platform)), el("p", { text: t("x_not_found") }));
       sheet.hidden = false;
       setStatus("");
       return;
@@ -1303,7 +1309,7 @@
     pressed("x-views", "view", "favorites");
     setStatus(t("x_loading"));
     const got = (await Promise.all(query.getAll("g").slice(0, 3).map((k) => sheetOfKey(k).catch(() => null)))).filter(Boolean);
-    const back = el("a", { class: "back", href: `#${route().platform}/favorites` }, `← ${t("x_favorites")}`);
+    const back = roundBack(`#${route().platform}/favorites`, t("x_favorites"));
     sheet.hidden = false;
     sheet.classList.remove("with-backdrop");
     if (got.length < 2) {
