@@ -30,12 +30,13 @@
     ps4: "PlayStation 4", ps5: "PlayStation 5", "3ds": "Nintendo 3DS",
     xbox: "Xbox", gog: "GOG", epic: "Epic Games" };
   const status = $("x-status"), results = $("x-results"), sheet = $("x-sheet");
-  const search = $("x-search"), machine = $("x-machine");
+  const search = $("x-search");
   const panel = $("x-browse"), facetBox = $("x-facets"), sortBox = $("x-sort");
-  const more = $("x-more"), loadAll = $("x-loadall"), active = $("x-active");
-  // The filters' menus fold under one summary: open on a wide screen, folded on a phone (the list comes first).
-  const filters = $("x-filters"), filtersTitle = $("x-filters-title");
-  filters.open = window.matchMedia("(min-width: 701px)").matches;
+  const more = $("x-more"), loadAll = $("x-loadall"), active = $("x-active"), foot = $("x-foot");
+  const rtools = $("x-rtools"), filtersBtn = $("x-filters-btn"), filtersTitle = $("x-filters-title"), apply = $("x-apply");
+  const scrim = $("x-scrim"), menu = $("x-menu");
+  // The filters stand in a column from 900px; below, they rise from the bottom of the screen on a button's press.
+  const WIDE = window.matchMedia("(min-width: 900px)");
   const cache = new Map();
   let read = 0;
 
@@ -140,6 +141,7 @@
 
   function setStatus(text) {
     status.textContent = text;
+    foot.textContent = "";      // the small print under a list is set after its status, by the view that has one
   }
 
   function nameOf(id, name, platform) {
@@ -202,7 +204,13 @@
 
   function trend(v) {
     if (!v) return null;
-    return el("span", { class: v > 0 ? "trend up" : "trend down", text: `${v > 0 ? "+" : ""}${num(v)} %` });
+    return el("span", { class: v > 0 ? "trend up" : "trend down", title: t("x_trend") },
+      icon(v > 0 ? "i-ui-arrow-up" : "i-ui-arrow-down"), `${num(Math.abs(v))} %`);
+  }
+
+  // The critics' average as a badge, its colour from its value.
+  function crit(v) {
+    return v ? el("span", { class: `crit ${v >= 85 ? "high" : v >= 70 ? "mid" : "low"}`, title: t("x_critics_help") }, el("small", { text: t("x_critics") }), String(v)) : null;
   }
 
   function score(v) {
@@ -270,7 +278,7 @@
       const rows = lists[view] || [];
       for (const [id, name, s, tr, critics, pic] of rows) {
         results.append(row(platform, id, name, [score(s), trend(tr),
-          critics ? el("span", { class: "dim", text: `${t("x_critics")} ${critics}` }) : null], pic));
+          crit(critics)], pic));
       }
       count = rows.length;
       note = t(view === "trending" ? "x_trending_note" : "x_popular_note");
@@ -790,7 +798,7 @@
   const keepFavs = (list) => { try { localStorage.setItem(FAVS, JSON.stringify(list.slice(-60))); } catch (e) { /* no storage: nothing kept */ } };
   const favHref = (k) => { const at = k.indexOf("/"); return gameHref(k.slice(0, at), k.slice(at + 1)); };
   const favButton = $("x-fav");
-  const countFavs = () => { const n = favs().length; favButton.textContent = n ? `${t("x_favorites")} · ${num(n)}` : t("x_favorites"); };
+  const countFavs = () => { const n = favs().length; favButton.replaceChildren(t("x_favorites"), n ? el("span", { class: "n", text: num(n) }) : ""); };
   function heart(m, es) {
     if (es.length > 1 && !m.qid) return null;
     const k = es.length > 1 ? `u/${m.qid}` : `${es[0].p}/${es[0].id}`;
@@ -1357,6 +1365,7 @@
   const FACETS = ["genres", "themes", "modes", "perspectives", "styles", "moods", "gameplay", "content", "access", "series", "developers", "publishers", "tags", "year"];
   const SORTS = ["popular", "atlas", "trending", "critics", "year", "name"];
   const STEP = 50;
+  const FEW = 6;           // the values a facet shows before its "See all"
   let B = null;            // what is loaded of the platform being browsed
   let V = null;            // the games the filters keep, and how they are shown
   let limit = STEP;        // how many of them are listed
@@ -1365,8 +1374,15 @@
   let restore = null;      // the trail of the list being shown again, to put it back as it was
   let run = 0;
 
+  // The filters, the sort and the menu belong to Browse alone (`.b-only`).
+  function browseUi(on) {
+    panel.hidden = !on;
+    for (const e of document.querySelectorAll(".b-only")) e.hidden = !on;
+    if (!on) closeFilters(false);
+  }
+
   function leaveBrowse() {
-    panel.hidden = true;
+    browseUi(false);
     more.hidden = true;
     active.hidden = true;
   }
@@ -1435,15 +1451,34 @@
         options.push({ input, n, li, value, text: fold(`${name} ${value}`) });
         list.append(li);
       });
-      const find = el("input", { type: "search", autocomplete: "off", spellcheck: "false", placeholder: t("x_find_value"), "aria-label": `${t(`x_${kind}`)}: ${t("x_find_value")}` });
-      find.addEventListener("input", () => {
-        const q = fold(find.value.trim());
-        for (const o of options) o.li.hidden = !!q && !o.text.includes(q);
-      });
+      // A long list shows its first values and a "See all"; the box to find one in it comes with it.
+      const many = values.length > FEW + 2;
+      const box = { many, expanded: false, options };
+      const reflow = () => list.classList.toggle("all", !many || box.expanded || !!box.q);
+      let find = null, see = null;
+      if (many) {
+        find = el("input", { type: "search", autocomplete: "off", spellcheck: "false", placeholder: t("x_find_value"), "aria-label": `${t(`x_${kind}`)}: ${t("x_find_value")}` });
+        find.addEventListener("input", () => {
+          const q = box.q = fold(find.value.trim());
+          for (const o of options) o.li.hidden = !!q && !o.text.includes(q);
+          reflow();
+        });
+        see = el("button", { type: "button", class: "see", "aria-expanded": "false", text: t("x_see_all", { n: num(values.length) }) });
+        see.addEventListener("click", () => {
+          box.expanded = !box.expanded;
+          see.setAttribute("aria-expanded", String(box.expanded));
+          see.textContent = box.expanded ? t("x_see_less") : t("x_see_all", { n: num(values.length) });
+          reflow();
+        });
+      }
+      reflow();
       const title = el("span", { text: t(`x_${kind}`) });
-      const summary = el("summary", {}, icon(`i-k-${kind}`), title);
-      const details = el("details", { class: "facet" }, summary, el("div", { class: "facet-body" }, find, list));
-      b.boxes.set(kind, { title, details, options });
+      const count = el("span", { class: "count", hidden: "" });
+      const summary = el("summary", {}, icon(`i-k-${kind}`), title, count);
+      const details = el("details", { class: "facet" }, summary, el("div", { class: "facet-body" }, find, list, see));
+      details.open = kind === FACETS[0] && WIDE.matches;
+      Object.assign(box, { title, count, details, list });
+      b.boxes.set(kind, box);
       facetBox.append(details);
     }
   }
@@ -1512,12 +1547,16 @@
         }
         o.n.textContent = v.found.length && partial ? `≥ ${num(count)}` : num(count);
         o.li.classList.toggle("empty", !count && !checked && !partial);
+        o.li.classList.toggle("extra", box.many && i >= FEW && !checked);
         o.input.disabled = !count && !checked && !partial;
       });
-      box.title.textContent = chosen ? `${t(`x_${kind}`)} · ${chosen}` : t(`x_${kind}`);
+      box.count.textContent = chosen ? String(chosen) : "";
+      box.count.hidden = !chosen;
       if (chosen && !box.details.open) box.details.open = true;
     }
-    filtersTitle.textContent = v.found.length ? `${t("x_filters")} · ${num(v.found.length)}` : t("x_filters");
+    const picked = v.found.length ? `${t("x_filters")} · ${num(v.found.length)}` : t("x_filters");
+    filtersTitle.textContent = picked;
+    filtersBtn.lastElementChild.textContent = picked;
   }
 
   function draw(b) {
@@ -1525,7 +1564,7 @@
     results.replaceChildren(...ids.slice(0, limit).map((i) => {
       const [id, name, s, tr, critics, year, , pic] = b.rows[i];
       return row(b.platform, id, name, [score(s), trend(tr),
-        critics ? el("span", { class: "dim", text: `${t("x_critics")} ${critics}` }) : null,
+        crit(critics),
         year ? el("span", { class: "dim", text: String(year) }) : null], pic);
     }));
     bars(results);
@@ -1536,18 +1575,21 @@
       // A value the data does not know (an old link, a typo): nothing matches, and no page would change that.
       more.hidden = true;
       loadAll.hidden = true;
+      apply.textContent = t("x_show_n", { n: "0" });
       setStatus(t("x_nothing"));
       return;
     }
     const partial = b.loaded < b.f.pages;
     const total = found.length ? (partial ? `≥ ${num(ids.length)}` : num(ids.length)) : num(b.f.games);
-    const parts = [ids.length || !partial ? t("x_count_of", { shown: num(Math.min(limit, ids.length)), n: total }) : ""];
-    if (partial && (found.length || how !== "popular")) parts.push(t("x_browse_partial", { loaded: num(b.rows.length), total: num(b.f.games) }));
-    parts.push(t("x_loaded", { size: kb(read) }));
-    setStatus(parts.filter(Boolean).join(" · "));
+    apply.textContent = t("x_show_n", { n: total });
+    // The count on top; how much was read, and what the counts cover, in small print under the list.
+    const rest = [];
+    if (partial && (found.length || how !== "popular")) rest.push(t("x_browse_partial", { loaded: num(b.rows.length), total: num(b.f.games) }));
+    rest.push(t("x_loaded", { size: kb(read) }));
+    setStatus(!ids.length && !partial ? t("x_nothing") : ids.length || !partial ? t("x_count_of", { shown: num(Math.min(limit, ids.length)), n: total }) : "");
+    foot.textContent = rest.join(" · ");
     more.hidden = !(ids.length > limit || partial);
     loadAll.hidden = !(partial && how !== "popular");
-    if (!ids.length && !partial) setStatus(`${t("x_nothing")} · ${t("x_loaded", { size: kb(read) })}`);
   }
 
   // Pages are fetched while the games kept are fewer than the list wants.
@@ -1565,7 +1607,7 @@
     const mine = ++run;
     sheet.hidden = true;
     results.hidden = false;
-    panel.hidden = false;
+    browseUi(true);
     pressed("x-views", "view", "browse");
     lastBrowse = location.hash;
     setStatus(t("x_loading"));
@@ -1573,7 +1615,7 @@
     if (mine !== run) return;
     if (!b.f.pages) {
       results.replaceChildren();
-      panel.hidden = true;
+      browseUi(false);
       more.hidden = true;
       setStatus(t("x_nothing"));
       return;
@@ -1632,7 +1674,6 @@
     keepViews(savedViews().filter((v) => !(v.p === B.platform && v.name === name)).concat({ name, p: B.platform, q }));
     renderSaved();
   });
-  $("x-clear").addEventListener("click", () => { if (B) go(hashOf(B.platform, new URLSearchParams())); });
   $("x-random").addEventListener("click", () => {
     if (B && V && V.ids.length) go(`#${B.platform}/game/${encodeURIComponent(B.rows[V.ids[Math.floor(Math.random() * V.ids.length)]][0])}`);
   });
@@ -1662,7 +1703,14 @@
     statsBox.hidden = view !== "stats";
     tipBox.hidden = true;
     pressed("x-platforms", "platform", platform);
-    machine.value = [...machine.options].some((o) => o.value === platform) ? platform : "";
+    syncPlatform(platform);
+    pickerOpen(false);
+    $("x-search-all").setAttribute("aria-pressed", String(view === "searchall"));
+    rtools.hidden = !["browse", "popular", "trending", "upcoming", "search", "searchall"].includes(view);
+    // The first three of a ranking carry a trophy (site.css): a list that says "best" (best known, trending, or Browse
+    // sorted by a measure), not one sorted by name or date, nor a search.
+    results.classList.toggle("podium", view === "popular" || view === "trending"
+      || (view === "browse" && ["popular", "atlas", "trending", "critics"].includes(query.get("sort") || "popular")));
     try {
       if (view === "browse") await browse(platform, query);
       else if (view === "ugame") await unified(arg);
@@ -1693,7 +1741,7 @@
   function syncLayout() {
     results.classList.toggle("cards", cards);
     layout.setAttribute("aria-pressed", String(cards));
-    layout.textContent = cards ? "☰" : "▦";
+    layout.querySelector("use").setAttribute("href", cards ? "#i-ui-list" : "#i-ui-layout-grid");
     const label = t(cards ? "x_as_list" : "x_as_cards");
     layout.title = label;
     layout.setAttribute("aria-label", label);
@@ -1713,7 +1761,6 @@
     const keep = view === "game" || view === "ugame" || view === "search" || view === "searchall" ? "popular" : view;
     go(`#${b.dataset.platform}/${keep}`);
   });
-  machine.addEventListener("change", () => { if (machine.value) go(`#${machine.value}/popular`); });
   document.getElementById("x-views").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-view]");
     if (!b) return;
@@ -1724,14 +1771,84 @@
   search.addEventListener("input", () => {
     clearTimeout(timer);
     timer = setTimeout(() => {
-      const q = search.value.trim();
-      go(q ? `#${route().platform}/search/${encodeURIComponent(q)}` : `#${route().platform}/popular`);
+      const q = search.value.trim(), r = route();
+      go(q ? `#${r.view === "searchall" ? "all" : r.platform}/search/${encodeURIComponent(q)}` : `#${r.platform}/popular`);
     }, 250);
   });
+  // The scope of the search: this platform, or all of them (pressed); pressed again, back to this one.
   $("x-search-all").addEventListener("click", () => {
     clearTimeout(timer);       // the typing's own search, waiting its turn, would take the address back
-    const q = search.value.trim();
-    if (q) go(`#all/search/${encodeURIComponent(q)}`);
+    const q = search.value.trim(), r = route();
+    if (r.view === "searchall") go(q ? `#${r.platform}/search/${encodeURIComponent(q)}` : `#${r.platform}/popular`);
+    else if (q) go(`#all/search/${encodeURIComponent(q)}`);
+    else search.focus();
+  });
+
+  // The platform picker: a button with the platform's name and colour, a panel of every platform by group.
+  const pBtn = $("x-platform-btn"), pPanel = $("x-platform-panel"), pFind = $("x-platform-find"), pNone = $("x-platform-none");
+  const tintOf = (p) => TINTS[p] || `hsl(${hueOf(p)} 60% 50%)`;
+  function syncPlatform(platform) {
+    $("x-platform-name").textContent = (S._names && S._names[platform]) || platform;
+    pBtn.style.setProperty("--tint", tintOf(platform));
+  }
+  function filterPlatforms(q) {
+    const f = fold(q.trim());
+    let any = false;
+    for (const g of pPanel.querySelectorAll(".plat-group")) {
+      let seen = 0;
+      for (const b of g.querySelectorAll("button")) {
+        b.hidden = !!f && !fold(b.firstElementChild.textContent).includes(f) && !b.dataset.platform.includes(f);
+        if (!b.hidden) seen += 1;
+      }
+      g.hidden = !seen;
+      any = any || !!seen;
+    }
+    pNone.hidden = any;
+  }
+  function pickerOpen(on) {
+    if (pPanel.hidden === !on) return;
+    pPanel.hidden = !on;
+    pBtn.setAttribute("aria-expanded", String(on));
+    if (on) { pFind.value = ""; filterPlatforms(""); pFind.focus(); }
+  }
+  pBtn.addEventListener("click", () => pickerOpen(pPanel.hidden));
+  pFind.addEventListener("input", () => filterPlatforms(pFind.value));
+  pFind.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    const first = pPanel.querySelector(".plat-list button:not([hidden])");
+    if (first) { e.preventDefault(); first.click(); }
+  });
+  document.addEventListener("click", (e) => {
+    if (!pPanel.hidden && !e.target.closest(".picker")) pickerOpen(false);
+    if (menu.open && !menu.contains(e.target)) menu.open = false;
+  });
+
+  // The filters as a panel rising from the bottom (under 900px); the "More" menu.
+  function openFilters() {
+    panel.classList.add("open");
+    scrim.hidden = false;
+    document.documentElement.classList.add("x-lock");
+    filtersBtn.setAttribute("aria-expanded", "true");
+    $("x-filters-close").focus();
+  }
+  function closeFilters(focus) {
+    if (!panel.classList.contains("open")) return;
+    panel.classList.remove("open");
+    scrim.hidden = true;
+    document.documentElement.classList.remove("x-lock");
+    filtersBtn.setAttribute("aria-expanded", "false");
+    if (focus !== false) filtersBtn.focus();
+  }
+  filtersBtn.setAttribute("aria-expanded", "false");
+  filtersBtn.addEventListener("click", openFilters);
+  for (const e of [$("x-filters-close"), apply, scrim]) e.addEventListener("click", () => closeFilters());
+  WIDE.addEventListener("change", (e) => { if (e.matches) closeFilters(false); });
+  menu.addEventListener("click", (e) => { if (e.target.closest(".menu-list button")) menu.open = false; });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!pPanel.hidden) { pickerOpen(false); pBtn.focus(); }
+    else if (menu.open) { menu.open = false; menu.querySelector("summary").focus(); }
+    else closeFilters();
   });
   // A card or a platform's tile leans toward the pointer and catches a glint of light (a fine pointer that hovers, and
   // only for visitors who have not asked for less motion): the custom properties are read by site.css.

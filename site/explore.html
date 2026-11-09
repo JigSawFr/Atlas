@@ -1,57 +1,79 @@
 <svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">{{icons}}</svg>
   <section class="section explorer" id="explorer" aria-live="polite">
     <div class="controls">
-      <div class="group" role="group" aria-label="{{x_platform}}" id="x-platforms">
-{{platform_buttons}}
+      <div class="xc-top">
+        <div class="picker">
+          <button type="button" id="x-platform-btn" aria-haspopup="true" aria-expanded="false" aria-controls="x-platform-panel" aria-label="{{x_platform}}">
+            <i class="dot" aria-hidden="true"></i><span id="x-platform-name"></span><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-chevron-down"></use></svg>
+          </button>
+          <div class="plat-panel" id="x-platform-panel" role="group" aria-label="{{x_platform}}" hidden>
+            <input type="search" id="x-platform-find" autocomplete="off" spellcheck="false" placeholder="{{x_plat_find}}" aria-label="{{x_plat_find}}">
+            <div class="plat-groups" id="x-platforms">
+{{platform_picker}}
+            </div>
+            <p class="dim" id="x-platform-none" hidden>{{x_plat_none}}</p>
+          </div>
+        </div>
+        <div class="searchbar">
+          <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-search"></use></svg>
+          <input id="x-search" type="search" autocomplete="off" spellcheck="false" placeholder="{{x_search_hint}}" aria-label="{{x_search}}">
+          <kbd aria-hidden="true">/</kbd>
+          <button type="button" id="x-search-all" aria-pressed="false">{{x_search_all}}</button>
+        </div>
       </div>
-      <label class="field" id="x-machine-field"{{machine_hidden}}><span>{{x_machine}}</span><select id="x-machine">
-          <option value="">{{x_machine_pick}}</option>
-{{machine_options}}
-        </select></label>
-      <div class="group" role="group" aria-label="{{x_view}}" id="x-views">
+      <div class="tabs" role="group" aria-label="{{x_view}}" id="x-views">
         <button type="button" data-view="browse">{{x_browse}}</button>
         <button type="button" data-view="popular">{{x_popular}}</button>
         <button type="button" data-view="trending">{{x_trending}}</button>
         <button type="button" data-view="upcoming">{{x_upcoming}}</button>
         <button type="button" data-view="stats">{{x_stats}}</button>
         <button type="button" data-view="favorites" id="x-fav">{{x_favorites}}</button>
-        <button type="button" class="layout" id="x-layout" aria-pressed="false" aria-label="{{x_as_cards}}" title="{{x_as_cards}}">▦</button>
-      </div>
-      <div class="fields">
-        <label class="field search"><span>{{x_search}}</span><input id="x-search" type="search" autocomplete="off" spellcheck="false" placeholder="{{x_search_hint}}"></label>
-        <button type="button" id="x-search-all">{{x_search_all}}</button>
-      </div>
-      <div class="browse" id="x-browse" hidden>
-        <p class="dim">{{x_browse_note}}</p>
-        <div class="fields">
-          <label class="field"><span>{{x_sort}}</span><select id="x-sort">
-              <option value="popular">{{x_score}}</option>
-              <option value="atlas">{{x_atlas_score}}</option>
-              <option value="trending">{{x_trend}}</option>
-              <option value="critics">{{x_critics}}</option>
-              <option value="year">{{x_release}}</option>
-              <option value="name">{{x_sort_name}}</option>
-            </select></label>
-        </div>
-        <details class="filters" id="x-filters">
-          <summary><span id="x-filters-title">{{x_filters}}</span></summary>
-          <div class="facets" id="x-facets" role="group" aria-label="{{x_filters}}"></div>
-        </details>
-        <div class="group">
-          <button type="button" id="x-clear">{{x_clear}}</button>
-          <button type="button" id="x-random">{{x_random}}</button>
-          <button type="button" id="x-save">{{x_save_view}}</button>
-          <button type="button" id="x-loadall" hidden>{{x_load_all}}</button>
-        </div>
-        <div class="saved" id="x-saved" hidden><span class="dim">{{x_saved_views}}</span><ul></ul></div>
       </div>
     </div>
-    <div class="active" id="x-active" hidden></div>
-    <p class="status" id="x-status">{{x_loading}}</p>
-    <ol class="results" id="x-results"></ol>
-    <button type="button" class="more" id="x-more" hidden>{{x_more}}</button>
-    <article class="sheet" id="x-sheet" hidden></article>
-    <div class="figures-view" id="x-stats" hidden></div>
+    <div class="xbody">
+      <aside class="xc-side" id="x-browse" aria-label="{{x_filters}}" hidden>
+        <div class="side-head">
+          <h2 id="x-filters-title">{{x_filters}}</h2>
+          <button type="button" class="xc-close" id="x-filters-close" aria-label="{{x_close}}"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-x"></use></svg></button>
+        </div>
+        <div class="facets" id="x-facets" role="group" aria-label="{{x_filters}}"></div>
+        <div class="saved" id="x-saved" hidden><span class="dim">{{x_saved_views}}</span><ul></ul></div>
+        <p class="dim xc-note">{{x_browse_note}}</p>
+        <button type="button" class="apply" id="x-apply"></button>
+      </aside>
+      <div class="xmain">
+        <div class="active" id="x-active" hidden></div>
+        <div class="rbar">
+          <p class="status" id="x-status">{{x_loading}}</p>
+          <div class="rtools" id="x-rtools" hidden>
+            <button type="button" class="filters-btn b-only" id="x-filters-btn" aria-controls="x-browse" hidden><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-sliders-horizontal"></use></svg><span>{{x_filters}}</span></button>
+            <label class="sortbox b-only" hidden><span>{{x_sort}}</span><select id="x-sort" aria-label="{{x_sort}}">
+                <option value="popular">{{x_score}}</option>
+                <option value="atlas">{{x_atlas_score}}</option>
+                <option value="trending">{{x_trend}}</option>
+                <option value="critics">{{x_critics}}</option>
+                <option value="year">{{x_release}}</option>
+                <option value="name">{{x_sort_name}}</option>
+              </select></label>
+            <button type="button" class="layout" id="x-layout" aria-pressed="false" aria-label="{{x_as_cards}}" title="{{x_as_cards}}"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-layout-grid"></use></svg></button>
+            <details class="menu b-only" id="x-menu" hidden>
+              <summary aria-label="{{x_more_options}}" title="{{x_more_options}}"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-ellipsis"></use></svg></summary>
+              <div class="menu-list">
+                <button type="button" id="x-random">{{x_random}}</button>
+                <button type="button" id="x-save">{{x_save_view}}</button>
+                <button type="button" id="x-loadall" hidden>{{x_load_all}}</button>
+              </div>
+            </details>
+          </div>
+        </div>
+        <ol class="results" id="x-results"></ol>
+        <p class="foot dim" id="x-foot"></p>
+        <button type="button" class="more" id="x-more" hidden>{{x_more}}</button>
+        <article class="sheet" id="x-sheet" hidden></article>
+        <div class="figures-view" id="x-stats" hidden></div>
+      </div>
+    </div>
+    <div class="scrim" id="x-scrim" hidden></div>
     <div class="tip" id="x-tip" role="tooltip" hidden></div>
     <noscript><p class="status">{{x_noscript}}</p></noscript>
   </section>
