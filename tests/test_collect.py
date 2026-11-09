@@ -240,8 +240,7 @@ class RicherSources(unittest.TestCase):
 
 class NoPrices(unittest.TestCase):
     """Atlas keeps no price nor sale (2026-10-30): the stores' answers are
-    kept without theirs, nothing is asked for them every day, and the one-time
-    cleanup takes their files off the data branch."""
+    kept without theirs and nothing is asked for them every day."""
 
     def test_steam_item(self):
         item = {"appid": 900001, "success": 1, "type": 0, "name": "Lantern Tale", "is_free": False,
@@ -286,27 +285,6 @@ class NoPrices(unittest.TestCase):
         self.assertEqual(asked, ["wikidata", "wikipedia"])
         for gone in ("prices.py", "steam_prices.py", "gog.py prices", "xbox.py prices", "steam-store"):
             self.assertNotIn(gone, daily)
-
-    def test_cleanup(self):
-        script = os.path.join(os.path.dirname(__file__), "..", "tools", "drop-prices.sh")
-        with tempfile.TemporaryDirectory() as d:
-            kept = ["platforms/switch/popular.json", "platforms/steam/games.json", "sources/gog/catalog/US.json",
-                    "sources/steam-store/apps.json", "sources/msstore/products.json", "sources/titledb/US.json"]
-            gone = ["platforms/switch/prices/FR.json", "platforms/xbox/prices/JP.json", "history/steam/2026-10.json",
-                    "sources/eshop/prices/FR.json", "sources/steam-store/prices/DE.json", "sources/msstore/prices/BR.json",
-                    "sources/gog/catalog/FR.json", "sources/gog/catalog/JP/1.json"]
-            for name in kept + gone:
-                os.makedirs(os.path.dirname(os.path.join(d, name)), exist_ok=True)
-                with open(os.path.join(d, name), "w") as f:
-                    f.write("{}")
-            subprocess.run(["bash", script, d], check=True)
-            for name in kept:
-                self.assertTrue(os.path.exists(os.path.join(d, name)), name)
-            for name in gone:
-                self.assertFalse(os.path.exists(os.path.join(d, name)), name)
-            for folder in ("history", "sources/eshop", "platforms/switch/prices"):
-                self.assertFalse(os.path.exists(os.path.join(d, folder)), folder)
-            subprocess.run(["bash", script, d], check=True)   # again: nothing left to do, no error
 
 
 if __name__ == "__main__":

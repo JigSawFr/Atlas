@@ -76,7 +76,10 @@ def platforms(directory):
         reviewed = {g for g, e in games.items() if isinstance(e, dict)
                     and any(k in e for k in ("reviews", "rating", "steam", "igdb_rating"))}
         # A platform's games by Wikidata item (the old machines'): linked when links.json has the item.
-        linked = linked_ids.get(pid, set()) | {g for g in ids if g.startswith("Q") and g in links}
+        # GOG's games are keyed by number, links.json knows them by slug: a game counts by its id or its slug.
+        mine = linked_ids.get(pid, set())
+        by_slug = {g for g, e in games.items() if isinstance(e, dict) and e.get("slug") in mine}
+        linked = mine | by_slug | {g for g in ids if g.startswith("Q") and g in links}
         out[pid] = {"games": len(games), "names": len(names) or sum(1 for e in games.values()
                                                                     if isinstance(e, dict) and e.get("name")),
                     "popular": len(popular.get("games") or {}), "linked": share(linked),

@@ -91,6 +91,16 @@ class Report(unittest.TestCase):
             with open(os.path.join(d, "platforms/switch/popular.json"), encoding="utf-8") as f:
                 self.assertEqual(json.load(f), later)
 
+    def test_linked_by_slug(self):
+        # GOG: games keyed by number, linked in links.json by slug.
+        with tempfile.TemporaryDirectory() as d:
+            put(d, "links.json", {"schema": 1, "games": {"Q900002": {"gog": ["amber_lantern"], "steam": ["900020"]},
+                                                         "Q900003": {"gog": ["quiet_pond"]}}})
+            put(d, "platforms/gog/games.json", {"schema": 1, "generated": "2026-11-09", "games": {
+                "1207000001": {"name": "Amber Lantern", "slug": "amber_lantern"},
+                "1207000002": {"name": "Quiet Pond", "slug": "quiet_pond"}}})
+            self.assertEqual(report.platforms(d)["gog"]["linked"], 0.5)
+
     def test_kinds_known(self):
         # platforms.json's kinds, the 3DS's console among them, match its schema.
         import datetime
