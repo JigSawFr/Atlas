@@ -21,6 +21,11 @@
     gog: (id) => `https://www.gog.com/game/${id}`,
     epic: (id) => `https://store.epicgames.com/p/${id}`,
   };
+  // A game's page at its store: GOG's wants the slug, not the number the games are keyed by.
+  const storePage = (e) => {
+    const key = e.p === "gog" ? e.slug : e.id;
+    return STORES[e.p] && key && /^[\w-]+$/.test(key) ? STORES[e.p](key) : null;
+  };
   const STORE_NAMES = { switch: "Nintendo Switch", steam: "Steam", ps: "PlayStation", ps_product: "PlayStation",
     ps4: "PlayStation 4", ps5: "PlayStation 5", "3ds": "Nintendo 3DS",
     xbox: "Xbox", gog: "GOG", epic: "Epic Games" };
@@ -626,7 +631,7 @@
       if (rev || extras.length) lines.push(el("span", { class: "plat-more" }, rev ? el("span", { class: "dim", text: t("x_reviews", { n: num(rev[0]), p: rev[1] }) }) : null, ...extras));
       const main = el("a", { class: `plat-main${e.popular ? " has-ring" : ""}`, href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
         e.popular ? miniRing(e.popular[0], t("x_score")) : null, ...lines, el("span", { class: "out", "aria-hidden": "true", text: "→" }));
-      const shop = STORES[e.p] && /^[\w-]+$/.test(e.id) ? el("a", { class: "store", href: STORES[e.p](e.id), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank",
+      const shop = storePage(e) ? el("a", { class: "store", href: storePage(e), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank",
         title: t("x_open_store", { store: name }), "aria-label": t("x_open_store", { store: name }), text: "↗" }) : null;
       const li = platTile(e.p, main, shop);
       if (top === e && es.filter((x) => x.popular).length > 1) li.classList.add("best");
@@ -851,8 +856,8 @@
     const info = el("div", { class: "info" }, logo, title, ids.childElementCount ? ids : null,
       rings.childElementCount ? rings : null, rings.childElementCount ? ringHelp : null);
     // On a platform's own sheet: its store, and the way back to the game's sheet of all its platforms.
-    const p1 = es[0], shop = !multi && STORES[p1.p] && /^[\w-]+$/.test(p1.id)
-      ? el("a", { class: "chip store-link", href: STORES[p1.p](p1.id), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", text: `${t("x_open_store", { store: storeName(p1.p) })} ↗` }) : null;
+    const p1 = es[0], shop = !multi && storePage(p1)
+      ? el("a", { class: "chip store-link", href: storePage(p1), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", text: `${t("x_open_store", { store: storeName(p1.p) })} ↗` }) : null;
     const whole = !multi && m.unified ? el("a", { class: "chip whole", href: gameHref("u", m.unified), text: `◂ ${t("x_global_sheet")}` }) : null;
     const top = whole || shop ? el("div", { class: "topline" }, whole, shop) : null;
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
@@ -1238,7 +1243,7 @@
   // The sheet of one platform's game, as renderSheet and the comparison take it.
   function platformSheet(platform, id, g) {
     const entry = { p: platform, id };
-    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of"]) if (g[k]) entry[k] = g[k];
+    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of", "slug"]) if (g[k]) entry[k] = g[k];
     return { name: g.name, id, qid: g.qid, unified: g.unified ? g.qid : "", wd: g.wd, platforms: [entry], traits: g.traits,
       similar: (g.similar || []).map(([o, name, s, pic, shared]) => [platform, o, name, s, pic, shared]),
       family: g.family ? [g.family[0], g.family[1].map((r) => [platform, ...r])] : null, links: g.links };
