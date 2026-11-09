@@ -400,7 +400,6 @@
   "x_weight": "Weight",
   "x_pooled_label": "Reviews, all stores",
   "x_pooled_value": "{p} % positive of {n} reviews",
-  "x_platforms_count": "Platforms",
   "x_score_avg": "Average renown",
   "x_global_sheet": "Overall sheet",
   "x_value": "Value"

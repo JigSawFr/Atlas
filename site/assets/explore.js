@@ -886,7 +886,6 @@
       let n = 0, sum = 0;
       for (const e of es) for (const r of [e.reviews, e.rating]) if (r && r[0]) { n += r[0]; sum += r[0] * r[1]; }
       if (n) stat(t("x_pooled_label"), t("x_pooled_value", { p: num(Math.round(sum / n)), n: num(n) }));
-      stat(t("x_platforms_count"), num(es.length));
       const known = es.map((e) => (e.popular ? e.popular[0] : 0)).filter(Boolean);
       if (known.length) stat(t("x_score_avg"), fmt1.format(known.reduce((a, b) => a + b, 0) / known.length));
     } else {
@@ -1031,7 +1030,9 @@
     // Nor the games of its series, which have their own row above.
     const kin = new Set(), kinNames = new Set();
     for (const [k, r, n] of (m.family && m.family[1]) || []) { kin.add(`${k}/${r}`); if (n) kinNames.add(fold(n)); }
-    const alike = (m.similar || []).filter(([kind, ref, name]) => !(kind === "u" && ref === m.qid) && !es.some((e) => e.p === kind && e.id === ref)
+    // Below ALIKE_MIN % it is a stretch, not a game like it: left out (no row at all if none is left).
+    const ALIKE_MIN = 30;
+    const alike = (m.similar || []).filter(([kind, ref, name, s]) => s >= ALIKE_MIN && !(kind === "u" && ref === m.qid) && !es.some((e) => e.p === kind && e.id === ref)
       && !(name && m.name && fold(name) === fold(m.name)) && !kin.has(`${kind}/${ref}`) && !(name && kinNames.has(fold(name))));
     if (alike.length) {
       // On a sheet of several platforms a game that is on one only says which; the figure is how alike, not how known.

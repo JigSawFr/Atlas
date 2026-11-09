@@ -400,7 +400,6 @@
   "x_weight": "가중치",
   "x_pooled_label": "리뷰(모든 스토어)",
   "x_pooled_value": "리뷰 {n}개 중 {p} % 긍정",
-  "x_platforms_count": "플랫폼",
   "x_score_avg": "평균 인지도",
   "x_global_sheet": "종합 페이지",
   "x_value": "값"
