@@ -112,7 +112,6 @@
   "x_noscript": "탐색기에는 JavaScript가 필요합니다. 파일 목록은 프로젝트 페이지에 있습니다.",
   "x_error": "데이터를 읽을 수 없습니다. 잠시 후 다시 시도하세요.",
   "x_nothing": "게임을 찾지 못했습니다.",
-  "x_loaded": "{size} 읽음",
   "x_count": "게임 {n}개",
   "x_popular_note": "Wikipedia, 평론가, 스토어 리뷰로 본 가장 유명한 게임.",
   "x_trending_note": "지난 4주보다 이번 주에 더 많이 읽힌 게임.",

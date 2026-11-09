@@ -38,7 +38,6 @@
   // The filters stand in a column from 900px; below, they rise from the bottom of the screen on a button's press.
   const WIDE = window.matchMedia("(min-width: 900px)");
   const cache = new Map();
-  let read = 0;
 
   const t = (key, values) => {
     let s = S[key] || "";
@@ -63,11 +62,6 @@
     const s = String(n);
     const d = new Date(Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)));
     return new Intl.DateTimeFormat(LANG, { dateStyle: "medium", timeZone: "UTC" }).format(d);
-  };
-  const kb = (bytes) => {
-    const unit = /^fr/.test(LANG) ? ["ko", "Mo"] : LANG === "ru" ? ["КБ", "МБ"] : ["kB", "MB"];
-    return bytes < 1e6 ? `${num(Math.max(1, Math.round(bytes / 1000)))} ${unit[0]}`
-      : `${new Intl.NumberFormat(LANG, { maximumFractionDigits: 1 }).format(bytes / 1e6)} ${unit[1]}`;
   };
   const shard = (id, shards) => {
     let h = 0;
@@ -99,11 +93,9 @@
 
   async function get(path) {
     if (cache.has(path)) return cache.get(path);
-    const p = fetch(ROOT + path).then(async (r) => {
+    const p = fetch(ROOT + path).then((r) => {
       if (!r.ok) throw new Error(`${path}: ${r.status}`);
-      const text = await r.text();
-      read += text.length;
-      return JSON.parse(text);
+      return r.json();
     });
     cache.set(path, p);
     p.catch(() => cache.delete(path));
@@ -307,7 +299,7 @@
       note = t(view === "trending" ? "x_trending_note" : "x_popular_note");
     }
     bars(results);
-    setStatus(`${note} ${t("x_count", { n: num(count) })} · ${t("x_loaded", { size: kb(read) })}`);
+    setStatus(`${note} ${t("x_count", { n: num(count) })}`);
   }
 
   async function find(platform, words) {
@@ -330,7 +322,7 @@
     }
     results.replaceChildren(...found.map(([id, name, s]) => row(platform, id, name, [score(s)])));
     bars(results);
-    setStatus(found.length ? `${t("x_count", { n: num(found.length) })} · ${t("x_loaded", { size: kb(read) })}` : "");
+    setStatus(found.length ? t("x_count", { n: num(found.length) }) : "");
     if (!found.length) nothing([action(t("x_empty_all"), `#all/search/${encodeURIComponent(words.trim())}`), action(t("x_empty_browse"), `#${platform}/browse`)]);
   }
 
@@ -350,7 +342,7 @@
     const once = new Set(), shown = found.filter(([p, id]) => !once.has(`${p}/${id}`) && once.add(`${p}/${id}`)).slice(0, 200);
     results.replaceChildren(...shown.map(([p, id, name, s]) => row(p, id, name, [el("span", { class: "badge", text: S._names[p] || p }), score(s)])));
     bars(results);
-    setStatus(found.length ? `${t("x_count", { n: num(found.length) })} · ${t("x_loaded", { size: kb(read) })}` : "");
+    setStatus(found.length ? t("x_count", { n: num(found.length) }) : "");
     if (!found.length) nothing([action(t("x_empty_browse"), `#${from || PLATFORMS[0]}/browse`)]);
   }
 
@@ -590,18 +582,10 @@
   // A small ring with no help, for a platform's tile (the renown there; its label is the tile's text).
   const miniRing = (v, label) => el("span", { class: `mini-ring ${toneOf(v)}`, role: "img", "aria-label": `${label}: ${v} / 100` }, ringSvg(v), el("b", { text: String(v), "aria-hidden": "true" }));
 
-  function ring(v, label, help, helpBox) {
-    const svg = ringSvg(v);
-    const b = el("button", { type: "button", class: `ring ${toneOf(v)}`, "aria-label": `${label}: ${v} / 100`, "aria-expanded": "false", title: help },
-      svg, el("b", { text: String(v), "aria-hidden": "true" }), el("small", { text: label, "aria-hidden": "true" }));
-    b.addEventListener("click", () => {
-      const open = b.getAttribute("aria-expanded") !== "true";
-      for (const other of b.parentNode.querySelectorAll(".ring")) other.setAttribute("aria-expanded", "false");
-      b.setAttribute("aria-expanded", String(open));
-      helpBox.textContent = open ? help : "";
-      helpBox.hidden = !open;
-    });
-    return b;
+  // A ring says what it is in its tooltip (the help), not in a text opened by a press.
+  function ring(v, label, help) {
+    return el("div", { class: `ring ${toneOf(v)}`, role: "img", "aria-label": `${label}: ${v} / 100`, title: help },
+      ringSvg(v), el("b", { text: String(v), "aria-hidden": "true" }), el("small", { text: label, "aria-hidden": "true" }));
   }
 
   // A sheet is drawn from one model, whether it is of a game on one platform or on several:
@@ -866,19 +850,18 @@
     const title = el("h2", { tabindex: "-1" }, m.name || m.id || "");
     const logo = shown.logo ? el("img", { class: "logo", src: proxied(shown.logo, 560), alt: "", decoding: "async", referrerpolicy: "no-referrer" }) : null;
     const rings = el("div", { class: "rings" });
-    const ringHelp = el("p", { class: "ring-help", "aria-live": "polite", hidden: "" });
     if (atlas) {
-      rings.append(ring(atlas.score, t("x_atlas_score"), t("x_atlas_help", { n: num(atlas.parts.length) }), ringHelp));
+      rings.append(ring(atlas.score, t("x_atlas_score"), t("x_atlas_help", { n: num(atlas.parts.length) })));
       rings.lastChild.classList.add("atlas");
     }
-    if (best && !multi) rings.append(ring(best.popular[0], t("x_score"), t("x_score_help"), ringHelp));
-    if (critics) rings.append(ring(critics, t("x_critics"), t("x_critics_help"), ringHelp));
+    if (best && !multi) rings.append(ring(best.popular[0], t("x_score"), t("x_score_help")));
+    if (critics) rings.append(ring(critics, t("x_critics"), t("x_critics_help")));
     // The players' rating (IGDB, from 20 ratings) and each store's share of good reviews are rings too.
     const voters = es.filter((e) => e.igdb_rating && e.igdb_rating[1] >= 20).sort((x, y) => y.igdb_rating[1] - x.igdb_rating[1])[0];
-    if (voters) rings.append(ring(voters.igdb_rating[0], t("x_players_rating"), t("x_players_help", { n: num(voters.igdb_rating[1]) }), ringHelp));
+    if (voters) rings.append(ring(voters.igdb_rating[0], t("x_players_rating"), t("x_players_help", { n: num(voters.igdb_rating[1]) })));
     for (const e of multi ? [] : es) {
       for (const r of [e.reviews, e.rating]) {
-        if (r && r[0]) rings.append(ring(r[1], storeName(e.p), t("x_store_help", { p: r[1], n: num(r[0]), store: storeName(e.p) }), ringHelp));
+        if (r && r[0]) rings.append(ring(r[1], storeName(e.p), t("x_store_help", { p: r[1], n: num(r[0]), store: storeName(e.p) })));
       }
     }
     // The platforms are the tiles' where there are several: the line under the title is then the id alone (and its
@@ -889,7 +872,7 @@
       !multi && es[0].tech && es[0].tech.deck >= 2 ? el("span", { class: "chip", text: `Steam Deck · ${t(`x_deck_${es[0].tech.deck}`)}` }) : null,
       !m.name ? el("small", { text: t("x_no_name") }) : null);
     const info = el("div", { class: "info" }, logo, title, ids.childElementCount ? ids : null,
-      rings.childElementCount ? rings : null, rings.childElementCount ? ringHelp : null);
+      rings.childElementCount ? rings : null, null);
     // On a platform's own sheet: its store, and the way back to the game's sheet of all its platforms.
     const p1 = es[0], shop = !multi && storePage(p1)
       ? el("a", { class: "chip store-link", href: storePage(p1), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", text: `${t("x_open_store", { store: storeName(p1.p) })} ↗` }) : null;
@@ -1118,7 +1101,7 @@
     bars(sheet);
     reveal(sheet);
     fitSide();
-    setStatus(t("x_loaded", { size: kb(read) }));
+    setStatus("");
     head.querySelector("h2").focus({ preventScroll: true });
     window.scrollTo({ top: sheet.getBoundingClientRect().top + window.scrollY - 16 });
   }
@@ -1217,7 +1200,7 @@
     bars(statsBox);
     countUp(statsBox);
     reveal(statsBox);
-    setStatus(t("x_loaded", { size: kb(read) }));
+    setStatus("");
   }
 
   // One tooltip for every chart's marks (data-tip), placed by the pointer; a mark's figures are in its table too.
@@ -1608,10 +1591,9 @@
     const partial = b.loaded < b.f.pages;
     const total = found.length ? (partial ? `≥ ${num(ids.length)}` : num(ids.length)) : num(b.f.games);
     apply.textContent = t("x_show_n", { n: total });
-    // The count on top; how much was read, and what the counts cover, in small print under the list.
+    // The count on top; what the counts cover, in small print under the list.
     const rest = [];
     if (partial && (found.length || how !== "popular")) rest.push(t("x_browse_partial", { loaded: num(b.rows.length), total: num(b.f.games) }));
-    rest.push(t("x_loaded", { size: kb(read) }));
     setStatus(ids.length ? t("x_count_of", { shown: num(Math.min(limit, ids.length)), n: total }) : "");
     foot.textContent = rest.join(" · ");
     if (!ids.length && !partial) {
