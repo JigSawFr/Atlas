@@ -524,7 +524,7 @@ button.ring[aria-expanded="true"] small { color: var(--snow); }
 .rtools[hidden], .b-only[hidden] { display: none; }
 .sortbox { display: inline-flex; align-items: center; gap: 8px; color: var(--mist); font: 500 0.875rem var(--body); }
 .sortbox select { padding: 0 12px; font-weight: 500; font-size: 0.9375rem; cursor: pointer; }
-.filters-btn { display: none; align-items: center; gap: 8px; padding: 0 14px; cursor: pointer; }
+.filters-btn { display: none; align-items: center; gap: 8px; padding: 0 14px; cursor: pointer; white-space: nowrap; flex: none; }
 button.layout { width: 48px; display: inline-grid; place-items: center; padding: 0; cursor: pointer; color: var(--mist); }
 button.layout:hover, .menu summary:hover, .filters-btn:hover, .tabs button:hover { border-color: var(--mist); }
 button.layout:hover { color: var(--snow); }
@@ -596,6 +596,24 @@ button.layout:hover { color: var(--snow); }
   .results:not(.cards) li:not(.fav-item) > a .meta :is(.trend, .crit) { min-width: 0; }
   .results:not(.cards) li:not(.fav-item) > a .meta .crit { gap: 5px; padding-inline: 6px; }
 }
+
+/* Cards in a list: all the same size. The picture has one ratio, the name two lines (clamped, the room kept when it
+   takes one), and the figures two rows pinned to the bottom, each in its own place whatever the game lacks: the renown
+   bar and the trend on the first, the critics' badge and the year on the second. */
+.results.cards { align-items: stretch; }
+.results.cards > li { display: flex; }
+.results.cards a.card { flex: 1; width: 100%; grid-template-rows: auto auto 1fr; align-content: stretch; gap: 8px; padding-bottom: 12px; }
+.results.cards a.card > .name {
+  font-size: 0.9375rem; line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.results.cards a.card > .meta { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 22px 24px; align-content: end; align-items: center; gap: 6px 8px; }
+.results.cards a.card > .meta > .score { grid-column: 1; grid-row: 1; }
+.results.cards a.card > .meta > .trend { grid-column: 2; grid-row: 1; justify-self: end; }
+.results.cards a.card > .meta > .crit { grid-column: 1; grid-row: 2; justify-self: start; }
+.results.cards a.card > .meta > .dim { grid-column: 2; grid-row: 2; justify-self: end; }
+.results.cards a.card > .meta > .date { grid-column: 1 / -1; grid-row: 1; }
+.results.cards a.card > .meta .bar { width: 100%; max-width: 64px; }
+.results.cards a.card > .meta .crit { min-width: 0; }
 
 /* The explorer's heading is short: the controls come up the screen. */
 .hero.small { padding-block: clamp(20px, 3.5vw, 36px) clamp(12px, 2vw, 20px); gap: 8px; }
