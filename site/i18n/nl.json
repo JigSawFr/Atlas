@@ -425,5 +425,12 @@
   "x_help_sheet": "Vorig of volgend spel op een pagina",
   "x_help_esc": "Sluiten of zoekveld legen",
   "x_fav_export": "Exporteren",
-  "x_compare_with": "Vergelijk met…"
+  "x_compare_with": "Vergelijk met…",
+  "x_this_day": "Op deze dag",
+  "x_out_now": "Net uit",
+  "x_fav_soon": "Je favorieten, binnenkort",
+  "x_near": "Geen exacte treffer: {n} vergelijkbare namen",
+  "x_fav_import": "Importeren",
+  "x_fav_imported": "{n} games toegevoegd",
+  "x_fav_import_bad": "Dit bestand is geen lijst die hier is geëxporteerd"
 }

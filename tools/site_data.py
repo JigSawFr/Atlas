@@ -4,6 +4,8 @@ holds them cut for a phone, one platform a folder:
 
 - x/<platform>/lists.json: the lists the explorer opens on (the best known,
   the trending, the coming soon), each game with its name;
+- x/<platform>/days.json: for each day of the year (MMDD) the best known games released that day in an earlier
+  year, for the first page's "On this day"; lists.json also holds the games out in the last RECENT_DAYS days;
 - x/<platform>/names.json: every game with a name, for the search (an edition is found by its name and opens its game);
 - x/<platform>/facets.json: for each facet (genres, modes, series,
   developers, publishers, themes, perspectives, tags, year) its values with
@@ -20,6 +22,7 @@ holds them cut for a phone, one platform a folder:
 
 Python's standard library only. Usage: see tools/build_site.py.
 """
+import datetime
 import json
 import os
 from bisect import bisect_left
@@ -34,6 +37,9 @@ import trends
 import wdfacts
 
 LIST = 200              # games a list holds
+RECENT_DAYS = 60        # days back the "just out" list reaches (the page shows the last week or two of them)
+RECENT_LIST = 40        # games it holds
+DAY_LIST = 4            # games a day of the year holds in days.json
 PAGE = 5000             # games a page of the browse index holds
 FACETS = ("genres", "themes", "modes", "perspectives", "styles", "moods", "gameplay", "content", "access",
           "series", "developers", "publishers", "tags")
@@ -187,6 +193,31 @@ def year_of(game: dict) -> int:
 # and in the lists only (their names are long: some 70 characters, a page of the browse index would double)
 # "g<name>" GOG's own landscape cover. Steam's own rows need none: their id is the app.
 LONG_PICTURES = {"gog": "g"}
+
+
+def by_release(scores: dict, games: dict, editions: dict, generated) -> tuple:
+    """The games out in the RECENT_DAYS before `generated`, best known first, and for each day of the year (MMDD)
+    the best known ones released that day in an earlier year: ([(id, release)], {MMDD: [(id, release)]})."""
+    try:
+        today = datetime.date.fromisoformat(generated)
+    except (TypeError, ValueError):
+        return [], {}
+    now = today.year * 10000 + today.month * 100 + today.day
+    back = today - datetime.timedelta(days=RECENT_DAYS)
+    start = back.year * 10000 + back.month * 100 + back.day
+    recent, days = [], {}
+    for gid, score in scores.items():
+        game = games.get(gid)
+        release = game.get("release") if isinstance(game, dict) else None
+        if gid in editions or not isinstance(release, int) or release < 10_000_000 or not score[0]:
+            continue
+        if start <= release <= now:
+            recent.append((-score[0], gid, release))
+        if release // 10000 < today.year:
+            days.setdefault(f"{release % 10000:04d}", []).append((-score[0], gid, release))
+    recent.sort()
+    return ([(g, r) for _, g, r in recent],
+            {day: [(g, r) for _, g, r in sorted(rows)[:DAY_LIST]] for day, rows in sorted(days.items())})
 
 
 def picture(platform: str, gid: str, game, link, store: dict, long_ok: bool) -> str:
@@ -592,13 +623,17 @@ def build(data_dir: str, out_dir: str) -> dict:
         best = sorted(((g, s) for g, s in scores.items() if g not in editions), key=lambda kv: (-kv[1][0], kv[0]))
         trending = sorted(((g, s) for g, s in scores.items() if s[1] > 0 and g not in editions), key=lambda kv: (-kv[1][1], -kv[1][0], kv[0]))
         soon = sorted(((g, r) for g, r in upcoming.items() if g not in editions), key=lambda kv: (kv[1][0], kv[0]))
+        recent, days = by_release(scores, games, editions, files["popular"].get("generated"))
         lists = {
             "platform": platform,
             "generated": files["popular"].get("generated"),
             "popular": [with_pic([g, names.get(g, ""), *(list(s) + [0, 0, 0])[:3]], g) for g, s in best[:LIST]],
             "trending": [with_pic([g, names.get(g, ""), *(list(s) + [0, 0, 0])[:3]], g) for g, s in trending[:LIST]],
             "upcoming": [with_pic([g, names.get(g, ""), r[0], r[2] if len(r) > 2 else 0], g) for g, r in soon[:LIST]],
+            "recent": [with_pic([g, names[g], r, scores[g][0]], g) for g, r in recent if names.get(g)][:RECENT_LIST],
         }
+        write(os.path.join(base, "days.json"), {"platform": platform, "days": {
+            day: [with_pic([g, names[g], r, scores[g][0]], g) for g, r in rows if names.get(g)] for day, rows in days.items()}})
         write(os.path.join(base, "names.json"),
               # (an edition is found by its name, and opens its game)
               sorted(([editions.get(g, g), n, (scores.get(editions.get(g, g)) or [0])[0]] for g, n in names.items()), key=lambda x: (-x[2], x[1])))

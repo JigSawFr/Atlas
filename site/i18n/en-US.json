@@ -425,5 +425,12 @@
   "x_help_sheet": "Previous or next game on a sheet",
   "x_help_esc": "Close, or empty the search",
   "x_fav_export": "Export",
-  "x_compare_with": "Compare with…"
+  "x_compare_with": "Compare with…",
+  "x_this_day": "On this day",
+  "x_out_now": "Just out",
+  "x_fav_soon": "Your favorites, coming soon",
+  "x_near": "No exact match: {n} close names",
+  "x_fav_import": "Import",
+  "x_fav_imported": "{n} games added",
+  "x_fav_import_bad": "This file is not a list exported from here"
 }

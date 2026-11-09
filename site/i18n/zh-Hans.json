@@ -425,5 +425,12 @@
   "x_help_sheet": "在详情页切换上一个或下一个游戏",
   "x_help_esc": "关闭或清空搜索",
   "x_fav_export": "导出",
-  "x_compare_with": "与其他游戏比较…"
+  "x_compare_with": "与其他游戏比较…",
+  "x_this_day": "历史上的今天",
+  "x_out_now": "刚刚发售",
+  "x_fav_soon": "你收藏的游戏，即将发售",
+  "x_near": "没有完全匹配：{n} 个相近名称",
+  "x_fav_import": "导入",
+  "x_fav_imported": "已添加 {n} 款游戏",
+  "x_fav_import_bad": "此文件不是从这里导出的列表"
 }

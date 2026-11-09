@@ -425,5 +425,12 @@
   "x_help_sheet": "シートで前後のゲームへ",
   "x_help_esc": "閉じる、または検索を消す",
   "x_fav_export": "エクスポート",
-  "x_compare_with": "他のゲームと比較…"
+  "x_compare_with": "他のゲームと比較…",
+  "x_this_day": "この日に発売",
+  "x_out_now": "最近の新作",
+  "x_fav_soon": "お気に入りの発売予定",
+  "x_near": "完全一致なし：近い名前 {n} 件",
+  "x_fav_import": "読み込む",
+  "x_fav_imported": "{n} 本を追加しました",
+  "x_fav_import_bad": "このファイルは、ここから書き出したリストではありません"
 }

@@ -325,6 +325,7 @@
     setStatus(t("x_loading"));
     const lists = await get(`x/${platform}/lists.json`);
     const home = $("x-home");
+    home.dataset.platform = platform;
     const row = (title, link, items) => (items.length ? el("section", { class: "homerow" },
       el("div", { class: "homerow-head" }, el("h3", { text: title }), link),
       el("ul", { class: "cardgrid carousel" }, ...items.map((c) => el("li", {}, c)))) : null);
@@ -337,8 +338,18 @@
     });
     const soon = (lists.upcoming || []).slice(0, 12).map(([id, name, when, , pic]) =>
       card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
+    // Just out: the last two weeks of the list (it holds sixty days, the data being a few days old at most).
+    const cut = new Date(Date.now() - 14 * 864e5), since = cut.getFullYear() * 10000 + (cut.getMonth() + 1) * 100 + cut.getDate();
+    const out = (lists.recent || []).filter((r) => r[2] >= since).slice(0, 12).map(([id, name, when, , pic]) =>
+      card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
+    // The favourites that come out soon (the coming-soon list of the platform being looked at).
+    const mine = new Set(favs().map((f) => f.k));
+    const mineSoon = (lists.upcoming || []).filter(([id]) => mine.has(`${platform}/${id}`)).slice(0, 12).map(([id, name, when, , pic]) =>
+      card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
     home.replaceChildren(...[
       row(t("x_recent"), null, seen),
+      row(t("x_fav_soon"), null, mineSoon),
+      row(t("x_out_now"), null, out),
       row(t("x_trending"), all("trending", (lists.trending || []).length), known(lists.trending || [])),
       row(t("x_upcoming"), all("upcoming", (lists.upcoming || []).length), soon),
       row(t("x_popular"), all("popular", (lists.popular || []).length), known(lists.popular || [])),
@@ -348,6 +359,39 @@
     results.hidden = true;
     home.hidden = false;
     setStatus("");
+    // "On this day" comes last and on its own: a file of its own, asked after the page is up.
+    const now = new Date(), day = String((now.getMonth() + 1) * 100 + now.getDate()).padStart(4, "0");
+    get(`x/${platform}/days.json`).then((d) => {
+      const rows = ((d.days || {})[day] || []).map(([id, name, when, , pic]) =>
+        card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
+      const block = row(t("x_this_day"), null, rows);
+      if (block && !home.hidden && home.dataset.platform === platform) { home.append(block); bars(block); }
+    }, () => {});
+  }
+
+  // Close names: every word asked is within a letter or two of a word of the name (or of the start of one), so
+  // a slip in the spelling still finds the game. `within` stops as soon as the distance is past `max`.
+  function within(a, b, max) {
+    if (Math.abs(a.length - b.length) > max) return false;
+    let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++) {
+      const cur = [i];
+      let low = i;
+      for (let j = 1; j <= b.length; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        if (cur[j] < low) low = cur[j];
+      }
+      if (low > max) return false;
+      prev = cur;
+    }
+    return prev[b.length] <= max;
+  }
+  function near(q, name) {
+    const words = fold(name).split(/[^a-z0-9]+/).filter(Boolean);
+    return q.split(/\s+/).filter(Boolean).every((w) => {
+      const max = w.length > 6 ? 2 : w.length > 3 ? 1 : 0;
+      return max > 0 && words.some((x) => within(w, x, max) || (x.length > w.length && within(w, x.slice(0, w.length), max)));
+    });
   }
 
   async function find(platform, words) {
@@ -368,9 +412,18 @@
       if (fold(name).includes(q) && !once.has(id)) { once.add(id); found.push([id, name, s]); }
       if (found.length >= 200) break;
     }
+    // Nothing has the words as typed: the names that are a slip away from them.
+    let close = false;
+    if (!found.length && q.length > 3) {
+      for (const [id, name, s] of names) {
+        if (near(q, name) && !once.has(id)) { once.add(id); found.push([id, name, s]); }
+        if (found.length >= 60) break;
+      }
+      close = found.length > 0;
+    }
     results.replaceChildren(...found.map(([id, name, s]) => row(platform, id, name, [score(s)])));
     bars(results);
-    setStatus(found.length ? t("x_count", { n: num(found.length) }) : "");
+    setStatus(found.length ? (close ? t("x_near", { n: num(found.length) }) : t("x_count", { n: num(found.length) })) : "");
     if (!found.length) nothing([action(t("x_empty_all"), `#all/search/${encodeURIComponent(words.trim())}`), action(t("x_empty_browse"), `#${platform}/browse`)]);
   }
 
@@ -1407,9 +1460,29 @@
     // From a sheet's "Compare with…": that game is on the list, ticked, whether it is a favourite or not.
     const pick = query && query.get("pick");
     if (pick && pick.includes("/") && !list.some((f) => f.k === pick)) list.push({ k: pick, name: query.get("n") || "" });
+    // A list saved by "Export" (JSON with a `schema`): read here, the games it names joined to the list. A newer
+    // `schema` than this page knows is left alone, and what it does not know of a game is skipped.
+    const importIn = el("input", { type: "file", accept: "application/json,.json", hidden: "" });
+    const importBtn = el("button", { type: "button", class: "compare", text: t("x_fav_import") });
+    importBtn.addEventListener("click", () => importIn.click());
+    importIn.addEventListener("change", async () => {
+      const file = importIn.files && importIn.files[0];
+      if (!file) return;
+      try {
+        const doc = JSON.parse(await file.text());
+        if (!doc || !Number.isInteger(doc.schema) || doc.schema > 1 || !Array.isArray(doc.games)) throw new Error("schema");
+        const have = new Set(favs().map((f) => f.k));
+        const add = doc.games.filter((g) => g && typeof g.key === "string" && /^(u|[a-z0-9-]+)\/[^/\s]+$/.test(g.key) && !have.has(g.key) && (g.key.startsWith("u/") || PLATFORMS.includes(g.key.split("/")[0])))
+          .map((g) => ({ k: g.key, name: typeof g.name === "string" ? g.name.slice(0, 120) : "" }));
+        keepFavs(favs().concat(add));
+        countFavs();
+        await favoritesView();
+        setStatus(t("x_fav_imported", { n: num(add.length) }));
+      } catch (e) { setStatus(t("x_fav_import_bad")); }
+    });
     if (!list.length) {
-      results.replaceChildren();
-      setStatus(t("x_fav_empty"));
+      results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_empty") }), el("span", { class: "fav-actions" }, importBtn, importIn)));
+      setStatus("");
       return;
     }
     const picked = new Set(), boxes = [];
@@ -1443,7 +1516,7 @@
       return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), drop);
     });
     sync();
-    results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, exportBtn, compare)), ...items);
+    results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, importBtn, importIn, exportBtn, compare)), ...items);
     setStatus(`${t("x_favorites")} · ${num(list.length)}`);
   }
 
