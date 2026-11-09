@@ -58,7 +58,7 @@ MAKERS = [
     ("Atari", ["atari2600", "atarist"]),
     ("x_plat_computers", ["c64", "amiga", "zxspectrum", "amstradcpc", "msx", "apple2", "dos"]),
 ]
-UI_ICONS = ["search", "chevron-down", "sliders-horizontal", "layout-grid", "list", "ellipsis", "x", "arrow-up", "arrow-down"]
+UI_ICONS = ["search", "chevron-down", "sliders-horizontal", "layout-grid", "list", "ellipsis", "x", "arrow-up", "arrow-down", "share-2"]
 MACHINES = "|".join(re.escape(p[0]) for p in platforms.RETRO)
 # The pages, by their path under each language's folder.
 PAGES = {"": "home", "explore/": "explore", "status/": "status"}

@@ -415,5 +415,7 @@
   "x_empty_browse": "Mit Filtern durchsuchen",
   "x_trailer": "Trailer",
   "x_views_peak": "Spitze: {n} Aufrufe pro Woche",
-  "x_views_ago": "Vor {w} Wo.: {n}"
+  "x_views_ago": "Vor {w} Wo.: {n}",
+  "x_share": "Teilen",
+  "x_link_copied": "Link kopiert"
 }

@@ -415,5 +415,7 @@
   "x_empty_browse": "Browse with filters",
   "x_trailer": "Trailer",
   "x_views_peak": "Peak: {n} reads a week",
-  "x_views_ago": "{w} weeks ago: {n}"
+  "x_views_ago": "{w} weeks ago: {n}",
+  "x_share": "Share",
+  "x_link_copied": "Link copied"
 }

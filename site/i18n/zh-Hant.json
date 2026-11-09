@@ -415,5 +415,7 @@
   "x_empty_browse": "用篩選條件瀏覽",
   "x_trailer": "預告片",
   "x_views_peak": "峰值：每週 {n} 次",
-  "x_views_ago": "{w} 週前：{n}"
+  "x_views_ago": "{w} 週前：{n}",
+  "x_share": "分享",
+  "x_link_copied": "連結已複製"
 }
