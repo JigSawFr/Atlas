@@ -441,5 +441,14 @@
   "x_roulette": "正在抽取遊戲…",
   "x_fav_today": "今日發售：{name}",
   "x_palette": "跳轉到遊戲、平台或檢視",
-  "x_help_palette": "跳轉到遊戲、平台或檢視"
+  "x_help_palette": "跳轉到遊戲、平台或檢視",
+  "x_since": "自你上次造訪以來",
+  "x_status": "狀態",
+  "x_status_todo": "想玩",
+  "x_status_doing": "在玩",
+  "x_status_done": "已通關",
+  "x_note": "備註",
+  "x_fav_share": "分享清單",
+  "x_fav_shared": "與你分享的清單",
+  "x_fav_shared_add": "加入我的收藏"
 }

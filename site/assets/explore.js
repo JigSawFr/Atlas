@@ -462,11 +462,31 @@
       try { seenToday = localStorage.getItem("atlas-confetti") === String(today); localStorage.setItem("atlas-confetti", String(today)); } catch (e) { /* not kept */ }
       if (!seenToday) confetti();
     }
+    // Since the last visit (a day or more ago): the games that entered the trending list or came out since.
+    let fresh = [];
+    try {
+      const ids = (lists.trending || []).map((r) => r[0]).concat((lists.recent || []).map((r) => r[0]));
+      const all = JSON.parse(localStorage.getItem("atlas-visit") || "{}"), was = all[platform];
+      let e = was && Array.isArray(was.cur) ? was : null;
+      if (!e) e = { d: today, prev: null, cur: ids };
+      else if (e.d !== today) e = { d: today, prev: e.cur, cur: ids };
+      else e = { ...e, cur: ids };
+      all[platform] = e;
+      localStorage.setItem("atlas-visit", JSON.stringify(all));
+      if (e.prev) {
+        const old = new Set(e.prev), mark = new Set();
+        const rows = (lists.recent || []).map((r) => ({ id: r[0], name: r[1], s: r[3], pic: r[4] }))
+          .concat((lists.trending || []).map((r) => ({ id: r[0], name: r[1], s: r[2], pic: r[5] })));
+        fresh = rows.filter((r) => !old.has(r.id) && !mark.has(r.id) && mark.add(r.id)).slice(0, 12)
+          .map((r) => card(`#${platform}/game/${encodeURIComponent(r.id)}`, platform, r.id, r.name, [score(r.s)], r.pic));
+      }
+    } catch (e) { /* no storage: no such row */ }
     const lead = hero(platform, home, (lists.trending || []).length >= 3 ? lists.trending : (lists.popular || []), (lists.trending || []).length >= 3 ? t("x_trending") : t("x_popular"));
     home.replaceChildren(...[
       banner,
       lead,
       row(t("x_recent"), null, seen),
+      row(t("x_since"), null, fresh),
       row(t("x_fav_soon"), null, mineSoon),
       row(t("x_out_now"), null, out),
       row(t("x_trending"), all("trending", (lists.trending || []).length), known(lists.trending || [])),
@@ -1114,10 +1134,36 @@
   const favHref = (k) => { const at = k.indexOf("/"); return gameHref(k.slice(0, at), k.slice(at + 1)); };
   const favButton = $("x-fav");
   const countFavs = () => { const n = favs().length; favButton.replaceChildren(t("x_favorites"), n ? el("span", { class: "n", text: num(n) }) : ""); };
+  // What the visitor keeps of a game besides the heart: a status (to play, playing, played) and a note, on the favourite
+  // (the game becomes one if it was not). An empty value takes the field away.
+  const STATUSES = ["todo", "doing", "done"];
+  function upsertFav(k, name, patch) {
+    const list = favs(), at = list.findIndex((f) => f.k === k);
+    const f = at >= 0 ? { ...list[at] } : { k, name };
+    for (const [key, v] of Object.entries(patch)) { if (v) f[key] = v; else delete f[key]; }
+    if (at >= 0) list[at] = f; else list.push(f);
+    keepFavs(list);
+    countFavs();
+    document.dispatchEvent(new Event("atlas-favs"));
+  }
+  function mine(m, es) {
+    const k = sheetKey(m, es);
+    if (!k) return null;
+    const cur = favs().find((f) => f.k === k) || {}, name = m.name || m.id || "";
+    const status = el("select", { class: "status", "aria-label": t("x_status") }, el("option", { value: "", text: t("x_status") }),
+      ...STATUSES.map((v) => el("option", cur.s === v ? { value: v, selected: "" } : { value: v }, t(`x_status_${v}`))));
+    status.addEventListener("change", () => upsertFav(k, name, { s: status.value }));
+    const note = el("input", { type: "text", class: "note", maxlength: "120", placeholder: t("x_note"), "aria-label": t("x_note"), value: cur.n || "" });
+    note.addEventListener("change", () => upsertFav(k, name, { n: note.value.trim().slice(0, 120) }));
+    return el("span", { class: "mine" }, status, note);
+  }
+
   function heart(m, es) {
     const k = sheetKey(m, es);
     if (!k) return null;
     const b = el("button", { type: "button", class: "fav fab" });
+    const sync = () => { if (b.isConnected) draw(); else document.removeEventListener("atlas-favs", sync); };
+    document.addEventListener("atlas-favs", sync);
     const draw = () => {
       const on = favs().some((f) => f.k === k), label = t(on ? "x_fav_remove" : "x_fav_add");
       b.classList.toggle("on", on);
@@ -1217,7 +1263,8 @@
     const whole = !multi && m.unified ? el("a", { class: "chip whole", href: gameHref("u", m.unified), text: `◂ ${t("x_global_sheet")}` }) : null;
     const ck = sheetKey(m, es);
     const withOther = ck ? el("a", { class: "chip", href: `#${es[0].p}/favorites?${new URLSearchParams({ pick: ck, n: m.name || m.id || "" })}`, text: t("x_compare_with") }) : null;
-    const top = whole || shop || withOther ? el("div", { class: "topline" }, whole, shop, withOther) : null;
+    const mineBox = mine(m, es);
+    const top = whole || shop || withOther || mineBox ? el("div", { class: "topline" }, whole, shop, withOther, mineBox) : null;
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
       wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
     if (logo) {
@@ -1654,6 +1701,27 @@
     sheet.hidden = true;
     results.hidden = false;
     pressed("x-views", "view", "favorites");
+    // A list opened from a shared address: its games, to look at and to add to one's own favourites.
+    const shared = query && query.get("share");
+    if (shared) {
+      let games = [];
+      try {
+        const json = decodeURIComponent(escape(atob(shared.replace(/-/g, "+").replace(/_/g, "/"))));
+        games = JSON.parse(json).filter((g) => Array.isArray(g) && typeof g[0] === "string" && /^(u|[a-z0-9-]+)\/[^/\s]+$/.test(g[0]) && (g[0].startsWith("u/") || PLATFORMS.includes(g[0].split("/")[0])))
+          .slice(0, 60).map(([k, name]) => ({ k, name: typeof name === "string" ? name.slice(0, 120) : "" }));
+      } catch (e) { /* not a list */ }
+      const add = el("button", { type: "button", class: "compare", text: t("x_fav_shared_add") });
+      add.addEventListener("click", () => {
+        const have = new Set(favs().map((f) => f.k));
+        keepFavs(favs().concat(games.filter((g) => !have.has(g.k))));
+        countFavs();
+        go(`#${route().platform}/favorites`);
+      });
+      results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_shared") }), el("span", { class: "fav-actions" }, games.length ? add : "")),
+        ...games.map((f) => { const at = f.k.indexOf("/"); return el("li", { class: "fav-item" }, el("a", { href: favHref(f.k) }, tile(f.k.slice(0, at), f.k.slice(at + 1), f.name, true, ""), nameOf(f.k.slice(at + 1), f.name))); }));
+      setStatus(games.length ? t("x_count", { n: num(games.length) }) : t("x_not_found"));
+      return;
+    }
     const cur = (query && query.get("list")) || "";
     const names = listNames(), here = names.includes(cur) ? cur : "";
     const every = favs();
@@ -1686,7 +1754,7 @@
       if (!here) return "";
       const b = el("button", { type: "button", class: "compare", text: t("x_list_delete") });
       b.addEventListener("click", () => {
-        keepFavs(favs().map((f) => ((f.l || "") === here ? { k: f.k, name: f.name } : f)));
+        keepFavs(favs().map((f) => { if ((f.l || "") !== here) return f; const { l, ...rest } = f; return rest; }));
         keepLists(listNames().filter((n) => n !== here));
         go(`#${route().platform}/favorites`);
       });
@@ -1700,11 +1768,12 @@
         if (!doc || !Number.isInteger(doc.schema) || doc.schema > 1 || !Array.isArray(doc.games)) throw new Error("schema");
         const have = new Set(favs().map((f) => f.k));
         const add = doc.games.filter((g) => g && typeof g.key === "string" && /^(u|[a-z0-9-]+)\/[^/\s]+$/.test(g.key) && !have.has(g.key) && (g.key.startsWith("u/") || PLATFORMS.includes(g.key.split("/")[0])))
-          .map((g) => ({ k: g.key, name: typeof g.name === "string" ? g.name.slice(0, 120) : "", l: typeof g.list === "string" ? g.list.trim().slice(0, 24) : "" }));
+          .map((g) => ({ k: g.key, name: typeof g.name === "string" ? g.name.slice(0, 120) : "", l: typeof g.list === "string" ? g.list.trim().slice(0, 24) : "",
+            ...(STATUSES.includes(g.status) ? { s: g.status } : {}), ...(typeof g.note === "string" && g.note.trim() ? { n: g.note.trim().slice(0, 120) } : {}) }));
         const known = new Set(listNames());
         for (const g of add) if (g.l && !known.has(g.l) && known.size < 12) known.add(g.l);
         keepLists([...known]);
-        keepFavs(favs().concat(add.map((g) => (g.l && known.has(g.l) ? g : { k: g.k, name: g.name }))));
+        keepFavs(favs().concat(add.map((g) => { const { l, ...rest } = g; return g.l && known.has(g.l) ? g : rest; })));
         countFavs();
         await favoritesView();
         setStatus(t("x_fav_imported", { n: num(add.length) }));
@@ -1720,13 +1789,23 @@
     exportBtn.addEventListener("click", () => {
       // A document read elsewhere carries its `schema` (an integer, as the data's formats do).
       const base = location.origin + location.pathname;
-      const doc = { schema: 1, games: every.map((f) => ({ name: f.name || "", key: f.k, ...(f.l ? { list: f.l } : {}), url: base + favHref(f.k) })) };
+      const doc = { schema: 1, games: every.map((f) => ({ name: f.name || "", key: f.k, ...(f.l ? { list: f.l } : {}), ...(f.s ? { status: f.s } : {}), ...(f.n ? { note: f.n } : {}), url: base + favHref(f.k) })) };
       const url = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }));
       const a = el("a", { href: url, download: "atlas-favorites.json" });
       document.body.append(a);
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    const shareBtn = el("button", { type: "button", class: "compare", text: t("x_fav_share") });
+    shareBtn.addEventListener("click", async () => {
+      // The list in the address (names and keys, 60 at most), read by whoever opens it: nothing is sent anywhere.
+      const code = btoa(unescape(encodeURIComponent(JSON.stringify(list.map((f) => [f.k, f.name || ""]))))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      const link = `${location.origin}${location.pathname}#${route().platform}/favorites?share=${code}`;
+      try {
+        if (navigator.share) await navigator.share({ title: t("x_favorites"), url: link });
+        else { await navigator.clipboard.writeText(link); shareBtn.textContent = t("x_link_copied"); setTimeout(() => { shareBtn.textContent = t("x_fav_share"); }, 1800); }
+      } catch (e) { /* cancelled */ }
     });
     const compare = el("button", { type: "button", class: "compare", disabled: "", text: t("x_compare_pick") });
     const sync = () => {
@@ -1747,13 +1826,14 @@
       const move = names.length ? el("select", { class: "move", title: t("x_list_move"), "aria-label": `${t("x_list_move")}: ${f.name || ref}` },
         ...["", ...names].map((n) => el("option", n === (f.l || "") ? { value: n, selected: "" } : { value: n }, n || t("x_favorites")))) : "";
       if (names.length) move.addEventListener("change", () => {
-        keepFavs(favs().map((x) => (x.k === f.k ? (move.value ? { ...x, l: move.value } : { k: x.k, name: x.name }) : x)));
+        keepFavs(favs().map((x) => { if (x.k !== f.k) return x; const { l, ...rest } = x; return move.value ? { ...rest, l: move.value } : rest; }));
         again();
       });
-      return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), move, drop);
+      const kept = f.s || f.n ? el("span", { class: "fav-mine" }, f.s ? el("span", { class: `badge st-${f.s}`, text: t(`x_status_${f.s}`) }) : null, f.n ? el("span", { class: "dim", text: f.n }) : null) : "";
+      return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), kept, move, drop);
     });
     sync();
-    results.replaceChildren(tabs, el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, delList(), importBtn, importIn, exportBtn, compare)), ...items);
+    results.replaceChildren(tabs, el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, delList(), importBtn, importIn, exportBtn, shareBtn, compare)), ...items);
     setStatus(`${t("x_favorites")} · ${num(list.length)}`);
   }
 

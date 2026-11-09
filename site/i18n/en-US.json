@@ -441,5 +441,14 @@
   "x_roulette": "Drawing a game…",
   "x_fav_today": "Out today: {name}",
   "x_palette": "Jump to a game, a platform or a view",
-  "x_help_palette": "Jump to a game, a platform or a view"
+  "x_help_palette": "Jump to a game, a platform or a view",
+  "x_since": "Since your last visit",
+  "x_status": "Status",
+  "x_status_todo": "To play",
+  "x_status_doing": "Playing",
+  "x_status_done": "Played",
+  "x_note": "A note",
+  "x_fav_share": "Share the list",
+  "x_fav_shared": "A list shared with you",
+  "x_fav_shared_add": "Add to my favorites"
 }

@@ -441,5 +441,14 @@
   "x_roulette": "ゲームを抽選中…",
   "x_fav_today": "本日発売：{name}",
   "x_palette": "ゲーム・プラットフォーム・表示へ移動",
-  "x_help_palette": "ゲーム・プラットフォーム・表示へ移動"
+  "x_help_palette": "ゲーム・プラットフォーム・表示へ移動",
+  "x_since": "前回の訪問以降",
+  "x_status": "ステータス",
+  "x_status_todo": "プレイ予定",
+  "x_status_doing": "プレイ中",
+  "x_status_done": "クリア済み",
+  "x_note": "メモ",
+  "x_fav_share": "リストを共有",
+  "x_fav_shared": "共有されたリスト",
+  "x_fav_shared_add": "お気に入りに追加"
 }

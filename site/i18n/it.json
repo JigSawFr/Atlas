@@ -441,5 +441,14 @@
   "x_roulette": "Estrazione di un gioco…",
   "x_fav_today": "Esce oggi: {name}",
   "x_palette": "Vai a un gioco, una piattaforma o una vista",
-  "x_help_palette": "Vai a un gioco, una piattaforma o una vista"
+  "x_help_palette": "Vai a un gioco, una piattaforma o una vista",
+  "x_since": "Dalla tua ultima visita",
+  "x_status": "Stato",
+  "x_status_todo": "Da giocare",
+  "x_status_doing": "In corso",
+  "x_status_done": "Finito",
+  "x_note": "Una nota",
+  "x_fav_share": "Condividi la lista",
+  "x_fav_shared": "Una lista condivisa con te",
+  "x_fav_shared_add": "Aggiungi ai miei preferiti"
 }
