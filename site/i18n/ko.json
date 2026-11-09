@@ -436,5 +436,8 @@
   "x_list_new": "새 목록",
   "x_list_name": "목록 이름",
   "x_list_move": "이동할 목록",
-  "x_list_delete": "이 목록 삭제"
+  "x_list_delete": "이 목록 삭제",
+  "x_see_sheet": "상세 보기",
+  "x_roulette": "게임을 뽑는 중…",
+  "x_fav_today": "오늘 출시: {name}"
 }

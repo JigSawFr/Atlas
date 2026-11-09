@@ -436,5 +436,8 @@
   "x_list_new": "New list",
   "x_list_name": "List name",
   "x_list_move": "Move to",
-  "x_list_delete": "Delete this list"
+  "x_list_delete": "Delete this list",
+  "x_see_sheet": "See the sheet",
+  "x_roulette": "Drawing a game…",
+  "x_fav_today": "Out today: {name}"
 }

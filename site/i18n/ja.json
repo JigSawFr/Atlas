@@ -436,5 +436,8 @@
   "x_list_new": "新しいリスト",
   "x_list_name": "リスト名",
   "x_list_move": "移動先",
-  "x_list_delete": "このリストを削除"
+  "x_list_delete": "このリストを削除",
+  "x_see_sheet": "詳細を見る",
+  "x_roulette": "ゲームを抽選中…",
+  "x_fav_today": "本日発売：{name}"
 }

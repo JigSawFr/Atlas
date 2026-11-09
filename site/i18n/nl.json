@@ -436,5 +436,8 @@
   "x_list_new": "Nieuwe lijst",
   "x_list_name": "Naam van de lijst",
   "x_list_move": "Verplaatsen naar",
-  "x_list_delete": "Deze lijst verwijderen"
+  "x_list_delete": "Deze lijst verwijderen",
+  "x_see_sheet": "Bekijk de fiche",
+  "x_roulette": "Een game wordt getrokken…",
+  "x_fav_today": "Vandaag uit: {name}"
 }

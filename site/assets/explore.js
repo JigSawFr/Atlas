@@ -188,11 +188,20 @@
     if (!origin) return draw();
     const [w, h] = thumb ? [128, 60] : [320, 150];
     const img = el("img", { src: proxied(origin, w, h) + (pic && pic[0] === "i" ? "&a=top" : ""), alt: "", loading: "lazy", decoding: "async",
-      referrerpolicy: "no-referrer", width: String(w), height: String(h) });
+      referrerpolicy: "no-referrer", width: String(w), height: String(h), "data-o": origin, "data-top": pic && pic[0] === "i" ? "1" : null });
     const figure = el("figure", { class: `cover ${cls}` }, img);
     img.addEventListener("error", () => figure.replaceWith(draw()));
     return figure;
   }
+
+  // The first three cards of a ranking are drawn large (site.css): they ask for a sharper picture of the same game.
+  new MutationObserver(() => {
+    if (!results.classList.contains("podium") || !results.classList.contains("cards")) return;
+    for (const img of results.querySelectorAll(":scope > li:nth-child(-n+3) img[data-o]:not([data-big])")) {
+      img.dataset.big = "1";
+      img.src = proxied(img.dataset.o, 640, 300) + (img.dataset.top ? "&a=top" : "");
+    }
+  }).observe(results, { childList: true });
 
   let cards = false;           // lists as cards with a picture rather than rows (kept in the browser)
   try { cards = localStorage.getItem("atlas-cards") === "1"; } catch (e) { /* no storage: rows */ }
@@ -319,6 +328,102 @@
 
   // The first page: rows that scroll sideways (seen recently, trending, coming soon, the best known), each with a way to
   // the whole list.
+  // The big picture at the head of the first page: the five trending games (or the best known), one at a time, each
+  // with its name and figures. It turns by itself every few seconds (not with reduced motion; not while the pointer
+  // or the keyboard is on it) and its picture, blurred, tints the page behind it (`--amb` on the page).
+  const calm = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function hero(platform, root, rows, kicker) {
+    const items = rows.slice(0, 5);
+    if (!items.length) return null;
+    const art = (id, pic) => {
+      const wide = platform === "steam" && /^\d+$/.test(id) ? STORE_PICTURES.steam(id, "library_hero.jpg") : null;
+      return [wide, tileOrigin(platform, id, pic)];
+    };
+    const slides = items.map(([id, name, s, tr, , pic], i) => {
+      const [wide, plain] = art(id, pic);
+      const fit = (o) => proxied(o, 1280, 480) + (pic && pic[0] === "i" ? "&a=top" : "");
+      const figure = el("figure", { class: "stage-art" });
+      const draw = () => figure.replaceChildren(drawnCover({ id, name }, "tile"));
+      if (wide || plain) {
+        const img = el("img", { src: fit(wide || plain), alt: "", decoding: "async", referrerpolicy: "no-referrer", width: "1280", height: "480", loading: i ? "lazy" : "eager" });
+        let tried = !wide;
+        img.addEventListener("error", () => { if (!tried && plain) { tried = true; img.src = fit(plain); } else draw(); });
+        figure.append(img);
+      } else draw();
+      return el("a", { class: "stage-slide", href: `#${platform}/game/${encodeURIComponent(id)}` }, figure,
+        el("div", { class: "stage-text" }, el("span", { class: "stage-kicker", text: kicker }), el("strong", { class: "stage-name", text: name }),
+          el("span", { class: "stage-meta" }, score(s), trend(tr)), el("span", { class: "stage-cta", text: t("x_see_sheet") })));
+    });
+    const dots = items.map(([, name], i) => {
+      const b = el("button", { type: "button", class: "stage-dot", "aria-label": name });
+      b.addEventListener("click", () => { show(i); });
+      return b;
+    });
+    const box = el("section", { class: "stage", "aria-roledescription": "carousel", "aria-label": kicker }, ...slides, el("div", { class: "stage-dots" }, ...dots));
+    let at = 0, paused = false;
+    function show(i) {
+      at = (i + items.length) % items.length;
+      slides.forEach((a, j) => { a.classList.toggle("on", j === at); a.tabIndex = j === at ? 0 : -1; a.setAttribute("aria-hidden", String(j !== at)); });
+      dots.forEach((b, j) => b.setAttribute("aria-current", String(j === at)));
+      const [wide, plain] = art(items[at][0], items[at][5]);
+      const o = plain || wide;
+      if (o) root.style.setProperty("--amb", `url("${proxied(o, 160, 75)}")`);
+    }
+    show(0);
+    box.addEventListener("pointerenter", () => { paused = true; });
+    box.addEventListener("pointerleave", () => { paused = false; });
+    box.addEventListener("focusin", () => { paused = true; });
+    box.addEventListener("focusout", () => { paused = false; });
+    if (!calm() && items.length > 1) {
+      const timer = setInterval(() => {
+        if (!box.isConnected || root.hidden) { clearInterval(timer); return; }
+        if (!paused && !document.hidden) show(at + 1);
+      }, 6500);
+    }
+    return box;
+  }
+
+  // A burst of paper for a favourite out today (once a day; not with reduced motion).
+  function confetti() {
+    if (calm()) return;
+    const box = el("div", { class: "confetti", "aria-hidden": "true" });
+    for (let i = 0; i < 44; i++) {
+      const bit = el("span");
+      bit.style.setProperty("--x", `${Math.round(Math.random() * 100)}%`);
+      bit.style.setProperty("--dx", `${Math.round(Math.random() * 160 - 80)}px`);
+      bit.style.setProperty("--r", `${Math.round(Math.random() * 720 - 360)}deg`);
+      bit.style.setProperty("--h", String(Math.round(Math.random() * 360)));
+      bit.style.setProperty("--d", `${Math.round(Math.random() * 700)}ms`);
+      box.append(bit);
+    }
+    document.body.append(box);
+    setTimeout(() => box.remove(), 3600);
+  }
+
+  // The random game, drawn like a wheel: names go by, slower and slower, and stop on the game (not with reduced motion).
+  function roulette(names, chosen, then) {
+    if (calm() || typeof HTMLDialogElement === "undefined") { then(); return; }
+    const name = el("strong", { class: "roulette-name" });
+    const dlg = el("dialog", { class: "roulette", "aria-label": t("x_roulette") }, el("span", { class: "roulette-kicker", text: t("x_roulette") }), name);
+    document.body.append(dlg);
+    let stopped = false;
+    dlg.addEventListener("close", () => { stopped = true; dlg.remove(); });
+    dlg.showModal();
+    const picks = names.slice(0, 13).concat(chosen);
+    let i = 0;
+    const step = () => {
+      if (stopped) return;
+      name.textContent = picks[i];
+      name.classList.remove("tick");
+      void name.offsetWidth;
+      name.classList.add("tick");
+      i += 1;
+      if (i < picks.length) setTimeout(step, 55 + i * i * 2.4);
+      else setTimeout(() => { if (stopped) return; stopped = true; dlg.close(); then(); }, 650);
+    };
+    step();
+  }
+
   async function homeView(platform) {
     leaveBrowse();
     sheet.hidden = true;
@@ -347,7 +452,20 @@
     const mine = new Set(favs().map((f) => f.k));
     const mineSoon = (lists.upcoming || []).filter(([id]) => mine.has(`${platform}/${id}`)).slice(0, 12).map(([id, name, when, , pic]) =>
       card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
+    // A favourite out today: a line above everything and a burst of paper, the first time that day.
+    const dn = new Date(), today = dn.getFullYear() * 10000 + (dn.getMonth() + 1) * 100 + dn.getDate();
+    const outToday = (lists.recent || []).concat(lists.upcoming || []).filter(([id, , when]) => when === today && mine.has(`${platform}/${id}`));
+    let banner = null;
+    if (outToday.length) {
+      banner = el("p", { class: "today", role: "status", text: t("x_fav_today", { name: outToday.map((r) => r[1]).slice(0, 3).join(", ") }) });
+      let seenToday = false;
+      try { seenToday = localStorage.getItem("atlas-confetti") === String(today); localStorage.setItem("atlas-confetti", String(today)); } catch (e) { /* not kept */ }
+      if (!seenToday) confetti();
+    }
+    const lead = hero(platform, home, (lists.trending || []).length >= 3 ? lists.trending : (lists.popular || []), (lists.trending || []).length >= 3 ? t("x_trending") : t("x_popular"));
     home.replaceChildren(...[
+      banner,
+      lead,
       row(t("x_recent"), null, seen),
       row(t("x_fav_soon"), null, mineSoon),
       row(t("x_out_now"), null, out),
@@ -1963,7 +2081,11 @@
     renderSaved();
   });
   $("x-random").addEventListener("click", () => {
-    if (B && V && V.ids.length) go(`#${B.platform}/game/${encodeURIComponent(B.rows[V.ids[Math.floor(Math.random() * V.ids.length)]][0])}`);
+    if (!(B && V && V.ids.length)) return;
+    const pick = B.rows[V.ids[Math.floor(Math.random() * V.ids.length)]];
+    const others = Array.from({ length: 13 }, () => B.rows[V.ids[Math.floor(Math.random() * V.ids.length)]][1]);
+    const platform = B.platform;
+    roulette(others, pick[1], () => go(`#${platform}/game/${encodeURIComponent(pick[0])}`));
   });
   more.addEventListener("click", () => guarded(async () => {
     const mine = ++run;

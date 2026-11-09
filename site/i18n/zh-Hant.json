@@ -436,5 +436,8 @@
   "x_list_new": "新增清單",
   "x_list_name": "清單名稱",
   "x_list_move": "移至",
-  "x_list_delete": "刪除此清單"
+  "x_list_delete": "刪除此清單",
+  "x_see_sheet": "查看詳情",
+  "x_roulette": "正在抽取遊戲…",
+  "x_fav_today": "今日發售：{name}"
 }
