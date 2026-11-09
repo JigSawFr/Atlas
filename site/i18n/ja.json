@@ -424,5 +424,6 @@
   "x_help_list": "リストを移動",
   "x_help_sheet": "シートで前後のゲームへ",
   "x_help_esc": "閉じる、または検索を消す",
-  "x_fav_export": "エクスポート"
+  "x_fav_export": "エクスポート",
+  "x_compare_with": "他のゲームと比較…"
 }

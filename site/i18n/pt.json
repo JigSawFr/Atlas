@@ -424,5 +424,6 @@
   "x_help_list": "Percorrer a lista",
   "x_help_sheet": "Jogo anterior ou seguinte numa ficha",
   "x_help_esc": "Fechar ou limpar a pesquisa",
-  "x_fav_export": "Exportar"
+  "x_fav_export": "Exportar",
+  "x_compare_with": "Comparar com…"
 }

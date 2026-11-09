@@ -118,7 +118,7 @@
     if (parts[0] === "game" && parts[1]) return { platform: from || PLATFORMS[0], view: "ugame", arg: parts.slice(1).join("/"), query };
     const platform = PLATFORMS.includes(parts[0]) ? parts[0] : home;
     from = platform;
-    const view = ["browse", "popular", "trending", "upcoming", "search", "game", "stats", "favorites", "compare"].includes(parts[1]) ? parts[1] : "popular";
+    const view = ["home", "browse", "popular", "trending", "upcoming", "search", "game", "stats", "favorites", "compare"].includes(parts[1]) ? parts[1] : parts[1] ? "popular" : "home";
     return { platform, view, arg: parts.slice(2).join("/"), query };
   }
   const go = (hash) => { if (location.hash !== hash) location.hash = hash; else show(); };
@@ -288,7 +288,19 @@
     results.replaceChildren();
     let note = "", count = 0;
     if (view === "upcoming") {
-      for (const [id, name, when, , pic] of lists.upcoming) results.append(row(platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
+      // By month, each with how far away it is ("in 12 days").
+      const rtf = new Intl.RelativeTimeFormat(LANG, { numeric: "auto" }), today = Math.floor(Date.now() / 86400000);
+      let month = "";
+      for (const [id, name, when, , pic] of lists.upcoming) {
+        const day = realDay(when), key = day ? String(when).slice(0, 6) : "";
+        if (key && key !== month) {
+          month = key;
+          results.append(el("li", { class: "month", text: new Intl.DateTimeFormat(LANG, { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(+key.slice(0, 4), +key.slice(4) - 1, 1))) }));
+        }
+        const away = day ? dayOf(when) - today : null;
+        results.append(row(platform, id, name, [el("span", { class: "date", text: ymd(when) }),
+          away !== null && away >= 0 && away < 120 ? el("span", { class: "dim", text: rtf.format(away, "day") }) : null], pic));
+      }
       count = lists.upcoming.length;
       note = t("x_upcoming_note");
     } else {
@@ -302,6 +314,40 @@
     }
     bars(results);
     setStatus(`${note} ${t("x_count", { n: num(count) })}`);
+  }
+
+  // The first page: rows that scroll sideways (seen recently, trending, coming soon, the best known), each with a way to
+  // the whole list.
+  async function homeView(platform) {
+    leaveBrowse();
+    sheet.hidden = true;
+    pressed("x-views", "view", "");
+    setStatus(t("x_loading"));
+    const lists = await get(`x/${platform}/lists.json`);
+    const home = $("x-home");
+    const row = (title, link, items) => (items.length ? el("section", { class: "homerow" },
+      el("div", { class: "homerow-head" }, el("h3", { text: title }), link),
+      el("ul", { class: "cardgrid carousel" }, ...items.map((c) => el("li", {}, c)))) : null);
+    const all = (view, n) => el("a", { class: "chip", href: `#${platform}/${view}`, text: t("x_see_all", { n: num(n) }) });
+    const known = (rows) => rows.slice(0, 12).map(([id, name, s, tr, , pic]) =>
+      card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [score(s), trend(tr)], pic));
+    const seen = recents().slice().reverse().slice(0, 12).map((f) => {
+      const at = f.k.indexOf("/");
+      return card(favHref(f.k), f.k.slice(0, at), f.k.slice(at + 1), f.name, [], "");
+    });
+    const soon = (lists.upcoming || []).slice(0, 12).map(([id, name, when, , pic]) =>
+      card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
+    home.replaceChildren(...[
+      row(t("x_recent"), null, seen),
+      row(t("x_trending"), all("trending", (lists.trending || []).length), known(lists.trending || [])),
+      row(t("x_upcoming"), all("upcoming", (lists.upcoming || []).length), soon),
+      row(t("x_popular"), all("popular", (lists.popular || []).length), known(lists.popular || [])),
+    ].filter(Boolean));
+    bars(home);
+    results.replaceChildren();
+    results.hidden = true;
+    home.hidden = false;
+    setStatus("");
   }
 
   async function find(platform, words) {
@@ -873,7 +919,9 @@
     // platform's, which takes its colour and holds what is its own (its store's reviews, its figures, its tech).
     const multi = es.length > 1;
     sheet.classList.toggle("platform", !multi);
-    if (multi) sheet.style.removeProperty("--tint"); else sheet.style.setProperty("--tint", TINTS[es[0].p] || `hsl(${hueOf(es[0].p)} 60% 50%)`);
+// A sheet of several platforms takes a soft colour of its own, from the game's id (the same game, the same colour).
+    sheet.classList.toggle("tinted", multi);
+    if (multi) sheet.style.setProperty("--tint", `hsl(${hueOf(m.qid || m.id || m.name || "")} 55% 52%)`); else sheet.style.setProperty("--tint", TINTS[es[0].p] || `hsl(${hueOf(es[0].p)} 60% 50%)`);
     // The way back is a round button that stays in the corner of the window, not a link on the picture.
     const back = el("a", { class: "back fab", href: backHref, title: t("x_back"), "aria-label": t("x_back"), text: "←" });
     const shown = pictures(es);
@@ -918,7 +966,9 @@
     const p1 = es[0], shop = !multi && storePage(p1)
       ? el("a", { class: "chip store-link", href: storePage(p1), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", text: `${t("x_open_store", { store: storeName(p1.p) })} ↗` }) : null;
     const whole = !multi && m.unified ? el("a", { class: "chip whole", href: gameHref("u", m.unified), text: `◂ ${t("x_global_sheet")}` }) : null;
-    const top = whole || shop ? el("div", { class: "topline" }, whole, shop) : null;
+    const ck = sheetKey(m, es);
+    const withOther = ck ? el("a", { class: "chip", href: `#${es[0].p}/favorites?${new URLSearchParams({ pick: ck, n: m.name || m.id || "" })}`, text: t("x_compare_with") }) : null;
+    const top = whole || shop || withOther ? el("div", { class: "topline" }, whole, shop, withOther) : null;
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
       wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
     if (logo) {
@@ -1348,12 +1398,15 @@
   }
 
   // The favourites as a list, each with a box: two or three ticked are compared.
-  async function favoritesView() {
+  async function favoritesView(query) {
     leaveBrowse();
     sheet.hidden = true;
     results.hidden = false;
     pressed("x-views", "view", "favorites");
     const list = favs();
+    // From a sheet's "Compare with…": that game is on the list, ticked, whether it is a favourite or not.
+    const pick = query && query.get("pick");
+    if (pick && pick.includes("/") && !list.some((f) => f.k === pick)) list.push({ k: pick, name: query.get("n") || "" });
     if (!list.length) {
       results.replaceChildren();
       setStatus(t("x_fav_empty"));
@@ -1384,10 +1437,12 @@
       const box = el("input", { type: "checkbox", "aria-label": `${t("x_compare")}: ${f.name || ref}` });
       box.addEventListener("change", () => { if (box.checked) picked.add(f.k); else picked.delete(f.k); sync(); });
       boxes.push(box);
+      if (pick && f.k === pick) { box.checked = true; picked.add(f.k); }
       const drop = el("button", { type: "button", class: "unfav", title: t("x_fav_remove"), "aria-label": `${t("x_fav_remove")}: ${f.name || ref}`, text: "×" });
       drop.addEventListener("click", () => { keepFavs(favs().filter((x) => x.k !== f.k)); countFavs(); favoritesView(); });
       return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), drop);
     });
+    sync();
     results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, exportBtn, compare)), ...items);
     setStatus(`${t("x_favorites")} · ${num(list.length)}`);
   }
@@ -1817,6 +1872,7 @@
     const tr = trail();
     restore = tr && tr.hash === location.hash && !["game", "ugame", "compare", "favorites"].includes(view) ? tr : null;
     statsBox.hidden = view !== "stats";
+    $("x-home").hidden = true;
     tipBox.hidden = true;
     pressed("x-platforms", "platform", platform);
     syncPlatform(platform);
@@ -1829,11 +1885,12 @@
     results.classList.toggle("podium", view === "popular" || view === "trending"
       || (view === "browse" && ["popular", "atlas", "trending", "critics"].includes(query.get("sort") || "popular")));
     try {
-      if (view === "browse") await browse(platform, query);
+      if (view === "home") await homeView(platform);
+      else if (view === "browse") await browse(platform, query);
       else if (view === "ugame") await unified(arg);
       else if (view === "game") await game(platform, arg, query);
       else if (view === "stats") await statsView(platform);
-      else if (view === "favorites") await favoritesView();
+      else if (view === "favorites") await favoritesView(query);
       else if (view === "compare") await compareView(query);
       else if (view === "searchall") { if (search.value !== arg) search.value = arg; await findAll(arg); }
       else if (view === "search") { if (search.value !== arg) search.value = arg; await find(platform, arg); }
@@ -1866,7 +1923,7 @@
     const b = e.target.closest("button[data-platform]");
     if (!b) return;
     const { view } = route();
-    const keep = view === "game" || view === "ugame" || view === "search" || view === "searchall" ? "popular" : view;
+    const keep = view === "game" || view === "ugame" || view === "search" || view === "searchall" ? "home" : view;
     go(`#${b.dataset.platform}/${keep}`);
   });
   document.getElementById("x-views").addEventListener("click", (e) => {
@@ -1881,7 +1938,7 @@
     clearTimeout(timer);
     timer = setTimeout(() => {
       const q = search.value.trim(), r = route();
-      go(q ? `#${r.view === "searchall" ? "all" : r.platform}/search/${encodeURIComponent(q)}` : `#${r.platform}/popular`);
+      go(q ? `#${r.view === "searchall" ? "all" : r.platform}/search/${encodeURIComponent(q)}` : `#${r.platform}/home`);
     }, 250);
   });
   // The scope of the search: this platform, or all of them (pressed); pressed again, back to this one.

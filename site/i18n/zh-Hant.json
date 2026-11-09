@@ -424,5 +424,6 @@
   "x_help_list": "在清單中移動",
   "x_help_sheet": "在詳情頁切換上一個或下一個遊戲",
   "x_help_esc": "關閉或清空搜尋",
-  "x_fav_export": "匯出"
+  "x_fav_export": "匯出",
+  "x_compare_with": "與其他遊戲比較…"
 }

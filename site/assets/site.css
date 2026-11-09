@@ -1064,3 +1064,18 @@ dialog.help dd { margin: 0; color: var(--mist); }
 dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
 /* The picture of the game opened flies from the list to the sheet (a browser that has view transitions; explore.js names the two). */
 ::view-transition-group(game-pic) { animation-duration: 0.35s; }
+
+/* The first page: rows of cards that scroll sideways, in every width. */
+.home { display: grid; gap: 28px; }
+.home[hidden] { display: none; }
+.home > *, .homerow-head { min-width: 0; }
+.homerow-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.homerow-head h3 { margin: 0; font: 600 1.125rem var(--display); }
+.home .cardgrid.carousel { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 10px; scrollbar-width: thin; }
+.home .cardgrid.carousel > li { flex: 0 0 min(62%, 200px); scroll-snap-align: start; min-width: 0; }
+.home a.card::before { content: none; }
+/* Coming soon by month. */
+.results li.month { counter-increment: none; padding-top: 14px; font: 600 0.75rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mist); }
+.results li.month:first-child { padding-top: 0; }
+/* A sheet of several platforms: its own soft colour. */
+.sheet.tinted { background: radial-gradient(90% 38% at 0 0, color-mix(in srgb, var(--tint) 13%, transparent), transparent 70%), var(--night); border-color: color-mix(in srgb, var(--tint) 22%, var(--night-line)); }
