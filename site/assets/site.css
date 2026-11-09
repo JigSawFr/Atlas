@@ -615,6 +615,28 @@ button.layout:hover { color: var(--snow); }
 .results.cards a.card > .meta .bar { width: 100%; max-width: 64px; }
 .results.cards a.card > .meta .crit { min-width: 0; }
 
+/* The podium: the first three of a ranking (explore.js sets `.podium`) wear a trophy in gold, silver and bronze, in the
+   rank's place on a row and on the picture's corner on a card, and a tinted outline. */
+.results.podium > li:nth-child(1) { --medal: #ffc857; }
+.results.podium > li:nth-child(2) { --medal: #cdd6e2; }
+.results.podium > li:nth-child(3) { --medal: #e0955a; }
+.results.podium > li:nth-child(-n+3) > a { border-color: color-mix(in srgb, var(--medal) 55%, var(--night-line)); }
+.results.podium:not(.cards) > li:nth-child(-n+3) > a { background: linear-gradient(90deg, color-mix(in srgb, var(--medal) 16%, var(--night)), var(--night) 60%); }
+.results.podium:not(.cards) > li:nth-child(-n+3) > a::before {
+  content: ""; justify-self: center; width: 1.5rem; height: 1.5rem; background: var(--medal);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978'/%3E%3Cpath d='M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978'/%3E%3Cpath d='M18 9h1.5a1 1 0 0 0 0-5H18'/%3E%3Cpath d='M4 22h16'/%3E%3Cpath d='M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z'/%3E%3Cpath d='M6 9H4.5a1 1 0 0 1 0-5H6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978'/%3E%3Cpath d='M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978'/%3E%3Cpath d='M18 9h1.5a1 1 0 0 0 0-5H18'/%3E%3Cpath d='M4 22h16'/%3E%3Cpath d='M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z'/%3E%3Cpath d='M6 9H4.5a1 1 0 0 1 0-5H6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.results.podium.cards > li:nth-child(-n+3) > a.card { position: relative; box-shadow: 0 0 0 1px color-mix(in srgb, var(--medal) 55%, transparent), 0 10px 26px -12px var(--medal); }
+.results.podium.cards > li:nth-child(-n+3) > a.card::before {
+  content: ""; position: absolute; z-index: 1; top: 8px; inset-inline-start: 8px; width: 34px; height: 34px; border-radius: 50%;
+  inset-block-end: auto; inset-inline-end: auto; padding: 0; opacity: 1; transition: none; -webkit-mask: none; mask: none;   /* boreale-site's `.card::before` is an invisible outline: not this */
+  background: rgb(8 14 30 / 0.82); box-shadow: 0 0 0 1.5px var(--medal), 0 4px 12px rgb(0 0 0 / 0.5);
+}
+.results.podium.cards > li:nth-child(-n+3) > a.card::after {
+  content: ""; position: absolute; z-index: 2; top: 8px; inset-inline-start: 8px; width: 34px; height: 34px; background: var(--medal);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978'/%3E%3Cpath d='M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978'/%3E%3Cpath d='M18 9h1.5a1 1 0 0 0 0-5H18'/%3E%3Cpath d='M4 22h16'/%3E%3Cpath d='M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z'/%3E%3Cpath d='M6 9H4.5a1 1 0 0 1 0-5H6'/%3E%3C/svg%3E") center / 58% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978'/%3E%3Cpath d='M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978'/%3E%3Cpath d='M18 9h1.5a1 1 0 0 0 0-5H18'/%3E%3Cpath d='M4 22h16'/%3E%3Cpath d='M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z'/%3E%3Cpath d='M6 9H4.5a1 1 0 0 1 0-5H6'/%3E%3C/svg%3E") center / 58% no-repeat; pointer-events: none;
+}
+
 /* The explorer's heading is short: the controls come up the screen. */
 .hero.small { padding-block: clamp(20px, 3.5vw, 36px) clamp(12px, 2vw, 20px); gap: 8px; }
 .hero.small h1 { font-size: clamp(1.75rem, 4.2vw, 2.5rem); max-width: none; }

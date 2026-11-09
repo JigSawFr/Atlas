@@ -1707,6 +1707,10 @@
     pickerOpen(false);
     $("x-search-all").setAttribute("aria-pressed", String(view === "searchall"));
     rtools.hidden = !["browse", "popular", "trending", "upcoming", "search", "searchall"].includes(view);
+    // The first three of a ranking carry a trophy (site.css): a list that says "best" (best known, trending, or Browse
+    // sorted by a measure), not one sorted by name or date, nor a search.
+    results.classList.toggle("podium", view === "popular" || view === "trending"
+      || (view === "browse" && ["popular", "atlas", "trending", "critics"].includes(query.get("sort") || "popular")));
     try {
       if (view === "browse") await browse(platform, query);
       else if (view === "ugame") await unified(arg);
