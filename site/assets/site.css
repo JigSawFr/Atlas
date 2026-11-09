@@ -1018,3 +1018,19 @@ a.chip.store-link { border-color: color-mix(in srgb, var(--tint, #33bbff) 55%, t
 .recipe summary:hover { color: var(--snow); }
 .recipe[open] { border: 1px solid var(--night-line); border-radius: 14px; background: var(--abyss); padding: 10px 14px; }
 .recipe[open] summary { color: var(--snow); text-decoration: none; font-weight: 600; }
+
+/* The sheet's content: the traits in two groups, the awards folded, the interest curve with its peak and a hover. */
+.traits div:not(.makers) + .makers { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--night-line); }
+.awards li[hidden] { display: none; }
+.awards li .chip::before { content: ""; flex: none; width: 0.9rem; height: 0.9rem; background: #ffc857;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978'/%3E%3Cpath d='M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978'/%3E%3Cpath d='M18 9h1.5a1 1 0 0 0 0-5H18'/%3E%3Cpath d='M4 22h16'/%3E%3Cpath d='M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z'/%3E%3Cpath d='M6 9H4.5a1 1 0 0 1 0-5H6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978'/%3E%3Cpath d='M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978'/%3E%3Cpath d='M18 9h1.5a1 1 0 0 0 0-5H18'/%3E%3Cpath d='M4 22h16'/%3E%3Cpath d='M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z'/%3E%3Cpath d='M6 9H4.5a1 1 0 0 1 0-5H6'/%3E%3C/svg%3E") center / contain no-repeat; }
+.awards .chip { gap: 6px; }
+.sheet button.see { margin-top: 10px; min-height: 32px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--night-line); background: none; color: var(--mist); font: 600 0.8125rem var(--body); cursor: pointer; }
+.sheet button.see:hover { color: var(--snow); border-color: var(--mist); }
+.views { position: relative; max-width: 560px; }
+.views .peak { fill: #ffc857; }
+.views .now { fill: var(--aurora, #33bbff); }
+.views-tip { position: absolute; top: -6px; translate: -50% -100%; padding: 4px 8px; border-radius: 8px; background: var(--snow); color: var(--abyss); font: 600 0.75rem var(--mono); white-space: nowrap; pointer-events: none; }
+.views-tip[hidden] { display: none; }
+.sheet .links li code { font-size: 0.75rem; color: var(--mist); }

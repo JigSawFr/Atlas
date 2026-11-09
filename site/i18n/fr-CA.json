@@ -412,5 +412,8 @@
   "x_suggestions": "Suggestions",
   "x_empty_hint": "Essayez moins de filtres ou une autre orthographe.",
   "x_empty_all": "Chercher sur toutes les plateformes",
-  "x_empty_browse": "Parcourir avec des filtres"
+  "x_empty_browse": "Parcourir avec des filtres",
+  "x_trailer": "Bande-annonce",
+  "x_views_peak": "Pic : {n} lectures par semaine",
+  "x_views_ago": "Il y a {w} sem. : {n}"
 }

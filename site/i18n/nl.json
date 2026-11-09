@@ -412,5 +412,8 @@
   "x_suggestions": "Suggesties",
   "x_empty_hint": "Probeer minder filters of een andere spelling.",
   "x_empty_all": "Zoeken op alle platforms",
-  "x_empty_browse": "Bladeren met filters"
+  "x_empty_browse": "Bladeren met filters",
+  "x_trailer": "Trailer",
+  "x_views_peak": "Piek: {n} keer gelezen per week",
+  "x_views_ago": "{w} wkn geleden: {n}"
 }
