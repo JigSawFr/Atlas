@@ -441,5 +441,14 @@
   "x_roulette": "Een game wordt getrokken…",
   "x_fav_today": "Vandaag uit: {name}",
   "x_palette": "Ga naar een game, platform of weergave",
-  "x_help_palette": "Ga naar een game, platform of weergave"
+  "x_help_palette": "Ga naar een game, platform of weergave",
+  "x_since": "Sinds je laatste bezoek",
+  "x_status": "Status",
+  "x_status_todo": "Nog te spelen",
+  "x_status_doing": "Bezig",
+  "x_status_done": "Uitgespeeld",
+  "x_note": "Een notitie",
+  "x_fav_share": "Lijst delen",
+  "x_fav_shared": "Een met jou gedeelde lijst",
+  "x_fav_shared_add": "Toevoegen aan mijn favorieten"
 }

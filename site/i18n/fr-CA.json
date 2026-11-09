@@ -441,5 +441,14 @@
   "x_roulette": "Tirage d'un jeu…",
   "x_fav_today": "Sort aujourd'hui : {name}",
   "x_palette": "Aller à un jeu, une plateforme ou une vue",
-  "x_help_palette": "Aller à un jeu, une plateforme ou une vue"
+  "x_help_palette": "Aller à un jeu, une plateforme ou une vue",
+  "x_since": "Depuis votre dernière visite",
+  "x_status": "Statut",
+  "x_status_todo": "À faire",
+  "x_status_doing": "En cours",
+  "x_status_done": "Terminé",
+  "x_note": "Une note",
+  "x_fav_share": "Partager la liste",
+  "x_fav_shared": "Une liste partagée avec vous",
+  "x_fav_shared_add": "Ajouter à mes favoris"
 }

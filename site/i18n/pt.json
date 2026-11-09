@@ -441,5 +441,14 @@
   "x_roulette": "A sortear um jogo…",
   "x_fav_today": "Sai hoje: {name}",
   "x_palette": "Ir para um jogo, uma plataforma ou uma vista",
-  "x_help_palette": "Ir para um jogo, uma plataforma ou uma vista"
+  "x_help_palette": "Ir para um jogo, uma plataforma ou uma vista",
+  "x_since": "Desde a sua última visita",
+  "x_status": "Estado",
+  "x_status_todo": "Para jogar",
+  "x_status_doing": "A jogar",
+  "x_status_done": "Terminado",
+  "x_note": "Uma nota",
+  "x_fav_share": "Partilhar a lista",
+  "x_fav_shared": "Uma lista partilhada consigo",
+  "x_fav_shared_add": "Adicionar aos meus favoritos"
 }
