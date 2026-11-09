@@ -439,5 +439,7 @@
   "x_list_delete": "Deze lijst verwijderen",
   "x_see_sheet": "Bekijk de fiche",
   "x_roulette": "Een game wordt getrokken…",
-  "x_fav_today": "Vandaag uit: {name}"
+  "x_fav_today": "Vandaag uit: {name}",
+  "x_palette": "Ga naar een game, platform of weergave",
+  "x_help_palette": "Ga naar een game, platform of weergave"
 }

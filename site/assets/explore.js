@@ -782,6 +782,55 @@
     return layer;
   }
 
+  // The sheet's colour from its picture: the picture asked small (32 x 18) with the CORS header wsrv.nl sends, its
+  // pixels averaged (the vivid ones count most), and the hue kept for a glow behind the head. Nothing happens if the
+  // picture cannot be read: the sheet keeps its platform's tint.
+  let moodRun = 0;
+  function mood(origin, target) {
+    const mine = ++moodRun;
+    target.classList.remove("moody");
+    if (!origin) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+    img.addEventListener("load", () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 32;
+        canvas.height = 18;
+        const g = canvas.getContext("2d", { willReadFrequently: true });
+        g.drawImage(img, 0, 0, 32, 18);
+        const d = g.getImageData(0, 0, 32, 18).data;
+        let r = 0, gr = 0, b = 0, w = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]);
+          const sat = mx ? (mx - mn) / mx : 0, wt = mx > 40 ? sat * sat + 0.01 : 0.001;
+          r += d[i] * wt; gr += d[i + 1] * wt; b += d[i + 2] * wt; w += wt;
+        }
+        r /= w; gr /= w; b /= w;
+        const mx = Math.max(r, gr, b), mn = Math.min(r, gr, b);
+        if (mx - mn < 12) return;                                  // grey: no colour to take
+        const c = mx - mn;
+        let h = mx === r ? ((gr - b) / c) % 6 : mx === gr ? (b - r) / c + 2 : (r - gr) / c + 4;
+        h = Math.round(((h * 60) + 360) % 360);
+        if (mine !== moodRun) return;
+        target.style.setProperty("--mood", `hsl(${h} 65% 52%)`);
+        target.classList.add("moody");
+      } catch (e) { /* the picture could not be read */ }
+    });
+    img.src = proxied(origin, 32, 18);
+  }
+
+  // The picture behind the head slides up and fades as the page is scrolled (not with reduced motion).
+  let parallax = 0;
+  window.addEventListener("scroll", () => {
+    if (parallax || calm() || sheet.hidden) return;
+    parallax = requestAnimationFrame(() => {
+      parallax = 0;
+      sheet.style.setProperty("--par", String(Math.min(1, Math.max(0, window.scrollY / 420)).toFixed(3)));
+    });
+  }, { passive: true });
+
   const toneOf = (v) => (v >= 75 ? "high" : v >= 50 ? "mid" : "low");
 
   // A score out of 100 as a ring (a dasharray set by script, as the bars' widths: the CSP allows no style attribute).
@@ -804,8 +853,20 @@
 
   // A ring says what it is in its tooltip (the help), not in a text opened by a press.
   function ring(v, label, help) {
+    const figure = el("b", { text: String(v), "aria-hidden": "true" });
+    // The figure climbs to its value as the ring fills (not with reduced motion).
+    if (!calm() && v > 0) {
+      const t0 = performance.now();
+      figure.textContent = "0";
+      const tick = (now) => {
+        const k = Math.min(1, (now - t0) / 800);
+        figure.textContent = String(Math.round(v * (1 - (1 - k) ** 3)));
+        if (k < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
     return el("div", { class: `ring ${toneOf(v)}`, role: "img", "aria-label": `${label}: ${v} / 100`, title: help },
-      ringSvg(v), el("b", { text: String(v), "aria-hidden": "true" }), el("small", { text: label, "aria-hidden": "true" }));
+      ringSvg(v), figure, el("small", { text: label, "aria-hidden": "true" }));
   }
 
   // A sheet is drawn from one model, whether it is of a game on one platform or on several:
@@ -1164,6 +1225,8 @@
       logo.addEventListener("error", () => logo.remove());
     }
     if (wide) sheet.append(backdrop(shown.backdrops, shown.poster));
+    mood(wide ? (shown.backdrops[0] || shown.poster) : null, sheet);
+    sheet.style.setProperty("--par", "0");
     sheet.classList.toggle("with-backdrop", !!wide);
     noteRecent(m, es);
     // The way back, the steps through the list and the heart float in the window's corners and bottom; outside the
@@ -1291,7 +1354,7 @@
       const area = document.createElementNS(SVG, "polygon");
       for (const [k, v] of [["points", `0,${H} ${points.join(" ")} ${W},${H}`], ["fill", "currentColor"], ["opacity", "0.15"]]) area.setAttribute(k, v);
       const line = document.createElementNS(SVG, "polyline");
-      for (const [k, v] of [["points", points.join(" ")], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "2"], ["stroke-linejoin", "round"]]) line.setAttribute(k, v);
+      for (const [k, v] of [["points", points.join(" ")], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", "2"], ["stroke-linejoin", "round"], ["pathLength", "1"]]) line.setAttribute(k, v);
       svg.append(area, line);
       // The peak and the latest week are marked; a pointer over the curve reads the week under it.
       const mark = (i, cls) => {
@@ -2461,7 +2524,7 @@
     if (e.key !== "?" || e.ctrlKey || e.metaKey || e.altKey || e.target.closest("input, select, textarea, [contenteditable], dialog") || typeof HTMLDialogElement === "undefined") return;
     e.preventDefault();
     if (!help) {
-      const rows = [["/", "x_help_search"], ["↑ ↓", "x_help_list"], ["← →", "x_help_sheet"], ["Esc", "x_help_esc"], ["?", "x_help_title"]];
+      const rows = [["/", "x_help_search"], ["Ctrl K", "x_help_palette"], ["↑ ↓", "x_help_list"], ["← →", "x_help_sheet"], ["Esc", "x_help_esc"], ["?", "x_help_title"]];
       const close = el("button", { type: "button", class: "viewer-btn close", "aria-label": t("x_close"), text: "✕" });
       help = el("dialog", { class: "help", "aria-label": t("x_help_title") }, el("h3", { text: t("x_help_title") }),
         el("dl", {}, ...rows.map(([key, text]) => el("div", {}, el("dt", {}, el("kbd", { text: key })), el("dd", { text: t(text) })))), close);
@@ -2470,6 +2533,64 @@
       document.body.append(help);
     }
     help.showModal();
+  });
+
+  // Ctrl+K (or Cmd+K): one box to jump to a game of the platform, another platform or a view.
+  let palette = null;
+  async function openPalette() {
+    if (typeof HTMLDialogElement === "undefined") return;
+    if (!palette) {
+      const input = el("input", { type: "search", class: "palette-input", placeholder: t("x_palette"), "aria-label": t("x_palette"), autocomplete: "off", spellcheck: "false",
+        role: "combobox", "aria-expanded": "true", "aria-controls": "x-palette-list" });
+      const list = el("ul", { class: "palette-list", id: "x-palette-list", role: "listbox" });
+      const dlg = el("dialog", { class: "palette", "aria-label": t("x_palette") }, input, list);
+      let items = [], at = 0, run = 0;
+      const mark = () => items.forEach((li, i) => { li.setAttribute("aria-selected", String(i === at)); if (i === at) li.scrollIntoView({ block: "nearest" }); });
+      const choose = (i) => { const f = items[i] && items[i]._do; if (f) { dlg.close(); f(); } };
+      const fill = async () => {
+        const mineRun = ++run, q = fold(input.value.trim()), here = route().platform || from || PLATFORMS[0];
+        const rows = [];
+        const views = [...document.querySelectorAll("#x-views [data-view]")].filter((b) => b.dataset.view);
+        for (const b of views) rows.push([b.textContent.trim(), () => go(`#${here}/${b.dataset.view}`)]);
+        for (const pl of PLATFORMS) rows.push([S._names[pl] || pl, () => go(`#${pl}`)]);
+        let shown = rows.filter(([label]) => !q || fold(label).includes(q)).slice(0, q ? 6 : 8);
+        if (q.length >= 2) {
+          const names = await get(`x/${here}/names.json`).catch(() => []);
+          if (mineRun !== run) return;
+          const games = [], once = new Set();
+          for (const [id, name] of names) {
+            if (fold(name).includes(q) && !once.has(id)) { once.add(id); games.push([name, () => go(`#${here}/game/${encodeURIComponent(id)}`)]); }
+            if (games.length >= 6) break;
+          }
+          shown = shown.concat(games);
+        }
+        list.replaceChildren(...shown.map(([label, run1], i) => {
+          const li = el("li", { role: "option", "aria-selected": "false", text: label });
+          li._do = run1;
+          li.addEventListener("click", () => choose(i));
+          return li;
+        }));
+        items = [...list.children];
+        at = 0;
+        mark();
+      };
+      input.addEventListener("input", fill);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown") { e.preventDefault(); at = (at + 1) % Math.max(items.length, 1); mark(); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); at = (at - 1 + items.length) % Math.max(items.length, 1); mark(); }
+        else if (e.key === "Enter") { e.preventDefault(); choose(at); }
+      });
+      dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
+      dlg._fill = fill;
+      document.body.append(dlg);
+      palette = dlg;
+    }
+    palette.querySelector("input").value = "";
+    palette.showModal();
+    palette._fill();
+  }
+  document.addEventListener("keydown", (e) => {
+    if ((e.key === "k" || e.key === "K") && (e.ctrlKey || e.metaKey) && !e.altKey) { e.preventDefault(); openPalette(); }
   });
 
   window.addEventListener("hashchange", show);

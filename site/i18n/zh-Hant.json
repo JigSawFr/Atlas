@@ -439,5 +439,7 @@
   "x_list_delete": "刪除此清單",
   "x_see_sheet": "查看詳情",
   "x_roulette": "正在抽取遊戲…",
-  "x_fav_today": "今日發售：{name}"
+  "x_fav_today": "今日發售：{name}",
+  "x_palette": "跳轉到遊戲、平台或檢視",
+  "x_help_palette": "跳轉到遊戲、平台或檢視"
 }
