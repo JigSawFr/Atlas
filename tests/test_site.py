@@ -77,6 +77,22 @@ class SiteData(unittest.TestCase):
         self.assertEqual(self.sheet("switch", "0100F0F0F0F0F000")["edition_of"], ["0100A1B2C3D4E000", ""])
         self.assertEqual(self.sheet("steam", "900010")["traits"], {"genres": ["action"]})    # the tag "Action" is the genre
 
+    def test_a_gog_sheet_keeps_the_slug_for_its_store_page(self):
+        # GOG's games are keyed by number; the store page wants the slug.
+        with tempfile.TemporaryDirectory() as tmp:
+            data, out = os.path.join(tmp, "data"), os.path.join(tmp, "out")
+            sample(data)
+            put(data, "platforms/gog/popular.json", {"schema": 1, "generated": "2026-11-02", "games": {"1207000001": [50, 0, 0]}})
+            put(data, "platforms/gog/games.json", {"schema": 1, "games": {
+                "1207000001": {"name": "Amber Lantern", "slug": "amber_lantern", "qid": "Q900001"}}})
+            site_data.build(data, out)
+            lists = json.load(open(os.path.join(out, "x/gog/lists.json"), encoding="utf-8"))
+            shard = json.load(open(os.path.join(out, f"x/gog/g/{site_data.shard('1207000001', lists['shards'])}.json"), encoding="utf-8"))
+            self.assertEqual(shard["1207000001"]["slug"], "amber_lantern")
+            meta = json.load(open(os.path.join(out, "x/u/meta.json"), encoding="utf-8"))
+            unified = json.load(open(os.path.join(out, f"x/u/{site_data.shard('Q900001', meta['shards'])}.json"), encoding="utf-8"))["Q900001"]
+            self.assertEqual([e["slug"] for e in unified["platforms"] if e["p"] == "gog"], ["amber_lantern"])
+
     def unified(self, qid):
         meta = self.read("x/u/meta.json")
         return self.read(f"x/u/{site_data.shard(qid, meta['shards'])}.json")[qid]

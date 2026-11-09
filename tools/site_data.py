@@ -440,7 +440,7 @@ def unify(entries: dict, similar_of: dict) -> dict:
     for p in order:
         gid, sheet = entries[p]
         entry = {"p": p, "id": gid}
-        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of"):
+        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of", "slug"):
             if k in sheet:
                 entry[k] = sheet[k]
         out["platforms"].append(entry)
@@ -604,7 +604,7 @@ def build(data_dir: str, out_dir: str) -> dict:
                 traits = trait_names(game, tags, spelled)
                 if traits:
                     sheet["traits"] = traits
-                for k in ("release", "reviews", "rating", "gamepass", "qid", "igdb_rating", "igdb_cover", "igdb_art"):
+                for k in ("release", "reviews", "rating", "gamepass", "qid", "slug", "igdb_rating", "igdb_cover", "igdb_art"):
                     if game.get(k):
                         sheet[k] = game[k]
                 if isinstance(game.get("steam"), dict):
