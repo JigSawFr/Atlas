@@ -907,6 +907,15 @@
       return Array.isArray(list) ? list.filter((f) => f && typeof f.k === "string" && f.k.includes("/")) : [];
     } catch (e) { return []; }
   };
+  // Lists of its own (a name each, 12 at most): a favourite carries the name of the one it is in (`l`), none for the first.
+  const LISTS = "atlas-lists";
+  const listNames = () => {
+    try {
+      const l = JSON.parse(localStorage.getItem(LISTS) || "[]");
+      return Array.isArray(l) ? [...new Set(l.filter((x) => typeof x === "string" && x && x.length <= 24))].slice(0, 12) : [];
+    } catch (e) { return []; }
+  };
+  const keepLists = (l) => { try { localStorage.setItem(LISTS, JSON.stringify(l.slice(0, 12))); } catch (e) { /* not kept */ } };
   const keepFavs = (list) => { try { localStorage.setItem(FAVS, JSON.stringify(list.slice(-60))); } catch (e) { /* no storage: nothing kept */ } };
   // The sheets opened last (this browser only): offered when the search box is focused and empty.
   const RECENT = "atlas-recent";
@@ -1456,7 +1465,25 @@
     sheet.hidden = true;
     results.hidden = false;
     pressed("x-views", "view", "favorites");
-    const list = favs();
+    const cur = (query && query.get("list")) || "";
+    const names = listNames(), here = names.includes(cur) ? cur : "";
+    const every = favs();
+    const list = every.filter((f) => (f.l || "") === here);
+    const again = () => favoritesView(query);
+    // The lists side by side: the first, then each of its own, and a button for one more.
+    const tab = (name, label) => el("a", { class: "chip", href: `#${route().platform}/favorites${name ? `?${new URLSearchParams([["list", name]])}` : ""}`,
+      "aria-current": name === here ? "page" : null }, label, el("span", { class: "n", text: num(every.filter((f) => (f.l || "") === name).length) }));
+    const add = el("input", { type: "text", maxlength: "24", placeholder: t("x_list_name"), "aria-label": t("x_list_name"), hidden: "" });
+    const addBtn = el("button", { type: "button", class: "compare", text: t("x_list_new") });
+    addBtn.addEventListener("click", () => {
+      if (add.hidden) { add.hidden = false; add.focus(); return; }
+      const name = add.value.trim().slice(0, 24);
+      if (!name || names.length >= 12) return;
+      keepLists(names.concat(names.includes(name) ? [] : [name]));
+      go(`#${route().platform}/favorites?${new URLSearchParams([["list", name]])}`);
+    });
+    add.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addBtn.click(); } });
+    const tabs = el("li", { class: "fav-tabs" }, tab("", t("x_favorites")), ...names.map((n) => tab(n, n)), add, addBtn);
     // From a sheet's "Compare with…": that game is on the list, ticked, whether it is a favourite or not.
     const pick = query && query.get("pick");
     if (pick && pick.includes("/") && !list.some((f) => f.k === pick)) list.push({ k: pick, name: query.get("n") || "" });
@@ -1465,6 +1492,17 @@
     const importIn = el("input", { type: "file", accept: "application/json,.json", hidden: "" });
     const importBtn = el("button", { type: "button", class: "compare", text: t("x_fav_import") });
     importBtn.addEventListener("click", () => importIn.click());
+    // Dropping a list keeps its games: they go back to the first list.
+    const delList = () => {
+      if (!here) return "";
+      const b = el("button", { type: "button", class: "compare", text: t("x_list_delete") });
+      b.addEventListener("click", () => {
+        keepFavs(favs().map((f) => ((f.l || "") === here ? { k: f.k, name: f.name } : f)));
+        keepLists(listNames().filter((n) => n !== here));
+        go(`#${route().platform}/favorites`);
+      });
+      return b;
+    };
     importIn.addEventListener("change", async () => {
       const file = importIn.files && importIn.files[0];
       if (!file) return;
@@ -1473,15 +1511,18 @@
         if (!doc || !Number.isInteger(doc.schema) || doc.schema > 1 || !Array.isArray(doc.games)) throw new Error("schema");
         const have = new Set(favs().map((f) => f.k));
         const add = doc.games.filter((g) => g && typeof g.key === "string" && /^(u|[a-z0-9-]+)\/[^/\s]+$/.test(g.key) && !have.has(g.key) && (g.key.startsWith("u/") || PLATFORMS.includes(g.key.split("/")[0])))
-          .map((g) => ({ k: g.key, name: typeof g.name === "string" ? g.name.slice(0, 120) : "" }));
-        keepFavs(favs().concat(add));
+          .map((g) => ({ k: g.key, name: typeof g.name === "string" ? g.name.slice(0, 120) : "", l: typeof g.list === "string" ? g.list.trim().slice(0, 24) : "" }));
+        const known = new Set(listNames());
+        for (const g of add) if (g.l && !known.has(g.l) && known.size < 12) known.add(g.l);
+        keepLists([...known]);
+        keepFavs(favs().concat(add.map((g) => (g.l && known.has(g.l) ? g : { k: g.k, name: g.name }))));
         countFavs();
         await favoritesView();
         setStatus(t("x_fav_imported", { n: num(add.length) }));
       } catch (e) { setStatus(t("x_fav_import_bad")); }
     });
     if (!list.length) {
-      results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_empty") }), el("span", { class: "fav-actions" }, importBtn, importIn)));
+      results.replaceChildren(tabs, el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_empty") }), el("span", { class: "fav-actions" }, delList(), importBtn, importIn)));
       setStatus("");
       return;
     }
@@ -1490,7 +1531,7 @@
     exportBtn.addEventListener("click", () => {
       // A document read elsewhere carries its `schema` (an integer, as the data's formats do).
       const base = location.origin + location.pathname;
-      const doc = { schema: 1, games: list.map((f) => ({ name: f.name || "", key: f.k, url: base + favHref(f.k) })) };
+      const doc = { schema: 1, games: every.map((f) => ({ name: f.name || "", key: f.k, ...(f.l ? { list: f.l } : {}), url: base + favHref(f.k) })) };
       const url = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }));
       const a = el("a", { href: url, download: "atlas-favorites.json" });
       document.body.append(a);
@@ -1512,11 +1553,18 @@
       boxes.push(box);
       if (pick && f.k === pick) { box.checked = true; picked.add(f.k); }
       const drop = el("button", { type: "button", class: "unfav", title: t("x_fav_remove"), "aria-label": `${t("x_fav_remove")}: ${f.name || ref}`, text: "×" });
-      drop.addEventListener("click", () => { keepFavs(favs().filter((x) => x.k !== f.k)); countFavs(); favoritesView(); });
-      return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), drop);
+      drop.addEventListener("click", () => { keepFavs(favs().filter((x) => x.k !== f.k)); countFavs(); again(); });
+      // Move it to another list.
+      const move = names.length ? el("select", { class: "move", title: t("x_list_move"), "aria-label": `${t("x_list_move")}: ${f.name || ref}` },
+        ...["", ...names].map((n) => el("option", n === (f.l || "") ? { value: n, selected: "" } : { value: n }, n || t("x_favorites")))) : "";
+      if (names.length) move.addEventListener("change", () => {
+        keepFavs(favs().map((x) => (x.k === f.k ? (move.value ? { ...x, l: move.value } : { k: x.k, name: x.name }) : x)));
+        again();
+      });
+      return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), move, drop);
     });
     sync();
-    results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, importBtn, importIn, exportBtn, compare)), ...items);
+    results.replaceChildren(tabs, el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, delList(), importBtn, importIn, exportBtn, compare)), ...items);
     setStatus(`${t("x_favorites")} · ${num(list.length)}`);
   }
 
@@ -1560,11 +1608,15 @@
     const figure = (key, label) => {
       const values = facts.map((f) => f[key]), best = Math.max(...values);
       return [label, values.map((v) => (v ? el("span", { class: "cv" }, miniRing(v, label),
-        best > 0 && v === best && values.some((x) => x !== best) ? el("span", { class: "lead", title: t("x_highest"), "aria-label": t("x_highest"), text: "★" }) : null) : el("span", { class: "dim", text: "–" })))];
+        best > 0 && v === best && values.some((x) => x !== best) ? el("span", { class: "lead", title: t("x_highest"), "aria-label": t("x_highest"), text: "★" }) : null) : el("span", { class: "dim", text: "–" }))),
+        values.map((v) => best > 0 && v === best && values.some((x) => x !== best))];
     };
+    // The latest release wins its row too (when the dates differ).
+    const newest = facts.map((f) => f.release), latest = Math.max(...newest);
     const names = (m) => m.platforms.map((e) => S._names[e.p] || e.p).join(", ");
     const rows = [figure("atlas", t("x_atlas_score")), figure("score", t("x_score")), figure("critics", t("x_critics")), figure("players", t("x_players_rating")),
-      [t("x_release"), facts.map((f) => (f.release ? el("span", { text: ymd(f.release) }) : el("span", { class: "dim", text: "–" })))],
+      [t("x_release"), facts.map((f) => (f.release ? el("span", { text: ymd(f.release) }) : el("span", { class: "dim", text: "–" }))),
+        newest.map((v) => v > 0 && v === latest && newest.some((x) => x !== latest))],
       [t("x_by_platform"), got.map((m) => el("span", { text: names(m) }))],
       [t("x_genres"), got.map((m) => el("span", { class: "chips" }, ...((m.traits && m.traits.genres) || []).slice(0, 4).map((n) => chip("genres", n))))],
       [t("x_series"), got.map((m) => ((m.traits && m.traits.series) ? el("span", { text: labelOf("series", m.traits.series[0]) }) : el("span", { class: "dim", text: "–" })))]];
@@ -1574,7 +1626,7 @@
         tile(e.p, e.id, m.name, false, cover ? `i${cover}` : ""), el("span", { class: "name", text: m.name || e.id })));
     });
     const table = el("table", { class: "compare" }, el("thead", {}, el("tr", {}, el("th", { scope: "col", class: "corner", text: t("x_compare") }), ...heads)),
-      el("tbody", {}, ...rows.map(([label, cells]) => el("tr", {}, el("th", { scope: "row", text: label }), ...cells.map((c) => el("td", {}, c))))));
+      el("tbody", {}, ...rows.map(([label, cells, wins]) => el("tr", {}, el("th", { scope: "row", text: label }), ...cells.map((c, i) => el("td", wins && wins[i] ? { class: "win" } : {}, c))))));
     sheet.replaceChildren(back, el("h2", { tabindex: "-1", text: t("x_compare_n", { n: num(got.length) }) }), el("div", { class: "compare-wrap" }, table));
     setStatus("");
     window.scrollTo({ top: sheet.getBoundingClientRect().top + window.scrollY - 16 });

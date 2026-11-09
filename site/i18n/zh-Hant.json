@@ -432,5 +432,9 @@
   "x_near": "沒有完全符合：{n} 個相近名稱",
   "x_fav_import": "匯入",
   "x_fav_imported": "已新增 {n} 款遊戲",
-  "x_fav_import_bad": "此檔案不是從這裡匯出的清單"
+  "x_fav_import_bad": "此檔案不是從這裡匯出的清單",
+  "x_list_new": "新增清單",
+  "x_list_name": "清單名稱",
+  "x_list_move": "移至",
+  "x_list_delete": "刪除此清單"
 }

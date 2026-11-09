@@ -432,5 +432,9 @@
   "x_near": "完全一致なし：近い名前 {n} 件",
   "x_fav_import": "読み込む",
   "x_fav_imported": "{n} 本を追加しました",
-  "x_fav_import_bad": "このファイルは、ここから書き出したリストではありません"
+  "x_fav_import_bad": "このファイルは、ここから書き出したリストではありません",
+  "x_list_new": "新しいリスト",
+  "x_list_name": "リスト名",
+  "x_list_move": "移動先",
+  "x_list_delete": "このリストを削除"
 }

@@ -432,5 +432,9 @@
   "x_near": "没有完全匹配：{n} 个相近名称",
   "x_fav_import": "导入",
   "x_fav_imported": "已添加 {n} 款游戏",
-  "x_fav_import_bad": "此文件不是从这里导出的列表"
+  "x_fav_import_bad": "此文件不是从这里导出的列表",
+  "x_list_new": "新建列表",
+  "x_list_name": "列表名称",
+  "x_list_move": "移动到",
+  "x_list_delete": "删除此列表"
 }

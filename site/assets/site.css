@@ -922,6 +922,7 @@ table.compare tbody th { font-weight: 500; color: var(--mist); width: 8rem; font
 table.compare .corner { color: var(--mist); font-size: 0.875rem; font-weight: 500; vertical-align: bottom; }
 table.compare .cv { display: inline-flex; align-items: center; gap: 8px; }
 table.compare .lead { color: #ffc857; }
+table.compare td.win { background: color-mix(in srgb, #ffc857 14%, transparent); }
 table.compare .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* The way back from a sheet: a round button kept in the corner of the window. */
@@ -1079,3 +1080,10 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
 .results li.month:first-child { padding-top: 0; }
 /* A sheet of several platforms: its own soft colour. */
 .sheet.tinted { background: radial-gradient(90% 38% at 0 0, color-mix(in srgb, var(--tint) 13%, transparent), transparent 70%), var(--night); border-color: color-mix(in srgb, var(--tint) 22%, var(--night-line)); }
+
+/* Lists of favorites: the tabs, the "move to" menu */
+.results li.fav-tabs { counter-increment: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fav-tabs .chip[aria-current="page"] { border-color: currentColor; font-weight: 600; }
+.fav-tabs .chip .n { margin-inline-start: 6px; opacity: 0.7; font-size: 0.8125rem; }
+.fav-tabs input[type="text"] { min-width: 0; max-width: 11rem; }
+.fav-item .move { max-width: 8rem; font-size: 0.8125rem; }

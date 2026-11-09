@@ -432,5 +432,9 @@
   "x_near": "정확히 일치하는 항목 없음: 비슷한 이름 {n}개",
   "x_fav_import": "가져오기",
   "x_fav_imported": "게임 {n}개를 추가했어요",
-  "x_fav_import_bad": "이 파일은 여기에서 내보낸 목록이 아니에요"
+  "x_fav_import_bad": "이 파일은 여기에서 내보낸 목록이 아니에요",
+  "x_list_new": "새 목록",
+  "x_list_name": "목록 이름",
+  "x_list_move": "이동할 목록",
+  "x_list_delete": "이 목록 삭제"
 }

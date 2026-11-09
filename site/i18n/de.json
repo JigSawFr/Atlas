@@ -432,5 +432,9 @@
   "x_near": "Keine genaue Übereinstimmung: {n} ähnliche Namen",
   "x_fav_import": "Importieren",
   "x_fav_imported": "{n} Spiele hinzugefügt",
-  "x_fav_import_bad": "Diese Datei ist keine von hier exportierte Liste"
+  "x_fav_import_bad": "Diese Datei ist keine von hier exportierte Liste",
+  "x_list_new": "Neue Liste",
+  "x_list_name": "Name der Liste",
+  "x_list_move": "Verschieben nach",
+  "x_list_delete": "Diese Liste löschen"
 }
