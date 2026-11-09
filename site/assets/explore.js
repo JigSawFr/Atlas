@@ -1654,6 +1654,7 @@
     const { platform, view, arg, query } = route();
     // On a sheet the page's own heading folds to a line: the sheet is what is read.
     document.body.classList.toggle("x-on-sheet", view === "game" || view === "ugame" || view === "compare");
+    if (!document.body.classList.contains("x-on-sheet")) { document.body.classList.remove("x-controls-open"); foldBtn.setAttribute("aria-expanded", "false"); foldBtn.textContent = `${t("x_platform")} ▾`; }
     if (barOff && view !== "game" && view !== "ugame") barOff();
     const tr = trail();
     restore = tr && tr.hash === location.hash && !["game", "ugame", "compare", "favorites"].includes(view) ? tr : null;
@@ -1677,6 +1678,15 @@
       setStatus(t("x_error"));
     }
   }
+
+  // On a sheet the platforms, machines and views fold behind a button (the CSS does it; the search stays).
+  const foldBtn = el("button", { type: "button", class: "chip controls-toggle", "aria-expanded": "false", "aria-controls": "x-platforms", text: `${t("x_platform")} ▾` });
+  foldBtn.addEventListener("click", () => {
+    const open = document.body.classList.toggle("x-controls-open");
+    foldBtn.setAttribute("aria-expanded", String(open));
+    foldBtn.textContent = `${t("x_platform")} ${open ? "▴" : "▾"}`;
+  });
+  document.querySelector(".controls").prepend(foldBtn);
 
   const layout = document.getElementById("x-layout");
   function syncLayout() {
