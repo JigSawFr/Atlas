@@ -1341,7 +1341,7 @@
   // first, a page at a time. Every filter narrows (a game must have all the
   // values picked); the rows are filtered here, in the browser.
   const FACETS = ["genres", "themes", "modes", "perspectives", "styles", "moods", "gameplay", "content", "access", "series", "developers", "publishers", "tags", "year"];
-  const SORTS = ["popular", "trending", "critics", "year", "name"];
+  const SORTS = ["popular", "atlas", "trending", "critics", "year", "name"];
   const STEP = 50;
   let B = null;            // what is loaded of the platform being browsed
   let V = null;            // the games the filters keep, and how they are shown
@@ -1454,7 +1454,7 @@
       const c = new Intl.Collator(LANG);
       return ids.slice().sort((x, y) => c.compare(R[x][1], R[y][1]) || x - y);
     }
-    const col = { trending: 3, critics: 4, year: 5 }[how];
+    const col = { trending: 3, critics: 4, year: 5, atlas: 6 }[how];
     return ids.slice().sort((x, y) => (R[y][col] - R[x][col]) || x - y);
   }
 
@@ -1509,7 +1509,7 @@
   function draw(b) {
     const { ids, found, how } = V;
     results.replaceChildren(...ids.slice(0, limit).map((i) => {
-      const [id, name, s, tr, critics, year, pic] = b.rows[i];
+      const [id, name, s, tr, critics, year, , pic] = b.rows[i];
       return row(b.platform, id, name, [score(s), trend(tr),
         critics ? el("span", { class: "dim", text: `${t("x_critics")} ${critics}` }) : null,
         year ? el("span", { class: "dim", text: String(year) }) : null], pic);
