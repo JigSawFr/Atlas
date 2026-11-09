@@ -436,5 +436,8 @@
   "x_list_new": "Neue Liste",
   "x_list_name": "Name der Liste",
   "x_list_move": "Verschieben nach",
-  "x_list_delete": "Diese Liste löschen"
+  "x_list_delete": "Diese Liste löschen",
+  "x_see_sheet": "Zum Datenblatt",
+  "x_roulette": "Ein Spiel wird gezogen …",
+  "x_fav_today": "Heute erschienen: {name}"
 }

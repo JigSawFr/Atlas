@@ -436,5 +436,8 @@
   "x_list_new": "新建列表",
   "x_list_name": "列表名称",
   "x_list_move": "移动到",
-  "x_list_delete": "删除此列表"
+  "x_list_delete": "删除此列表",
+  "x_see_sheet": "查看详情",
+  "x_roulette": "正在抽取游戏…",
+  "x_fav_today": "今日发售：{name}"
 }

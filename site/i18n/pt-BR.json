@@ -436,5 +436,8 @@
   "x_list_new": "Nova lista",
   "x_list_name": "Nome da lista",
   "x_list_move": "Mover para",
-  "x_list_delete": "Excluir esta lista"
+  "x_list_delete": "Excluir esta lista",
+  "x_see_sheet": "Ver a ficha",
+  "x_roulette": "Sorteando um jogo…",
+  "x_fav_today": "Sai hoje: {name}"
 }
