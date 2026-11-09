@@ -2022,6 +2022,34 @@
     to.scrollIntoView({ block: "nearest", behavior: "auto" });
   });
 
+  // On a phone, once the controls are scrolled away, a thin bar keeps the three that matter at hand: the platform, the
+  // search, the filters (the page goes back to the top for the first two).
+  const mini = $("x-mini"), miniFilters = $("x-mini-filters");
+  let controlsAway = false;
+  function syncMini() {
+    const on = controlsAway && !WIDE.matches && !results.hidden && !document.body.classList.contains("x-on-sheet");
+    mini.hidden = !on;
+    if (!on) return;
+    mini.style.setProperty("--tint", tintOf(from || PLATFORMS[0]));
+    mini.querySelector("#x-mini-plat span").textContent = $("x-platform-name").textContent;
+    miniFilters.hidden = filtersBtn.hidden;
+    miniFilters.lastElementChild.textContent = filtersBtn.lastElementChild.textContent;
+  }
+  const toTop = (then) => {
+    window.scrollTo({ top: 0, behavior: MOTION.matches ? "smooth" : "auto" });
+    setTimeout(then, MOTION.matches ? 350 : 0);
+  };
+  $("x-mini-plat").addEventListener("click", () => toTop(() => pickerOpen(true)));
+  $("x-mini-search").addEventListener("click", () => toTop(() => search.focus()));
+  miniFilters.addEventListener("click", openFilters);
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(([en]) => { controlsAway = !en.isIntersecting && en.boundingClientRect.top < 0; syncMini(); })
+      .observe(document.querySelector(".xc-top"));
+  }
+  WIDE.addEventListener("change", syncMini);
+  window.addEventListener("hashchange", () => requestAnimationFrame(syncMini));
+  new MutationObserver(syncMini).observe(filtersBtn, { attributes: true, childList: true, subtree: true, attributeFilter: ["hidden"] });
+
   window.addEventListener("hashchange", show);
   countFavs();
   show();

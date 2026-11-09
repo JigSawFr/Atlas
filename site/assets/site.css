@@ -997,3 +997,15 @@ a.chip.store-link { border-color: color-mix(in srgb, var(--tint, #33bbff) 55%, t
 .suggest[hidden] { display: none; }
 .suggest li { padding: 10px 12px; border-radius: 9px; cursor: pointer; color: var(--snow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .suggest li:hover, .suggest li[aria-selected="true"] { background: color-mix(in srgb, var(--aurora) 16%, transparent); }
+
+/* On a phone, the thin bar that stays once the controls are scrolled away. */
+.xmini { position: fixed; z-index: 30; top: 0; inset-inline: 0; display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: color-mix(in srgb, var(--abyss) 88%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid var(--night-line); }
+.xmini[hidden] { display: none; }
+.xmini button { min-height: 40px; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; border-radius: 12px; border: 1px solid var(--night-line); background: var(--night); color: var(--snow); font: 600 0.875rem var(--body); cursor: pointer; }
+.xmini button[hidden] { display: none; }
+.xmini #x-mini-plat { flex: 1 1 auto; min-width: 0; justify-content: flex-start; }
+.xmini #x-mini-plat span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xmini .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--tint, var(--aurora)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--tint, var(--aurora)) 25%, transparent); }
+.xmini .ico { width: 1.125rem; height: 1.125rem; }
+@media (min-width: 900px) { .xmini { display: none !important; } }
+@media (prefers-reduced-motion: no-preference) { .xmini:not([hidden]) { animation: drop 0.2s ease-out; } @keyframes drop { from { transform: translateY(-100%); } to { transform: none; } } }
