@@ -220,6 +220,16 @@ class SiteData(unittest.TestCase):
         self.assertEqual(site_data.by_release(scores, games, {}, None), ([], {}))
         self.assertEqual(self.read("x/steam/days.json")["days"], {})
 
+    def test_share_pages(self):
+        page = site_data.share_page("steam", "900010", 'Amber "Lantern" <1>')
+        self.assertIn("Amber &quot;Lantern&quot; &lt;1&gt; · Atlas", page)
+        self.assertIn("store_item_assets/steam/apps/900010/header.jpg", page)
+        self.assertIn('url=../../../explore/#steam/game/900010"', page)
+        self.assertNotIn("og:image", site_data.share_page("switch", "0100A1B2C3D4E000", "Amber"))
+        # a page for each of the best known games that has a name
+        self.assertTrue(os.path.exists(os.path.join(self.out, "g", "steam", "900010", "index.html")))
+        self.assertFalse(os.path.exists(os.path.join(self.out, "g", "switch")))     # no page for a game with no name
+
     def test_an_edition_is_one_game_with_its_game(self):
         names = {"a": "Venetica", "b": "Venetica - Gold Edition", "c": "Venetica: Deluxe Edition", "d": "Other - Gold Edition",
                  "e": "Resident Evil 4", "f": "Resident Evil 4", "g": "Resident Evil 4 Deluxe Edition", "h": "Venetica Gold"}
