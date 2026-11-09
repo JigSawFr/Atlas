@@ -1091,12 +1091,12 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
 /* The big picture of the first page, the page's tint behind it, the cards that come alive, the wheel and the paper. */
 #x-home { position: relative; isolation: isolate; }
 #x-home::before {
-  content: ""; position: absolute; inset: -30px -24px auto; height: 560px; z-index: -1; pointer-events: none;
+  content: ""; position: absolute; inset: -30px 0 auto; height: 560px; z-index: -1; pointer-events: none;
   background: var(--amb, none) center / cover no-repeat; filter: blur(56px) saturate(1.4); opacity: 0.32;
   -webkit-mask-image: radial-gradient(ellipse 70% 90% at 50% 0%, #000 25%, transparent 75%); mask-image: radial-gradient(ellipse 70% 90% at 50% 0%, #000 25%, transparent 75%);
   transition: opacity 0.6s;
 }
-.stage { position: relative; aspect-ratio: 8 / 3; min-height: 230px; max-height: 440px; border-radius: 22px; overflow: hidden; border: 1px solid var(--night-line); background: var(--abyss); }
+.stage { position: relative; height: clamp(230px, 34vw, 440px); border-radius: 22px; overflow: hidden; border: 1px solid var(--night-line); background: var(--abyss); }
 .stage-slide { position: absolute; inset: 0; display: block; color: var(--snow); text-decoration: none; opacity: 0; visibility: hidden; transition: opacity 0.7s ease, visibility 0.7s; }
 .stage-slide.on { opacity: 1; visibility: visible; }
 .stage-art, .stage-art .cover, .stage-art svg { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; border: 0; border-radius: 0; aspect-ratio: auto; }
@@ -1108,9 +1108,10 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
 .stage-meta { display: inline-flex; align-items: center; gap: 10px; }
 .stage-cta { margin-top: 4px; padding: 8px 16px; border-radius: 999px; background: var(--snow); color: var(--abyss); font-weight: 600; font-size: 0.9375rem; }
 .stage-slide:hover .stage-cta, .stage-slide:focus-visible .stage-cta { background: color-mix(in srgb, var(--snow) 85%, var(--aurora, #6ee7c8)); }
-.stage-dots { position: absolute; z-index: 2; right: 14px; bottom: 14px; display: flex; gap: 8px; }
-.stage-dot { width: 10px; height: 10px; padding: 0; border-radius: 50%; border: 1px solid var(--snow); background: transparent; cursor: pointer; }
-.stage-dot[aria-current="true"] { background: var(--snow); }
+.stage-dots { position: absolute; z-index: 2; right: 8px; bottom: 8px; display: flex; }
+.stage-dot { position: relative; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.stage-dot::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; border: 1px solid var(--snow); }
+.stage-dot[aria-current="true"]::before { background: var(--snow); }
 .stage-dot:focus-visible { outline: 2px solid var(--snow); outline-offset: 3px; }
 .today { margin: 0 0 14px; padding: 12px 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, #ffc857 55%, var(--night-line)); background: color-mix(in srgb, #ffc857 12%, var(--night)); font-weight: 600; }
 /* The first of a ranking in cards is drawn large. */
