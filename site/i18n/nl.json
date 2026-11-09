@@ -432,5 +432,9 @@
   "x_near": "Geen exacte treffer: {n} vergelijkbare namen",
   "x_fav_import": "Importeren",
   "x_fav_imported": "{n} games toegevoegd",
-  "x_fav_import_bad": "Dit bestand is geen lijst die hier is geëxporteerd"
+  "x_fav_import_bad": "Dit bestand is geen lijst die hier is geëxporteerd",
+  "x_list_new": "Nieuwe lijst",
+  "x_list_name": "Naam van de lijst",
+  "x_list_move": "Verplaatsen naar",
+  "x_list_delete": "Deze lijst verwijderen"
 }

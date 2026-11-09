@@ -432,5 +432,9 @@
   "x_near": "No exact match: {n} close names",
   "x_fav_import": "Import",
   "x_fav_imported": "{n} games added",
-  "x_fav_import_bad": "This file is not a list exported from here"
+  "x_fav_import_bad": "This file is not a list exported from here",
+  "x_list_new": "New list",
+  "x_list_name": "List name",
+  "x_list_move": "Move to",
+  "x_list_delete": "Delete this list"
 }
