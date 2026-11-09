@@ -804,3 +804,10 @@ a.chip.store-link { border-color: color-mix(in srgb, var(--tint, #33bbff) 55%, t
 .fav.fab.on { background: rgb(60 20 34 / 0.92); }
 .topline { justify-content: flex-start; }
 .ring-note { margin: 0.4rem 0 0; font-size: 0.8125rem; }
+
+/* On a sheet the game comes first: the platforms, machines and views fold behind one button; the search stays. */
+.controls-toggle { display: none; justify-self: start; }
+.x-on-sheet .controls-toggle { display: inline-flex; cursor: pointer; font: inherit; color: var(--snow); }
+.x-on-sheet:not(.x-controls-open) #x-platforms,
+.x-on-sheet:not(.x-controls-open) #x-machine-field,
+.x-on-sheet:not(.x-controls-open) #x-views { display: none; }
