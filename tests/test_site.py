@@ -209,6 +209,17 @@ class SiteData(unittest.TestCase):
         self.assertEqual(site_data.similar_row("a", "A", 70, "", ["g:farm"]), ["a", "A", 70, "", ["g:farm"]])
         self.assertEqual(site_data.similar_row("a", "A", 70, "s9", []), ["a", "A", 70, "s9"])
 
+    def test_just_out_and_on_this_day(self):
+        scores = {"a": [50, 0, 0], "b": [40, 0, 0], "c": [30, 0, 0], "d": [20, 0, 0], "e": [0, 0, 0], "f": [10, 0, 0]}
+        games = {"a": {"release": 20261020}, "b": {"release": 20241102}, "c": {"release": 20010101}, "d": {"release": 20200102},
+                 "e": {"release": 20261030}, "f": {"release": 20261101}}
+        recent, days = site_data.by_release(scores, games, {"f": "a"}, "2026-11-02")
+        self.assertEqual(recent, [("a", 20261020)])      # out in the last days; an unscored game and an edition are left out
+        self.assertEqual(days["1102"], [("b", 20241102)])
+        self.assertNotIn("1020", days)                   # this year's releases are not "on this day"
+        self.assertEqual(site_data.by_release(scores, games, {}, None), ([], {}))
+        self.assertEqual(self.read("x/steam/days.json")["days"], {})
+
     def test_an_edition_is_one_game_with_its_game(self):
         names = {"a": "Venetica", "b": "Venetica - Gold Edition", "c": "Venetica: Deluxe Edition", "d": "Other - Gold Edition",
                  "e": "Resident Evil 4", "f": "Resident Evil 4", "g": "Resident Evil 4 Deluxe Edition", "h": "Venetica Gold"}
@@ -374,7 +385,7 @@ class SiteData(unittest.TestCase):
         self.assertNotIn("countries", lists)
         self.assertNotIn("history_shards", lists)
         self.assertNotIn("prices", self.sheet("switch", "0100A1B2C3D4E000"))
-        self.assertEqual(sorted(os.listdir(os.path.join(self.out, "x", "switch"))), ["browse", "facets.json", "g", "lists.json", "names.json", "stats.json"])
+        self.assertEqual(sorted(os.listdir(os.path.join(self.out, "x", "switch"))), ["browse", "days.json", "facets.json", "g", "lists.json", "names.json", "stats.json"])
 
     def test_names(self):
         names = self.read("x/steam/names.json")

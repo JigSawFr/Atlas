@@ -425,5 +425,12 @@
   "x_help_sheet": "시트에서 이전·다음 게임",
   "x_help_esc": "닫기 또는 검색어 지우기",
   "x_fav_export": "내보내기",
-  "x_compare_with": "비교하기…"
+  "x_compare_with": "비교하기…",
+  "x_this_day": "오늘 출시된 게임",
+  "x_out_now": "방금 출시",
+  "x_fav_soon": "곧 출시되는 즐겨찾기",
+  "x_near": "정확히 일치하는 항목 없음: 비슷한 이름 {n}개",
+  "x_fav_import": "가져오기",
+  "x_fav_imported": "게임 {n}개를 추가했어요",
+  "x_fav_import_bad": "이 파일은 여기에서 내보낸 목록이 아니에요"
 }

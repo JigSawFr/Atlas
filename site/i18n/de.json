@@ -425,5 +425,12 @@
   "x_help_sheet": "Vorheriges oder nächstes Spiel auf einer Seite",
   "x_help_esc": "Schließen oder Suche leeren",
   "x_fav_export": "Exportieren",
-  "x_compare_with": "Vergleichen mit …"
+  "x_compare_with": "Vergleichen mit …",
+  "x_this_day": "An diesem Tag",
+  "x_out_now": "Gerade erschienen",
+  "x_fav_soon": "Deine Favoriten, bald erhältlich",
+  "x_near": "Keine genaue Übereinstimmung: {n} ähnliche Namen",
+  "x_fav_import": "Importieren",
+  "x_fav_imported": "{n} Spiele hinzugefügt",
+  "x_fav_import_bad": "Diese Datei ist keine von hier exportierte Liste"
 }
