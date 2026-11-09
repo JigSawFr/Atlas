@@ -409,5 +409,9 @@
   "x_pooled_value": "{n} 条评价中 {p} % 为好评",
   "x_score_avg": "平均知名度",
   "x_global_sheet": "综合页面",
-  "x_value": "数值"
+  "x_value": "数值",
+  "x_suggestions": "建议",
+  "x_empty_hint": "试试减少筛选条件或换一种写法。",
+  "x_empty_all": "在所有平台中搜索",
+  "x_empty_browse": "用筛选条件浏览"
 }

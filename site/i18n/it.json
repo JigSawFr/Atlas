@@ -409,5 +409,9 @@
   "x_pooled_value": "{p} % positive su {n} recensioni",
   "x_score_avg": "Notorietà media",
   "x_global_sheet": "Scheda generale",
-  "x_value": "Valore"
+  "x_value": "Valore",
+  "x_suggestions": "Suggerimenti",
+  "x_empty_hint": "Prova con meno filtri o un'altra grafia.",
+  "x_empty_all": "Cerca su tutte le piattaforme",
+  "x_empty_browse": "Sfoglia con i filtri"
 }

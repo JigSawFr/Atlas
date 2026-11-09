@@ -968,3 +968,32 @@ a.chip.store-link { border-color: color-mix(in srgb, var(--tint, #33bbff) 55%, t
 .x-on-sheet:not(.x-controls-open) #x-platforms,
 .x-on-sheet:not(.x-controls-open) #x-machine-field,
 .x-on-sheet:not(.x-controls-open) #x-views { display: none; }
+
+/* Placeholders while a list is read (explore.js adds them after a beat): same footprint as a row, or a card. */
+.results li.skeleton { counter-increment: none; list-style: none; min-height: 64px; border-radius: 14px; border: 1px solid var(--night-line); background: var(--night); overflow: hidden; }
+.results.cards li.skeleton { min-height: 0; aspect-ratio: 200 / 190; }
+.results li.skeleton span { display: block; height: 100%; min-height: inherit; background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--snow) 7%, transparent) 50%, transparent 80%) 0 0 / 200% 100%; }
+.results.cards li.skeleton span { aspect-ratio: inherit; }
+@media (prefers-reduced-motion: no-preference) {
+  .results li.skeleton span { animation: sweep 1.4s linear infinite; }
+  @keyframes sweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+  /* The podium comes in one place after the other. */
+  .results.podium > li:nth-child(-n+3) > a { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .results.podium > li:nth-child(2) > a { animation-delay: 0.08s; }
+  .results.podium > li:nth-child(3) > a { animation-delay: 0.16s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+}
+
+/* Nothing found: say so, and offer the next step. */
+.empty { margin-top: 16px; padding: 20px; border-radius: 14px; border: 1px dashed var(--night-line); background: var(--night); }
+.empty[hidden] { display: none; }
+.empty p { margin: 0; }
+.empty-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px !important; }
+.empty-actions a.chip { text-decoration: none; }
+
+/* The suggestions under the search box. */
+.searchbar { position: relative; }
+.suggest { position: absolute; z-index: 20; inset-inline: 0; top: calc(100% + 6px); margin: 0; padding: 6px; list-style: none; border-radius: 14px; border: 1px solid var(--night-line); background: var(--night); box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.6); }
+.suggest[hidden] { display: none; }
+.suggest li { padding: 10px 12px; border-radius: 9px; cursor: pointer; color: var(--snow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.suggest li:hover, .suggest li[aria-selected="true"] { background: color-mix(in srgb, var(--aurora) 16%, transparent); }

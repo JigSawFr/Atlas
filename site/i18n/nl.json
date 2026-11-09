@@ -409,5 +409,9 @@
   "x_pooled_value": "{p} % positief van {n} reviews",
   "x_score_avg": "Gemiddelde bekendheid",
   "x_global_sheet": "Overzichtspagina",
-  "x_value": "Waarde"
+  "x_value": "Waarde",
+  "x_suggestions": "Suggesties",
+  "x_empty_hint": "Probeer minder filters of een andere spelling.",
+  "x_empty_all": "Zoeken op alle platforms",
+  "x_empty_browse": "Bladeren met filters"
 }

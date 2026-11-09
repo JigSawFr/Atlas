@@ -111,6 +111,10 @@
   }
 
   // The address, read and written.
+  // The platform last visited is where an empty address opens (kept in this browser only).
+  const HOME_KEY = "atlas-platform";
+  let home = PLATFORMS[0];
+  try { const kept = localStorage.getItem(HOME_KEY); if (PLATFORMS.includes(kept)) home = kept; } catch (e) { /* no storage: the first platform */ }
   let from = "";               // the platform last shown, which a sheet of all a game's platforms goes back to ("" before any)
   function route() {
     const raw = location.hash.slice(1), q = raw.indexOf("?");
@@ -118,7 +122,7 @@
     const query = new URLSearchParams(q < 0 ? "" : raw.slice(q + 1));
     if (parts[0] === "all" && parts[1] === "search") return { platform: from || PLATFORMS[0], view: "searchall", arg: parts.slice(2).join("/"), query };
     if (parts[0] === "game" && parts[1]) return { platform: from || PLATFORMS[0], view: "ugame", arg: parts.slice(1).join("/"), query };
-    const platform = PLATFORMS.includes(parts[0]) ? parts[0] : PLATFORMS[0];
+    const platform = PLATFORMS.includes(parts[0]) ? parts[0] : home;
     from = platform;
     const view = ["browse", "popular", "trending", "upcoming", "search", "game", "stats", "favorites", "compare"].includes(parts[1]) ? parts[1] : "popular";
     return { platform, view, arg: parts.slice(2).join("/"), query };
@@ -139,10 +143,29 @@
     }
   }
 
+  // While a list is read and nothing is on screen yet, grey placeholders hold its place (only after a beat, so a quick
+  // read does not flash them).
+  const empty = $("x-empty"), emptyActions = $("x-empty-actions");
+  let skeletonTimer = 0;
   function setStatus(text) {
     status.textContent = text;
     foot.textContent = "";      // the small print under a list is set after its status, by the view that has one
+    empty.hidden = true;
+    clearTimeout(skeletonTimer);
+    if (text === t("x_loading")) {
+      skeletonTimer = setTimeout(() => {
+        if (results.hidden || results.querySelector("li:not(.skeleton)")) return;
+        results.replaceChildren(...Array.from({ length: cards ? 12 : 8 }, () => el("li", { class: "skeleton", "aria-hidden": "true" }, el("span"))));
+      }, 150);
+    }
   }
+  // Nothing found: what to try, one press away.
+  function nothing(actions) {
+    results.replaceChildren();
+    emptyActions.replaceChildren(...actions.filter(Boolean));
+    empty.hidden = false;
+  }
+  const action = (text, href) => el("a", { class: "chip", href, text });
 
   function nameOf(id, name, platform) {
     return name ? el("span", { class: "name", text: name })
@@ -307,7 +330,8 @@
     }
     results.replaceChildren(...found.map(([id, name, s]) => row(platform, id, name, [score(s)])));
     bars(results);
-    setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + ` · ${t("x_loaded", { size: kb(read) })}`);
+    setStatus(found.length ? `${t("x_count", { n: num(found.length) })} · ${t("x_loaded", { size: kb(read) })}` : "");
+    if (!found.length) nothing([action(t("x_empty_all"), `#all/search/${encodeURIComponent(words.trim())}`), action(t("x_empty_browse"), `#${platform}/browse`)]);
   }
 
   // The search over every platform at once: all the names lists, asked only when the visitor asks for it.
@@ -326,7 +350,8 @@
     const once = new Set(), shown = found.filter(([p, id]) => !once.has(`${p}/${id}`) && once.add(`${p}/${id}`)).slice(0, 200);
     results.replaceChildren(...shown.map(([p, id, name, s]) => row(p, id, name, [el("span", { class: "badge", text: S._names[p] || p }), score(s)])));
     bars(results);
-    setStatus((found.length ? t("x_count", { n: num(found.length) }) : t("x_nothing")) + ` · ${t("x_loaded", { size: kb(read) })}`);
+    setStatus(found.length ? `${t("x_count", { n: num(found.length) })} · ${t("x_loaded", { size: kb(read) })}` : "");
+    if (!found.length) nothing([action(t("x_empty_browse"), `#${from || PLATFORMS[0]}/browse`)]);
   }
 
   function section(title, ...content) {
@@ -1576,7 +1601,8 @@
       more.hidden = true;
       loadAll.hidden = true;
       apply.textContent = t("x_show_n", { n: "0" });
-      setStatus(t("x_nothing"));
+      setStatus("");
+      nothing([action(t("x_clear"), hashOf(b.platform, new URLSearchParams()))]);
       return;
     }
     const partial = b.loaded < b.f.pages;
@@ -1586,8 +1612,15 @@
     const rest = [];
     if (partial && (found.length || how !== "popular")) rest.push(t("x_browse_partial", { loaded: num(b.rows.length), total: num(b.f.games) }));
     rest.push(t("x_loaded", { size: kb(read) }));
-    setStatus(!ids.length && !partial ? t("x_nothing") : ids.length || !partial ? t("x_count_of", { shown: num(Math.min(limit, ids.length)), n: total }) : "");
+    setStatus(ids.length ? t("x_count_of", { shown: num(Math.min(limit, ids.length)), n: total }) : "");
     foot.textContent = rest.join(" · ");
+    if (!ids.length && !partial) {
+      more.hidden = true;
+      loadAll.hidden = true;
+      nothing([action(t("x_clear"), hashOf(b.platform, new URLSearchParams())),
+        search.value.trim() ? action(t("x_empty_all"), `#all/search/${encodeURIComponent(search.value.trim())}`) : null]);
+      return;
+    }
     more.hidden = !(ids.length > limit || partial);
     loadAll.hidden = !(partial && how !== "popular");
   }
@@ -1704,6 +1737,7 @@
     tipBox.hidden = true;
     pressed("x-platforms", "platform", platform);
     syncPlatform(platform);
+    if (platform !== home) { home = platform; try { localStorage.setItem(HOME_KEY, platform); } catch (e) { /* not kept */ } }
     pickerOpen(false);
     $("x-search-all").setAttribute("aria-pressed", String(view === "searchall"));
     rtools.hidden = !["browse", "popular", "trending", "upcoming", "search", "searchall"].includes(view);
@@ -1769,6 +1803,7 @@
   });
   let timer = 0;
   search.addEventListener("input", () => {
+    suggest();
     clearTimeout(timer);
     timer = setTimeout(() => {
       const q = search.value.trim(), r = route();
@@ -1890,8 +1925,103 @@
     search.focus();
   });
   search.addEventListener("keydown", (e) => {
+    if (!suggestBox.hidden && ["ArrowDown", "ArrowUp"].includes(e.key)) {
+      e.preventDefault();
+      suggestMove(e.key === "ArrowDown" ? 1 : -1);
+      return;
+    }
+    if (e.key === "Enter" && suggestAt >= 0) {
+      e.preventDefault();
+      clearTimeout(timer);
+      suggestBox.children[suggestAt].click();
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      const first = results.querySelector(":scope > li > a");
+      if (first) { e.preventDefault(); first.focus(); }
+      return;
+    }
+    if (e.key === "Escape" && !suggestBox.hidden) { e.preventDefault(); suggestClose(); return; }
     if (e.key === "Escape" && search.value) { e.preventDefault(); search.value = ""; search.dispatchEvent(new Event("input")); }
   });
+  // The names that begin like what is typed (then those that contain it): a few lines under the box, to pick one.
+  const suggestBox = $("x-suggest");
+  let suggestAt = -1;
+  function suggestClose() {
+    suggestBox.hidden = true;
+    suggestBox.replaceChildren();
+    suggestAt = -1;
+    search.setAttribute("aria-expanded", "false");
+    search.removeAttribute("aria-activedescendant");
+  }
+  function suggestMove(d) {
+    const n = suggestBox.children.length;
+    if (!n) return;
+    suggestAt = (suggestAt + 1 + d + n + 1) % (n + 1) - 1;   // -1 is the box itself
+    [...suggestBox.children].forEach((li, i) => li.setAttribute("aria-selected", String(i === suggestAt)));
+    if (suggestAt >= 0) search.setAttribute("aria-activedescendant", suggestBox.children[suggestAt].id);
+    else search.removeAttribute("aria-activedescendant");
+  }
+  async function suggest() {
+    const word = search.value.trim(), q = fold(word), r = route();
+    if (q.length < 2 || r.view === "searchall" || /^[0-9a-f]{16}$/i.test(q)) return suggestClose();
+    let names;
+    try { names = await get(`x/${r.platform}/names.json`); } catch (e) { return suggestClose(); }
+    if (search.value.trim() !== word) return;                 // typed on meanwhile: that call will answer
+    const starts = [], inside = [], once = new Set();
+    for (const [id, name] of names) {
+      if (once.has(id)) continue;
+      const at = fold(name).indexOf(q);
+      if (at < 0) continue;
+      once.add(id);
+      (at === 0 ? starts : inside).push([id, name]);
+      if (starts.length >= 6) break;
+    }
+    const top = starts.concat(inside).slice(0, 6);
+    suggestAt = -1;
+    search.removeAttribute("aria-activedescendant");
+    if (!top.length) return suggestClose();
+    suggestBox.replaceChildren(...top.map(([id, name], i) => {
+      const li = el("li", { role: "option", id: `x-sug-${i}`, "aria-selected": "false", text: name });
+      li.addEventListener("click", () => { suggestClose(); go(`#${r.platform}/game/${encodeURIComponent(id)}`); });
+      return li;
+    }));
+    suggestBox.hidden = false;
+    search.setAttribute("aria-expanded", "true");
+  }
+  suggestBox.addEventListener("pointerdown", (e) => e.preventDefault());       // the box keeps focus while a line is pressed
+  search.addEventListener("blur", suggestClose);
+  window.addEventListener("hashchange", () => { if (!/\/search\//.test(location.hash)) suggestClose(); });
+
+  // In a list, the arrows move from one game to the next (up and down by line; in cards, left and right too).
+  results.addEventListener("keydown", (e) => {
+    const a = e.target.closest && e.target.closest("a");
+    if (!a || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || !e.key.startsWith("Arrow")) return;
+    const links = [...results.querySelectorAll(":scope > li > a")], i = links.indexOf(a);
+    let to = null;
+    if (e.key === "ArrowRight" && cards) to = links[i + 1];
+    else if (e.key === "ArrowLeft" && cards) to = links[i - 1];
+    else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      const dir = e.key === "ArrowDown" ? 1 : -1;
+      if (!cards) to = links[i + dir];
+      else {
+        const r = a.getBoundingClientRect();
+        let best = Infinity;
+        for (const l of links) {
+          const q = l.getBoundingClientRect();
+          if ((q.top - r.top) * dir <= 4) continue;
+          const d = Math.abs(q.top - r.top) * 1000 + Math.abs(q.left - r.left);
+          if (d < best) { best = d; to = l; }
+        }
+      }
+      if (!to && dir < 0) to = search;
+    }
+    if (!to) return;
+    e.preventDefault();
+    to.focus({ preventScroll: true });
+    to.scrollIntoView({ block: "nearest", behavior: "auto" });
+  });
+
   window.addEventListener("hashchange", show);
   countFavs();
   show();

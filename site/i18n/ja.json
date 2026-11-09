@@ -409,5 +409,9 @@
   "x_pooled_value": "{n}件中{p} %が好評",
   "x_score_avg": "平均の知名度",
   "x_global_sheet": "総合ページ",
-  "x_value": "値"
+  "x_value": "値",
+  "x_suggestions": "候補",
+  "x_empty_hint": "フィルターを減らすか、別の表記をお試しください。",
+  "x_empty_all": "すべてのプラットフォームで検索",
+  "x_empty_browse": "フィルターで探す"
 }
