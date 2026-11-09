@@ -112,7 +112,6 @@
   "x_noscript": "The explorer needs JavaScript. The files themselves are listed on the project's page.",
   "x_error": "The data could not be read. Try again in a moment.",
   "x_nothing": "No game found.",
-  "x_loaded": "{size} read",
   "x_count": "{n} games",
   "x_popular_note": "The best known games, from Wikipedia, the critics and the stores' reviews.",
   "x_trending_note": "The games read about more this week than in the four before.",

@@ -460,11 +460,7 @@ a.badge:hover, a.badge:focus-visible { color: var(--snow); border-color: var(--m
 }
 
 /* The rings are buttons: pressed, the line under them says what each measures. */
-button.ring { padding: 0; border: 0; background: none; color: var(--snow); font: inherit; cursor: help; border-radius: 12px; }
-button.ring:focus-visible { outline: 2px solid var(--aurora); outline-offset: 4px; }
-button.ring[aria-expanded="true"] small { color: var(--snow); }
-.ring-help { margin: 0; max-width: 56ch; font-size: 0.875rem; color: var(--mist); }
-.ring-help[hidden] { display: none; }
+.ring[title] { cursor: help; }
 
 /* ---- The explorer's controls: the platform picker and the search on one line, the lists as tabs; in Browse the
    filters stand in a column beside the games (a panel rising from the bottom on a phone). */

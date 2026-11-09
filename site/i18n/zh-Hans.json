@@ -112,7 +112,6 @@
   "x_noscript": "浏览器需要 JavaScript。文件本身列在项目页面上。",
   "x_error": "无法读取数据。请稍后再试。",
   "x_nothing": "未找到游戏。",
-  "x_loaded": "已读取 {size}",
   "x_count": "{n} 款游戏",
   "x_popular_note": "根据维基百科、评论家和商店评测得出的最知名游戏。",
   "x_trending_note": "本周比前四周被阅读更多的游戏。",

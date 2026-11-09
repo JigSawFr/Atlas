@@ -112,7 +112,6 @@
   "x_noscript": "O explorador precisa de JavaScript. Os ficheiros estão listados na página do projeto.",
   "x_error": "Não foi possível ler os dados. Tente de novo dentro de momentos.",
   "x_nothing": "Nenhum jogo encontrado.",
-  "x_loaded": "{size} lidos",
   "x_count": "{n} jogos",
   "x_popular_note": "Os jogos mais conhecidos, segundo a Wikipédia, a crítica e as análises das lojas.",
   "x_trending_note": "Os jogos mais lidos esta semana do que nas quatro anteriores.",
