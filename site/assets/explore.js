@@ -1127,7 +1127,8 @@
   const favs = () => {
     try {
       const list = JSON.parse(localStorage.getItem(FAVS) || "[]");
-      return Array.isArray(list) ? list.filter((f) => f && typeof f.k === "string" && f.k.includes("/")) : [];
+      // A status and a note (`s`, `n`) were kept on a favourite until 2026-11; they are dropped as the list is read, so the next write clears them (remove this with the next release).
+      return Array.isArray(list) ? list.filter((f) => f && typeof f.k === "string" && f.k.includes("/")).map(({ s, n, ...f }) => f) : [];
     } catch (e) { return []; }
   };
   // Lists of its own (a name each, 12 at most): a favourite carries the name of the one it is in (`l`), none for the first.
@@ -1157,30 +1158,6 @@
   const favHref = (k) => { const at = k.indexOf("/"); return gameHref(k.slice(0, at), k.slice(at + 1)); };
   const favButton = $("x-fav");
   const countFavs = () => { const n = favs().length; favButton.replaceChildren(t("x_favorites"), n ? el("span", { class: "n", text: num(n) }) : ""); };
-  // What the visitor keeps of a game besides the heart: a status (to play, playing, played) and a note, on the favourite
-  // (the game becomes one if it was not). An empty value takes the field away.
-  const STATUSES = ["todo", "doing", "done"];
-  function upsertFav(k, name, patch) {
-    const list = favs(), at = list.findIndex((f) => f.k === k);
-    const f = at >= 0 ? { ...list[at] } : { k, name };
-    for (const [key, v] of Object.entries(patch)) { if (v) f[key] = v; else delete f[key]; }
-    if (at >= 0) list[at] = f; else list.push(f);
-    keepFavs(list);
-    countFavs();
-    document.dispatchEvent(new Event("atlas-favs"));
-  }
-  function mine(m, es) {
-    const k = sheetKey(m, es);
-    if (!k) return null;
-    const cur = favs().find((f) => f.k === k) || {}, name = m.name || m.id || "";
-    const status = el("select", { class: "status", "aria-label": t("x_status") }, el("option", { value: "", text: t("x_status") }),
-      ...STATUSES.map((v) => el("option", cur.s === v ? { value: v, selected: "" } : { value: v }, t(`x_status_${v}`))));
-    status.addEventListener("change", () => upsertFav(k, name, { s: status.value }));
-    const note = el("input", { type: "text", class: "note", maxlength: "120", placeholder: t("x_note"), "aria-label": t("x_note"), value: cur.n || "" });
-    note.addEventListener("change", () => upsertFav(k, name, { n: note.value.trim().slice(0, 120) }));
-    return el("span", { class: "mine" }, status, note);
-  }
-
   function heart(m, es) {
     const k = sheetKey(m, es);
     if (!k) return null;
@@ -1289,8 +1266,7 @@
     const whole = !multi && m.unified ? el("a", { class: "chip whole", href: gameHref("u", m.unified), text: `◂ ${t("x_global_sheet")}` }) : null;
     const ck = sheetKey(m, es);
     const withOther = ck ? el("a", { class: "chip", href: `#${es[0].p}/favorites?${new URLSearchParams({ pick: ck, n: m.name || m.id || "" })}`, text: t("x_compare_with") }) : null;
-    const mineBox = mine(m, es);
-    const top = whole || shop || withOther || mineBox ? el("div", { class: "topline" }, whole, shop, withOther, mineBox) : null;
+    const top = whole || shop || withOther ? el("div", { class: "topline" }, whole, shop, withOther) : null;
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
       wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
     if (logo) {
@@ -1896,7 +1872,6 @@
       let line = name;
       while (line.length > 3 && g.measureText(line).width > 440) line = line.slice(0, -2);
       g.fillText(line === name ? line : `${line.trimEnd()}…`, 505, y + 135);
-      if (f.s) { g.fillStyle = "#9fe0c0"; g.font = "500 30px system-ui, sans-serif"; g.fillText(t(`x_status_${f.s}`), 580, y + 72); }
     });
     g.fillStyle = "rgba(255,255,255,.7)"; g.font = "500 32px system-ui, sans-serif";
     g.fillText(location.host || "Atlas", 70, H - 60);
@@ -1983,8 +1958,7 @@
         if (!doc || !Number.isInteger(doc.schema) || doc.schema > 1 || !Array.isArray(doc.games)) throw new Error("schema");
         const have = new Set(favs().map((f) => f.k));
         const add = doc.games.filter((g) => g && typeof g.key === "string" && /^(u|[a-z0-9-]+)\/[^/\s]+$/.test(g.key) && !have.has(g.key) && (g.key.startsWith("u/") || PLATFORMS.includes(g.key.split("/")[0])))
-          .map((g) => ({ k: g.key, name: typeof g.name === "string" ? g.name.slice(0, 120) : "", l: typeof g.list === "string" ? g.list.trim().slice(0, 24) : "",
-            ...(STATUSES.includes(g.status) ? { s: g.status } : {}), ...(typeof g.note === "string" && g.note.trim() ? { n: g.note.trim().slice(0, 120) } : {}) }));
+          .map((g) => ({ k: g.key, name: typeof g.name === "string" ? g.name.slice(0, 120) : "", l: typeof g.list === "string" ? g.list.trim().slice(0, 24) : "" }));
         const known = new Set(listNames());
         for (const g of add) if (g.l && !known.has(g.l) && known.size < 12) known.add(g.l);
         keepLists([...known]);
@@ -2004,7 +1978,7 @@
     exportBtn.addEventListener("click", () => {
       // A document read elsewhere carries its `schema` (an integer, as the data's formats do).
       const base = location.origin + location.pathname;
-      const doc = { schema: 1, games: every.map((f) => ({ name: f.name || "", key: f.k, ...(f.l ? { list: f.l } : {}), ...(f.s ? { status: f.s } : {}), ...(f.n ? { note: f.n } : {}), url: base + favHref(f.k) })) };
+      const doc = { schema: 1, games: every.map((f) => ({ name: f.name || "", key: f.k, ...(f.l ? { list: f.l } : {}), url: base + favHref(f.k) })) };
       const url = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }));
       const a = el("a", { href: url, download: "atlas-favorites.json" });
       document.body.append(a);
@@ -2050,8 +2024,7 @@
         keepFavs(favs().map((x) => { if (x.k !== f.k) return x; const { l, ...rest } = x; return move.value ? { ...rest, l: move.value } : rest; }));
         again();
       });
-      const kept = f.s || f.n ? el("span", { class: "fav-mine" }, f.s ? el("span", { class: `badge st-${f.s}`, text: t(`x_status_${f.s}`) }) : null, f.n ? el("span", { class: "dim", text: f.n }) : null) : "";
-      return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), kept, move, drop);
+      return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), move, drop);
     });
     sync();
     results.replaceChildren(tabs, el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, delList(), importBtn, importIn, exportBtn, shareBtn, imageBtn, compare)), ...items);
