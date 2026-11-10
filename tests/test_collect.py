@@ -187,6 +187,32 @@ class SteamAchievements(unittest.TestCase):
         self.assertEqual(got["source_id"], "steam-achievements")
 
 
+    def test_the_rates_are_asked_again_a_quarter_at_a_time(self):
+        apps = [str(a) for a in range(100, 140)]
+        popular = {"schema": common.SCHEMA, "games": {a: [90, 0, 0] for a in apps}}
+        old = {a: [1, 1.0, 0] for a in apps}
+        asked = []
+
+        def fetch(url, **kw):
+            asked.append(url.rsplit("=", 1)[-1])
+            return {"achievementpercentages": {"achievements": [{"name": "A", "percent": "50"}]}}
+        with tempfile.TemporaryDirectory() as tmp:
+            last, out = os.path.join(tmp, "last"), os.path.join(tmp, "out")
+            os.makedirs(os.path.join(last, "platforms", "steam"))
+            os.makedirs(os.path.join(last, "sources", "steam-achievements"))
+            with open(os.path.join(last, "platforms", "steam", "popular.json"), "w", encoding="utf-8") as f:
+                json.dump(popular, f)
+            with open(os.path.join(last, "sources", "steam-achievements", "apps.json"), "w", encoding="utf-8") as f:
+                json.dump({"schema": common.SOURCE_SCHEMA, "games": {**old, "999": [9, 9.0, 9]}}, f)     # 999 left the best known
+            with mock.patch.object(common, "fetch", fetch), mock.patch("sys.stderr"):
+                collect.collect_steam_achievements("weekly", out, last, [], datetime.date(2026, 11, 9), [])
+            with open(os.path.join(out, "sources", "steam-achievements", "apps.json"), encoding="utf-8") as f:
+                got = json.load(f)["games"]
+        self.assertTrue(0 < len(asked) < 40 // 2)                 # about a quarter of 40, not all
+        self.assertEqual(set(got), set(apps))                     # all kept, the one that left gone
+        self.assertEqual({a for a in apps if got[a] == [1, 50.0, 0]}, set(asked))      # the asked ones are new, the others the last run's
+
+
 class RicherSources(unittest.TestCase):
     """What the sheets show beyond the names and the figures (2026-11-07): where a game runs, how the
     Steam Deck takes it, the languages, the age ratings, the capabilities, and the pictures' names (the
