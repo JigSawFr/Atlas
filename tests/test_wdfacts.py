@@ -14,7 +14,7 @@ class Queries(unittest.TestCase):
     def test_a_query_for_each_group(self):
         names = [n for n, _ in wdfacts.queries()]
         self.assertEqual(names, list(wdfacts.GROUPS) + ["facts-wiki", "facts-awards"])
-        self.assertEqual(len(names), 8)
+        self.assertEqual(len(names), 11)
 
     def test_labels_only_where_the_value_is_an_item(self):
         with_labels = wdfacts.query(("P908",), True)
@@ -65,6 +65,14 @@ class Facts(unittest.TestCase):
                                        {"qid": "Q1", "p": "P1", "label": "Nobody"}],
         "wikidata/facts-engine.json": [{"qid": "Q1", "p": "P408", "label": "Unity"}, {"qid": "Q1", "p": "P408", "label": "Unity"},
                                        {"qid": "Q1", "p": "P408", "label": "Godot"}, {"qid": "Q1", "p": "P408", "label": "Source"}],
+        "wikidata/facts-setting.json": [{"qid": "Q1", "p": "P840", "label": "Tokyo"}, {"qid": "Q1", "p": "P840", "label": "Oslo"},
+                                        {"qid": "Q1", "p": "P2408", "label": "1980s"}, {"qid": "Q1", "p": "P840", "label": "Paris"},
+                                        {"qid": "Q1", "p": "P840", "label": "Q42"}],
+        "wikidata/facts-origin.json": [{"qid": "Q1", "p": "P144", "label": "A Novel"}, {"qid": "Q1", "p": "P144", "label": "A Film"},
+                                       {"qid": "Q1", "p": "P144", "label": "A Comic"}],
+        "wikidata/facts-sales.json": [{"qid": "Q1", "p": "P2664", "v": "1500000"}, {"qid": "Q1", "p": "P2664", "v": "4000000.0"},
+                                      {"qid": "Q1", "p": "P2664", "v": "12"}, {"qid": "Q1", "p": "P2664", "v": "x"},
+                                      {"qid": "Q3", "p": "P2664", "v": "99999999999"}],
     }
 
     def test_facts(self):
@@ -81,6 +89,9 @@ class Facts(unittest.TestCase):
         self.assertEqual(got["Q1"]["age"], [["ESRB", "T"], ["CERO", "C"], ["PEGI", "12"], ["USK", "12"]])    # one for a system, by property
         self.assertEqual(got["Q1"]["team"], {"director": ["Ann", "Bo", "Cy"], "composer": ["Eve"]})
         self.assertEqual(got["Q1"]["engine"], ["Godot", "Source"])      # two at most, in the label order
+        self.assertEqual(got["Q1"]["setting"], ["1980s", "Oslo", "Paris"])  # three at most, in the label order, no bare item
+        self.assertEqual(got["Q1"]["based_on"], ["A Comic", "A Film"])       # two at most
+        self.assertEqual(got["Q1"]["sold"], 4_000_000)                         # the most, a believable number
         self.assertNotIn("Q2", got)                                           # nothing it says is kept
         self.assertNotIn("Q3", got)
 

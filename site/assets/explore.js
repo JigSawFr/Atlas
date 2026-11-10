@@ -1465,6 +1465,17 @@
       if (dl.childElementCount) side.append(section(t("x_team"), dl));
     }
 
+    // Its background, from Wikidata: where and when it is set, what it is based on, the copies sold.
+    const wdb = m.wd || {};
+    if ((wdb.setting && wdb.setting.length) || (wdb.based_on && wdb.based_on.length) || wdb.sold) {
+      const dl = el("dl", { class: "traits" });
+      const line = (label, ...content) => dl.append(el("div", {}, el("dt", { text: label }), el("dd", {}, ...content)));
+      if (wdb.setting && wdb.setting.length) line(t("x_setting"), ...wdb.setting.map((x) => el("span", { class: "chip", text: x })));
+      if (wdb.based_on && wdb.based_on.length) line(t("x_based_on"), ...wdb.based_on.map((x) => el("span", { class: "chip", text: x })));
+      if (wdb.sold) line(t("x_sold"), el("span", { class: "chip", text: new Intl.NumberFormat(LANG, { notation: "compact", maximumFractionDigits: 1 }).format(wdb.sold) }));
+      side.append(section(t("x_background"), dl));
+    }
+
     // The games of its series, oldest first (the build's `family`): the one on this sheet marked.
     if (m.family && m.family[1].length > 1) {
       main.append(section(`${t("x_series")} · ${labelOf("series", m.family[0])}`, el("ul", { class: "cardgrid family carousel" }, ...m.family[1].map(([kind, ref, name, when, pic]) => {

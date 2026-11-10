@@ -8,6 +8,9 @@ Each query gives {qid, p, label or v} for the games with a platform (P400):
     sources/wikidata/facts-age.json      P908 PEGI, P852 ESRB, P853 CERO, P914 USK (labels)
     sources/wikidata/facts-people.json   P57 director, P86 composer, P58 screenwriter (labels)
     sources/wikidata/facts-engine.json   P408 engine (labels)
+    sources/wikidata/facts-setting.json  P840 narrative location, P2408 period it is set in (labels)
+    sources/wikidata/facts-origin.json   P144 the work it is based on (labels)
+    sources/wikidata/facts-sales.json    P2664 units sold (a number)
     sources/wikidata/facts-website.json  P856 official website
     sources/wikidata/facts-pcgw.json     P6337 PCGamingWiki id
     sources/wikidata/facts-youtube.json  P1651 YouTube video id
@@ -15,7 +18,8 @@ Each query gives {qid, p, label or v} for the games with a platform (P400):
     sources/wikidata/facts-wiki.json     the game's Wikipedia pages in the site's languages ({qid, p: "wiki", lang, v: title})
 
 facts() reduces them to {qid: {"web": url, "pcgw": id, "yt": [ids], "wiki": {lang: title}, "awards": [[label, year]], "age": [[system, value]],
-"team": {"director": [names], "composer": […], "writer": […]}, "engine": [names]}}, a key left out
+"team": {"director": [names], "composer": […], "writer": […]}, "engine": [names], "setting": [names], "based_on": [names],
+"sold": copies}}, a key left out
 when there is nothing. Python's standard library only.
 """
 import re
@@ -31,6 +35,9 @@ GROUPS = {
     "facts-age": (("P908", "P852", "P853", "P914"), True),
     "facts-people": (("P57", "P86", "P58"), True),
     "facts-engine": (("P408",), True),
+    "facts-setting": (("P840", "P2408"), True),
+    "facts-origin": (("P144",), True),
+    "facts-sales": (("P2664",), False),
     "facts-website": (("P856",), False),
     "facts-pcgw": (("P6337",), False),
     "facts-youtube": (("P1651",), False),
@@ -42,6 +49,9 @@ TEAM = {"P57": "director", "P86": "composer", "P58": "writer"}
 NAMES = 3          # people kept for each role
 VIDEOS = 3
 ENGINES = 2
+SETTINGS = 3       # places and periods kept
+ORIGINS = 2        # works it is based on kept
+SOLD = (1_000, 10_000_000_000)     # copies sold below or above are not believed
 
 
 def query(properties, labels):
@@ -185,4 +195,19 @@ def facts(src) -> dict:
         label = str(r.get("label") or "").strip()
         if label and not QID.match(label):
             put(r["qid"], "engine", label, many=ENGINES)
+    for r in rows(src, "wikidata/facts-setting.json"):
+        label = str(r.get("label") or "").strip()
+        if label and not QID.match(label) and len(label) <= 80:
+            put(r["qid"], "setting", label, many=SETTINGS)
+    for r in rows(src, "wikidata/facts-origin.json"):
+        label = str(r.get("label") or "").strip()
+        if label and not QID.match(label) and len(label) <= 120:
+            put(r["qid"], "based_on", label, many=ORIGINS)
+    for r in rows(src, "wikidata/facts-sales.json"):    # the most a source says: the games sold on several platforms have several
+        try:
+            copies = int(float(str(r.get("v") or "")))
+        except ValueError:
+            continue
+        if SOLD[0] <= copies <= SOLD[1] and copies > out.get(r["qid"], {}).get("sold", 0):
+            out.setdefault(r["qid"], {})["sold"] = copies
     return out
