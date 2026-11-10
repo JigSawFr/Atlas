@@ -27,7 +27,9 @@ import build
 import common
 import steam
 
-LANGS = ("en", "fr", "de", "es", "it", "ja", "nl", "pt")
+# The Wikipedias of the site's languages (site/i18n: the 15 locales, PlayShelf's too, are these 11 languages; the first 8
+# keep their place, reach.json's rows being in this order).
+LANGS = ("en", "fr", "de", "es", "it", "ja", "nl", "pt", "ko", "ru", "zh")
 TOP = 400            # the best known games measured
 MIN_VIEWS = 300      # views in the last seven days below which a trend says nothing
 DAYS = 91            # 13 weeks: the last seven days, the four weeks before for the trend, and the curve of the sheet
