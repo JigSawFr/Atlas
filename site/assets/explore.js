@@ -119,7 +119,7 @@
     if (parts[0] === "game" && parts[1]) return { platform: from || PLATFORMS[0], view: "ugame", arg: parts.slice(1).join("/"), query };
     const platform = PLATFORMS.includes(parts[0]) ? parts[0] : home;
     from = platform;
-    const view = ["home", "browse", "popular", "trending", "upcoming", "search", "game", "stats", "favorites", "compare"].includes(parts[1]) ? parts[1] : parts[1] ? "popular" : "home";
+    const view = ["home", "browse", "popular", "trending", "upcoming", "search", "game", "stats", "favorites", "compare", "play"].includes(parts[1]) ? parts[1] : parts[1] ? "popular" : "home";
     return { platform, view, arg: parts.slice(2).join("/"), query };
   }
   const go = (hash) => { if (location.hash !== hash) location.hash = hash; else show(); };
@@ -1539,7 +1539,7 @@
 
   // The platform's figures: stats.json, condensed at the build (tools/site_data.py `stats()`), and x/stats.json,
   // every platform's headline figures side by side. One hue for every series (Boréale's ice): one measure a chart.
-  const statsBox = $("x-stats"), tipBox = $("x-tip");
+  const statsBox = $("x-stats"), playBox = $("x-play"), tipBox = $("x-tip");
   const fmt1 = new Intl.NumberFormat(LANG, { maximumFractionDigits: 1 });
 
   function figure(label, value, digits, i) {
@@ -1713,6 +1713,176 @@
   }
 
   // The favourites as a list, each with a box: two or three ticked are compared.
+
+  // Play: a duel between two games of the best known (the ranking it builds is kept in this browser only) and a quiz of
+  // the day (one game a day, found from its clues; the same for everyone, drawn from the date).
+  const DUEL = "atlas-duel", QUIZ = "atlas-quiz", CLUES = 5;
+  const readJSON = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key) || ""); return v && typeof v === "object" ? v : fallback; } catch (e) { return fallback; } };
+  const keepJSON = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) { /* not kept */ } };
+  const today = () => new Date().toISOString().slice(0, 10);
+  const squash = (s) => fold(s || "").replace(/[^\p{L}\p{N}]+/gu, "");
+
+  async function playView(platform) {
+    leaveBrowse();
+    sheet.hidden = true;
+    results.hidden = true;
+    pressed("x-views", "view", "play");
+    setStatus(t("x_loading"));
+    const lists = await get(`x/${platform}/lists.json`);
+    const pool = lists.popular.filter((r) => r[1]);
+    playBox.replaceChildren(section(t("x_duel"), duelBox(platform, pool)), section(t("x_quiz"), await quizBox(platform, lists, pool)));
+    reveal(playBox);
+    setStatus("");
+  }
+
+  function duelBox(platform, pool) {
+    const box = el("div", { class: "duel" });
+    const key = (r) => `${platform}/${r[0]}`;
+    let last = "";
+    const board = el("div", { class: "duel-rank" });
+    const drawBoard = () => {
+      const all = readJSON(DUEL, {});
+      const top = Object.entries(all).filter(([k, v]) => k.startsWith(`${platform}/`) && v.n).sort((a, b) => (b[1].w + 1) / (b[1].n + 2) - (a[1].w + 1) / (a[1].n + 2) || b[1].n - a[1].n).slice(0, 10);
+      const reset = el("button", { type: "button", class: "compare", text: t("x_duel_reset") });
+      reset.addEventListener("click", () => { const keep = readJSON(DUEL, {}); for (const k of Object.keys(keep)) if (k.startsWith(`${platform}/`)) delete keep[k]; keepJSON(DUEL, keep); drawBoard(); });
+      board.replaceChildren(...(top.length ? [el("h4", { text: t("x_duel_rank") }),
+        el("ol", {}, ...top.map(([k, v]) => el("li", {}, el("a", { href: favHref(k), text: v.name }), el("span", { class: "dim", text: `${v.w} / ${v.n}` })))), reset] : []));
+    };
+    const deal = () => {
+      let a, b, id;
+      do { a = pool[Math.floor(Math.random() * pool.length)]; b = pool[Math.floor(Math.random() * pool.length)]; id = [a[0], b[0]].sort().join("|"); } while ((a === b || id === last) && pool.length > 2);
+      last = id;
+      const vote = (win, lose) => {
+        const all = readJSON(DUEL, {});
+        for (const [r, won] of [[win, 1], [lose, 0]]) { const k = key(r), v = all[k] || { name: r[1], w: 0, n: 0 }; v.name = r[1]; v.w += won; v.n += 1; all[k] = v; }
+        // Kept small: only the 200 most played.
+        const keep = Object.entries(all).sort((x, y) => y[1].n - x[1].n).slice(0, 200);
+        keepJSON(DUEL, Object.fromEntries(keep));
+        drawBoard();
+        deal();
+      };
+      const side = (r, other) => {
+        const btn = el("button", { type: "button", class: "duel-side" }, tile(platform, r[0], r[1], false, r[5]), el("span", { class: "name", text: r[1] }));
+        btn.addEventListener("click", () => vote(r, other));
+        return btn;
+      };
+      const skip = el("button", { type: "button", class: "compare", text: t("x_duel_skip") });
+      skip.addEventListener("click", deal);
+      box.replaceChildren(el("p", { class: "dim", text: t("x_duel_hint") }), el("div", { class: "duel-pair" }, side(a, b), el("span", { class: "duel-vs", "aria-hidden": "true", text: "vs" }), side(b, a)), skip);
+    };
+    deal();
+    drawBoard();
+    return el("div", {}, box, board);
+  }
+
+  async function quizBox(platform, lists, pool) {
+    const day = today();
+    const box = el("div", { class: "quiz" });
+    if (!pool.length) return box;
+    const answer = pool[shard(`${day}/${platform}`, pool.length)];
+    const part = await get(`x/${platform}/g/${shard(answer[0], lists.shards)}.json`);
+    const g = part[answer[0]] || {};
+    const tr = g.traits || {};
+    const year = g.release ? String(g.release).slice(0, 4) : "";
+    const clues = [
+      (tr.genres || []).length ? `${t("x_clue_genres")}: ${tr.genres.slice(0, 4).map((v) => labelOf("genres", v)).join(", ")}` : null,
+      year && year !== "0" ? `${t("x_clue_year")}: ${year}` : null,
+      (tr.developers || [])[0] ? `${t("x_clue_dev")}: ${tr.developers[0]}` : null,
+      (tr.publishers || [])[0] ? `${t("x_clue_pub")}: ${tr.publishers[0]}` : null,
+      `${t("x_clue_letter")}: ${answer[1].trim()[0].toUpperCase()}`,
+    ].filter(Boolean);
+    const state = readJSON(QUIZ, {});
+    state.plays = state.plays && typeof state.plays === "object" ? state.plays : {};
+    let play = state.plays[platform];
+    if (!play || play.d !== day) play = state.plays[platform] = { d: day, n: 0, w: false, done: false };
+    const finish = (won) => {
+      play.done = true; play.w = won;
+      if (won) {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        state.streak = state.lastWin === day ? state.streak : state.lastWin === yesterday ? (state.streak || 0) + 1 : 1;
+        state.lastWin = day;
+        confetti();
+      }
+      keepJSON(QUIZ, state);
+    };
+    const draw = () => {
+      const shown = Math.min(play.n + 1, clues.length);
+      const parts = [el("p", { class: "dim", text: t("x_quiz_clue", { n: num(shown), max: num(clues.length) }) }),
+        el("ul", { class: "clues" }, ...clues.slice(0, shown).map((c) => el("li", { text: c })))];
+      if (play.done) {
+        parts.push(el("p", { class: "quiz-result", role: "status" }, play.w ? t("x_quiz_won", { n: num(play.n + 1) }) : t("x_quiz_lost"), " ",
+          el("a", { href: `#${platform}/game/${encodeURIComponent(answer[0])}`, text: answer[1] })));
+        if (state.streak && state.lastWin) parts.push(el("p", { class: "dim", text: t("x_quiz_streak", { n: num(state.streak) }) }));
+      } else {
+        const list = el("datalist", { id: "x-quiz-names" }, ...pool.map((r) => el("option", { value: r[1] })));
+        const input = el("input", { type: "text", list: "x-quiz-names", autocomplete: "off", placeholder: t("x_quiz_guess"), "aria-label": t("x_quiz_guess"), maxlength: "80" });
+        const go1 = el("button", { type: "submit", class: "compare", text: t("x_quiz_go") });
+        const form = el("form", { class: "quiz-form" }, input, go1);
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          if (!input.value.trim()) return;
+          const ok = squash(input.value) === squash(answer[1]);
+          play.n += ok ? 0 : 1;
+          if (ok) finish(true);
+          else if (play.n >= clues.length) finish(false);
+          else { keepJSON(QUIZ, state); }
+          draw();
+          if (!ok && !play.done) { const m = box.querySelector(".quiz-miss"); if (m) m.textContent = t("x_quiz_wrong"); const i = box.querySelector("input"); if (i) i.focus(); }
+        });
+        parts.push(form, list, el("p", { class: "dim quiz-miss", role: "status" }));
+      }
+      box.replaceChildren(el("p", { class: "dim", text: t("x_quiz_hint") }), ...parts);
+    };
+    draw();
+    return box;
+  }
+
+
+  // The five latest favourites as a picture to keep or send (a canvas drawn here, nothing leaves the page): a cover
+  // where the store's picture can be read (wsrv.nl allows it), else a colour from the name.
+  async function favImage(list, button) {
+    const top = list.slice().reverse().slice(0, 5), W = 1080, H = 1350, c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    const g = c.getContext("2d");
+    const bg = g.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, "#17142b"); bg.addColorStop(1, "#0b2a3a");
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.fillStyle = "#fff"; g.font = "700 64px system-ui, sans-serif"; g.textBaseline = "alphabetic";
+    g.fillText(t("x_favorites"), 70, 140);
+    const load = (src) => new Promise((ok) => {
+      const i = new Image();
+      i.crossOrigin = "anonymous"; i.referrerPolicy = "no-referrer";
+      const done = setTimeout(() => ok(null), 5000);
+      i.onload = () => { clearTimeout(done); ok(i); };
+      i.onerror = () => { clearTimeout(done); ok(null); };
+      i.src = src;
+    });
+    const covers = await Promise.all(top.map((f) => { const at = f.k.indexOf("/"), o = tileOrigin(f.k.slice(0, at), f.k.slice(at + 1), ""); return o ? load(proxied(o, 460, 215)) : null; }));
+    top.forEach((f, i) => {
+      const y = 200 + i * 220, name = f.name || f.k.slice(f.k.indexOf("/") + 1);
+      g.fillStyle = "rgba(255,255,255,.08)"; g.fillRect(70, y, W - 140, 190);
+      if (covers[i]) g.drawImage(covers[i], 70, y, 405, 190);
+      else { g.fillStyle = `hsl(${hueOf(name)} 55% 38%)`; g.fillRect(70, y, 405, 190); g.fillStyle = "#fff"; g.font = "700 90px system-ui, sans-serif"; g.fillText(name.trim()[0] ? name.trim()[0].toUpperCase() : "?", 240, y + 125); }
+      g.fillStyle = "#ffd166"; g.font = "700 56px system-ui, sans-serif"; g.fillText(String(i + 1), 505, y + 75);
+      g.fillStyle = "#fff"; g.font = "600 42px system-ui, sans-serif";
+      let line = name;
+      while (line.length > 3 && g.measureText(line).width > 440) line = line.slice(0, -2);
+      g.fillText(line === name ? line : `${line.trimEnd()}…`, 505, y + 135);
+      if (f.s) { g.fillStyle = "#9fe0c0"; g.font = "500 30px system-ui, sans-serif"; g.fillText(t(`x_status_${f.s}`), 580, y + 72); }
+    });
+    g.fillStyle = "rgba(255,255,255,.7)"; g.font = "500 32px system-ui, sans-serif";
+    g.fillText(location.host || "Atlas", 70, H - 60);
+    const blob = await new Promise((ok) => { try { c.toBlob(ok, "image/png"); } catch (e) { ok(null); } });
+    if (!blob) { button.textContent = t("x_fav_image_fail"); setTimeout(() => { button.textContent = t("x_fav_image"); }, 2500); return; }
+    const file = new File([blob], "atlas-favorites.png", { type: "image/png" });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: t("x_favorites") }); return; }
+    } catch (e) { return; /* cancelled */ }
+    const url = URL.createObjectURL(blob), a = el("a", { href: url, download: "atlas-favorites.png" });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   async function favoritesView(query) {
     leaveBrowse();
     sheet.hidden = true;
@@ -1824,6 +1994,8 @@
         else { await navigator.clipboard.writeText(link); shareBtn.textContent = t("x_link_copied"); setTimeout(() => { shareBtn.textContent = t("x_fav_share"); }, 1800); }
       } catch (e) { /* cancelled */ }
     });
+    const imageBtn = el("button", { type: "button", class: "compare", text: t("x_fav_image") });
+    imageBtn.addEventListener("click", () => favImage(list, imageBtn));
     const compare = el("button", { type: "button", class: "compare", disabled: "", text: t("x_compare_pick") });
     const sync = () => {
       compare.disabled = picked.size < 2;
@@ -1850,7 +2022,7 @@
       return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), kept, move, drop);
     });
     sync();
-    results.replaceChildren(tabs, el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, delList(), importBtn, importIn, exportBtn, shareBtn, compare)), ...items);
+    results.replaceChildren(tabs, el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, delList(), importBtn, importIn, exportBtn, shareBtn, imageBtn, compare)), ...items);
     setStatus(`${t("x_favorites")} · ${num(list.length)}`);
   }
 
@@ -2287,6 +2459,7 @@
     const tr = trail();
     restore = tr && tr.hash === location.hash && !["game", "ugame", "compare", "favorites"].includes(view) ? tr : null;
     statsBox.hidden = view !== "stats";
+    playBox.hidden = view !== "play";
     $("x-home").hidden = true;
     tipBox.hidden = true;
     pressed("x-platforms", "platform", platform);
@@ -2305,6 +2478,7 @@
       else if (view === "ugame") await unified(arg);
       else if (view === "game") await game(platform, arg, query);
       else if (view === "stats") await statsView(platform);
+      else if (view === "play") await playView(platform);
       else if (view === "favorites") await favoritesView(query);
       else if (view === "compare") await compareView(query);
       else if (view === "searchall") { if (search.value !== arg) search.value = arg; await findAll(arg); }
