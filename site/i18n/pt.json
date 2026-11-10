@@ -474,5 +474,9 @@
   "x_clue_pub": "Publicadora",
   "x_clue_letter": "Começa com",
   "x_fav_image": "Compartilhar como imagem",
-  "x_fav_image_fail": "Imagem indisponível"
+  "x_fav_image_fail": "Imagem indisponível",
+  "x_skip": "Ir para os resultados",
+  "x_undo": "Desfazer",
+  "x_fav_added": "{name} adicionado aos favoritos",
+  "x_fav_removed": "{name} removido dos favoritos"
 }

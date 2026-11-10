@@ -1,5 +1,6 @@
 <svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">{{icons}}</svg>
   <section class="section explorer" id="explorer" aria-live="polite">
+    <a class="skip" href="#x-status">{{x_skip}}</a>
     <div class="controls">
       <div class="xc-top">
         <div class="picker">
@@ -46,7 +47,7 @@
       <div class="xmain">
         <div class="active" id="x-active" hidden></div>
         <div class="rbar">
-          <p class="status" id="x-status">{{x_loading}}</p>
+          <p class="status" id="x-status" tabindex="-1">{{x_loading}}</p>
           <div class="rtools" id="x-rtools" hidden>
             <button type="button" class="filters-btn b-only" id="x-filters-btn" aria-controls="x-browse" hidden><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-sliders-horizontal"></use></svg><span>{{x_filters}}</span></button>
             <label class="sortbox b-only" hidden><span>{{x_sort}}</span><select id="x-sort" aria-label="{{x_sort}}">

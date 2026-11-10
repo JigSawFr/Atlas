@@ -1098,6 +1098,29 @@
     return el("span", { class: "pager fab", role: "group", "aria-label": t("x_prev") + " / " + t("x_next") }, step(prev, "prev", t("x_prev"), "‹"), el("span", { class: "dim", text: `${num(at + 1)} / ${num(tr.rows.length)}` }), step(next, "next", t("x_next"), "›"));
   }
 
+
+  // "Skip to results": the address is the router's, so the link moves the focus itself.
+  document.querySelector(".skip").addEventListener("click", (e) => { e.preventDefault(); status.focus(); status.scrollIntoView({ block: "start" }); });
+  // A line at the foot of the window that says what was done and, where it can be, takes it back (5 s; one at a time).
+  let toastTimer = 0;
+  function toast(text, undo) {
+    document.querySelector(".toast")?.remove();
+    clearTimeout(toastTimer);
+    const box = el("div", { class: "toast", role: "status" }, el("span", { text }));
+    if (undo) {
+      const b = el("button", { type: "button", text: t("x_undo") });
+      b.addEventListener("click", () => { undo(); box.remove(); });
+      box.append(b);
+    }
+    document.body.append(box);
+    toastTimer = setTimeout(() => box.remove(), 5000);
+  }
+  // A grey block that shimmers where a page of figures will be (stats, play), until it is drawn.
+  function placeholders(box) {
+    box.replaceChildren(...Array.from({ length: 3 }, () => el("div", { class: "block-skeleton", "aria-hidden": "true" })));
+    box.hidden = false;
+  }
+
   // Favourites: games marked with a heart, kept in this browser only (a key "<platform>/<id>", or "u/<Wikidata item>"
   // for a game on several platforms, and its name).
   const FAVS = "atlas-favs";
@@ -1172,9 +1195,12 @@
       b.setAttribute("aria-label", label);
     };
     b.addEventListener("click", () => {
-      keepFavs(favs().some((f) => f.k === k) ? favs().filter((f) => f.k !== k) : favs().concat({ k, name: m.name || m.id || "" }));
+      const before = favs(), had = before.some((f) => f.k === k), name = m.name || m.id || "";
+      keepFavs(had ? before.filter((f) => f.k !== k) : before.concat({ k, name }));
       draw();
       countFavs();
+      if (!had && !calm()) { b.classList.remove("pulse"); void b.offsetWidth; b.classList.add("pulse"); }
+      toast(t(had ? "x_fav_removed" : "x_fav_added", { name }), () => { keepFavs(before); draw(); countFavs(); document.dispatchEvent(new Event("atlas-favs")); });
     });
     draw();
     return b;
@@ -1581,6 +1607,7 @@
     results.hidden = true;
     pressed("x-views", "view", "stats");
     setStatus(t("x_loading"));
+    placeholders(statsBox);
     const [st, every] = await Promise.all([get(`x/${platform}/stats.json`), get("x/stats.json").catch(() => null)]);
     const avg = (v) => (v === null || v === undefined ? "" : t("x_st_avg", { n: fmt1.format(v) }));
     const browseBy = (kind, value) => `#${platform}/browse?${new URLSearchParams([[kind, value]])}`;
@@ -1728,6 +1755,7 @@
     results.hidden = true;
     pressed("x-views", "view", "play");
     setStatus(t("x_loading"));
+    placeholders(playBox);
     const lists = await get(`x/${platform}/lists.json`);
     const pool = lists.popular.filter((r) => r[1]);
     playBox.replaceChildren(section(t("x_duel"), duelBox(platform, pool)), section(t("x_quiz"), await quizBox(platform, lists, pool)));
@@ -2010,7 +2038,11 @@
       boxes.push(box);
       if (pick && f.k === pick) { box.checked = true; picked.add(f.k); }
       const drop = el("button", { type: "button", class: "unfav", title: t("x_fav_remove"), "aria-label": `${t("x_fav_remove")}: ${f.name || ref}`, text: "×" });
-      drop.addEventListener("click", () => { keepFavs(favs().filter((x) => x.k !== f.k)); countFavs(); again(); });
+      drop.addEventListener("click", () => {
+        const before = favs();
+        keepFavs(before.filter((x) => x.k !== f.k)); countFavs(); again();
+        toast(t("x_fav_removed", { name: f.name || ref }), () => { keepFavs(before); countFavs(); again(); });
+      });
       // Move it to another list.
       const move = names.length ? el("select", { class: "move", title: t("x_list_move"), "aria-label": `${t("x_list_move")}: ${f.name || ref}` },
         ...["", ...names].map((n) => el("option", n === (f.l || "") ? { value: n, selected: "" } : { value: n }, n || t("x_favorites")))) : "";

@@ -474,5 +474,9 @@
   "x_clue_pub": "Distribuidor",
   "x_clue_letter": "Empieza por",
   "x_fav_image": "Compartir como imagen",
-  "x_fav_image_fail": "Imagen no disponible"
+  "x_fav_image_fail": "Imagen no disponible",
+  "x_skip": "Ir a los resultados",
+  "x_undo": "Deshacer",
+  "x_fav_added": "{name} añadido a favoritos",
+  "x_fav_removed": "{name} quitado de favoritos"
 }
