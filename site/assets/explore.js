@@ -1688,7 +1688,7 @@
       // Arrived by the address alone: the first of its platforms that has a button is the one shown.
       from = (u.platforms.find((e) => document.querySelector(`#x-platforms button[data-platform="${e.p}"]`)) || u.platforms[0]).p;
       pressed("x-platforms", "platform", from);
-      machine.value = [...machine.options].some((o) => o.value === from) ? from : "";
+      syncPlatform(from);
     }
     renderSheet(u, backTo(from));
   }
@@ -2509,6 +2509,8 @@
       if (restore) { const y = restore.y; requestAnimationFrame(() => window.scrollTo(0, y)); }
     } catch (e) {
       setStatus(t("x_error"));
+      // Shown to the visitor, and reported as well: in the console, and to the site check's browser, which fails on it.
+      if (typeof reportError === "function") reportError(e);
     }
   }
 
