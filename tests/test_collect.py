@@ -213,6 +213,34 @@ class SteamAchievements(unittest.TestCase):
         self.assertEqual({a for a in apps if got[a] == [1, 50.0, 0]}, set(asked))      # the asked ones are new, the others the last run's
 
 
+class MonthlyViews(unittest.TestCase):
+    MONTHS = ["2026-08", "2026-09", "2026-10"]
+
+    def test_the_same_months_are_not_asked_again(self):
+        last = {"months": self.MONTHS, "pages": {"A": [1, 2, 3], "B": [4, 5, 6], "Odd": [1, 2], "Str": ["1", 2, 3]}}
+        asked = []
+
+        def fetch(articles):
+            asked.append(list(articles))
+            return {a: [7, 8, 9] for a in articles}
+        with mock.patch("sys.stderr"):
+            got = collect.monthly_pages(["A", "B", "C", "Odd", "Str"], self.MONTHS, last, fetch)
+        self.assertEqual(asked, [["C", "Odd", "Str"]])                  # new, of another length, of another type: asked
+        self.assertEqual(got, {"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9], "Odd": [7, 8, 9], "Str": [7, 8, 9]})
+        with mock.patch("sys.stderr"):
+            self.assertEqual(collect.monthly_pages(["A"], self.MONTHS, last, fetch), {"A": [1, 2, 3]})
+        self.assertEqual(len(asked), 1)                                  # nothing to ask: no call
+
+    def test_a_new_month_asks_them_all(self):
+        last = {"months": ["2026-07", "2026-08", "2026-09"], "pages": {"A": [1, 2, 3]}}
+        with mock.patch("sys.stderr"):
+            got = collect.monthly_pages(["A", "B"], self.MONTHS, last, lambda articles: {a: [0, 0, 1] for a in articles})
+        self.assertEqual(got, {"A": [0, 0, 1], "B": [0, 0, 1]})
+        for nothing in (None, {}, {"months": self.MONTHS}, {"months": self.MONTHS, "pages": []}):
+            with mock.patch("sys.stderr"):
+                self.assertEqual(collect.monthly_pages(["A"], self.MONTHS, nothing, lambda a: {"A": [1, 1, 1]}), {"A": [1, 1, 1]})
+
+
 class RicherSources(unittest.TestCase):
     """What the sheets show beyond the names and the figures (2026-11-07): where a game runs, how the
     Steam Deck takes it, the languages, the age ratings, the capabilities, and the pictures' names (the
