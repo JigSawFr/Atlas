@@ -1116,12 +1116,12 @@
   document.querySelector(".skip").addEventListener("click", (e) => { e.preventDefault(); status.focus(); status.scrollIntoView({ block: "start" }); });
   // A line at the foot of the window that says what was done and, where it can be, takes it back (5 s; one at a time).
   let toastTimer = 0;
-  function toast(text, undo) {
+  function toast(text, undo, label) {
     document.querySelector(".toast")?.remove();
     clearTimeout(toastTimer);
     const box = el("div", { class: "toast", role: "status" }, el("span", { text }));
     if (undo) {
-      const b = el("button", { type: "button", text: t("x_undo") });
+      const b = el("button", { type: "button", text: label || t("x_undo") });
       b.addEventListener("click", () => { undo(); box.remove(); });
       box.append(b);
     }
@@ -1221,6 +1221,50 @@
     return b;
   }
 
+  // The games picked to compare (this browser only, three at most, what the compare view shows): the button of a sheet
+  // adds or takes off its game and counts them; from two, its message opens the comparison. Favorites' boxes share it.
+  const CMP = "atlas-compare", CMP_MAX = 3;
+  const compared = () => {
+    try {
+      const l = JSON.parse(localStorage.getItem(CMP) || "[]");
+      return Array.isArray(l) ? l.filter((f) => f && typeof f.k === "string" && f.k.includes("/")).slice(0, CMP_MAX) : [];
+    } catch (e) { return []; }
+  };
+  const keepCompared = (l) => {
+    try { localStorage.setItem(CMP, JSON.stringify(l.slice(0, CMP_MAX))); } catch (e) { /* no storage: nothing kept */ }
+    document.dispatchEvent(new Event("atlas-compare"));
+  };
+  const compareHref = (l) => `#${route().platform}/compare?${new URLSearchParams(l.map((f) => ["g", f.k]))}`;
+  function comparer(m, es) {
+    const k = sheetKey(m, es);
+    if (!k) return null;
+    const count = el("span", { class: "n" });
+    const b = el("button", { type: "button", class: "cmp fab" }, icon("i-ui-git-compare-arrows"), count);
+    const draw = () => {
+      const l = compared(), on = l.some((f) => f.k === k), label = t(on ? "x_cmp_remove" : "x_cmp_add");
+      b.setAttribute("aria-pressed", String(on));
+      count.textContent = l.length ? num(l.length) : "";
+      b.title = label;
+      b.setAttribute("aria-label", l.length ? `${label} (${num(l.length)})` : label);
+    };
+    const sync = () => { if (b.isConnected) draw(); else document.removeEventListener("atlas-compare", sync); };
+    document.addEventListener("atlas-compare", sync);
+    b.addEventListener("click", () => {
+      const before = compared(), had = before.some((f) => f.k === k), name = m.name || m.id || "";
+      if (!had && before.length >= CMP_MAX) {
+        toast(t("x_cmp_full", { n: num(CMP_MAX) }), () => go(compareHref(before)), t("x_compare_n", { n: num(before.length) }));
+        return;
+      }
+      const after = had ? before.filter((f) => f.k !== k) : before.concat({ k, name });
+      keepCompared(after);
+      if (!had && !calm()) { b.classList.remove("pulse"); void b.offsetWidth; b.classList.add("pulse"); }
+      if (!had && after.length >= 2) toast(t("x_cmp_added", { name, n: num(after.length) }), () => go(compareHref(after)), t("x_compare_n", { n: num(after.length) }));
+      else toast(t(had ? "x_cmp_removed" : "x_cmp_added", { name, n: num(after.length) }), () => keepCompared(before));
+    });
+    draw();
+    return b;
+  }
+
   function renderSheet(m, backHref) {
     if (barOff) barOff();
     document.body.classList.remove("x-sheet-find");
@@ -1279,9 +1323,7 @@
       ? el("a", { class: "chip store-link", href: storePage(p1), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", "aria-label": t("x_open_store", { store: storeName(p1.p) }) },
         el("span", { class: "long", text: t("x_open_store", { store: storeName(p1.p) }) }), el("span", { class: "short", text: storeName(p1.p) }), " ↗") : null;
     const whole = !multi && m.unified ? el("a", { class: "chip whole", href: gameHref("u", m.unified), text: `◂ ${t("x_global_sheet")}` }) : null;
-    const ck = sheetKey(m, es);
-    const withOther = ck ? el("a", { class: "chip", href: `#${es[0].p}/favorites?${new URLSearchParams({ pick: ck, n: m.name || m.id || "" })}`, text: t("x_compare_with") }) : null;
-    const top = whole || shop || withOther ? el("div", { class: "topline" }, whole, shop, withOther) : null;
+    const top = whole || shop ? el("div", { class: "topline" }, whole, shop) : null;
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
       wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
     if (logo) {
@@ -1293,12 +1335,12 @@
     sheet.style.setProperty("--par", "0");
     sheet.classList.toggle("with-backdrop", !!wide);
     noteRecent(m, es);
-    // The way back, the steps through the list, the search, the share and the heart: they float in the window's corners
+    // The way back, the steps through the list, the search, the comparison, the share and the heart: they float in the window's corners
     // and bottom, and on a phone make one bar at its foot (site.css); outside the head, whose entrance animation would
     // make it their frame. The search, a phone's only (its search box is folded away on a sheet), brings the box back.
     const find = el("button", { type: "button", class: "find fab", title: t("x_search"), "aria-label": t("x_search") }, icon("i-ui-search"));
     find.addEventListener("click", () => { document.body.classList.add("x-sheet-find"); toTop(() => search.focus()); });
-    sheet.append(el("div", { class: "dock" }, ...[back, pager(es), find, share(m), heart(m, es)].filter(Boolean)), head);
+    sheet.append(el("div", { class: "dock" }, ...[back, pager(es), find, comparer(m, es), share(m), heart(m, es)].filter(Boolean)), head);
     if (!multi) {
       sheet.append(el("span", { class: "sheet-wm", "aria-hidden": "true" }, icon(PC.has(es[0].p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[es[0].p] || es[0].p.toUpperCase() })));
     }
@@ -1961,8 +2003,6 @@
     add.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addBtn.click(); } });
     const tabs = el("li", { class: "fav-tabs" }, tab("", t("x_favorites")), ...names.map((n) => tab(n, n)), add, addBtn);
     // From a sheet's "Compare with…": that game is on the list, ticked, whether it is a favourite or not.
-    const pick = query && query.get("pick");
-    if (pick && pick.includes("/") && !list.some((f) => f.k === pick)) list.push({ k: pick, name: query.get("n") || "" });
     // A list saved by "Export" (JSON with a `schema`): read here, the games it names joined to the list. A newer
     // `schema` than this page knows is left alone, and what it does not know of a game is skipped.
     const importIn = el("input", { type: "file", accept: "application/json,.json", hidden: "" });
@@ -2002,7 +2042,7 @@
       setStatus("");
       return;
     }
-    const picked = new Set(), boxes = [];
+    const picked = new Set(), boxes = [], inCompare = new Set(compared().map((c) => c.k));
     const exportBtn = el("button", { type: "button", class: "compare", text: t("x_fav_export") });
     exportBtn.addEventListener("click", () => {
       // A document read elsewhere carries its `schema` (an integer, as the data's formats do).
@@ -2031,15 +2071,19 @@
     const sync = () => {
       compare.disabled = picked.size < 2;
       compare.textContent = picked.size >= 2 ? t("x_compare_n", { n: num(picked.size) }) : t("x_compare_pick");
-      for (const b of boxes) b.disabled = picked.size >= 3 && !b.checked;
+      for (const b of boxes) b.disabled = picked.size >= CMP_MAX && !b.checked;
     };
     compare.addEventListener("click", () => go(`#${route().platform}/compare?${new URLSearchParams([...picked].map((k) => ["g", k]))}`));
     const items = list.slice().reverse().map((f) => {
       const at = f.k.indexOf("/"), kind = f.k.slice(0, at), ref = f.k.slice(at + 1);
       const box = el("input", { type: "checkbox", "aria-label": `${t("x_compare")}: ${f.name || ref}` });
-      box.addEventListener("change", () => { if (box.checked) picked.add(f.k); else picked.delete(f.k); sync(); });
+      box.addEventListener("change", () => {
+        if (box.checked) picked.add(f.k); else picked.delete(f.k);
+        keepCompared([...compared().filter((c) => c.k !== f.k), ...(box.checked ? [{ k: f.k, name: f.name || "" }] : [])].slice(-CMP_MAX));
+        sync();
+      });
       boxes.push(box);
-      if (pick && f.k === pick) { box.checked = true; picked.add(f.k); }
+      if (inCompare.has(f.k) && picked.size < CMP_MAX) { box.checked = true; picked.add(f.k); }
       const drop = el("button", { type: "button", class: "unfav", title: t("x_fav_remove"), "aria-label": `${t("x_fav_remove")}: ${f.name || ref}`, text: "×" });
       drop.addEventListener("click", () => {
         const before = favs();
