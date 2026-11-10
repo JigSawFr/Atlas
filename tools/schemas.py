@@ -55,6 +55,7 @@ KINDS = {
             "igdb_rating": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
             "igdb_cover": {"type": "string", "pattern": r"^[a-z0-9]{6,40}$"},
             "igdb_art": {"type": "string", "pattern": r"^[a-z0-9]{6,40}$"},
+            "achievements": {"type": "array", "items": {"type": "number", "minimum": 0}, "minItems": 3, "maxItems": 3},
             "gamepass": {"type": "array", "items": {"enum": ["console", "pc"]}},
             "ps": {"type": "array", "items": {"type": "string", "pattern": r"^[0-9]+$"}},
             "ps_product": {"type": "array", "items": {"type": "string"}},

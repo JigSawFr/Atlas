@@ -228,6 +228,14 @@ def store_games(src, known, played):
             if (app in known or app in played) and item.get("type") == GAME}
 
 
+def with_achievements(games, kept, figures):
+    """The kept games' achievements' global rates put in their entry, `achievements`: [how many, the mean
+    percent of the players who have one, how many are rare] (sources/steam-achievements/apps.json); how hard a game is."""
+    for app, found in figures.items():
+        if app in games and app in kept and isinstance(found, list) and len(found) == 3:
+            games[app]["achievements"] = found
+
+
 def views_known(src):
     """{app id: (sitelinks, English page)} of the games whose views count."""
     known = build.games(common.bindings(src("wikidata/steam.json").get("rows") or []), ident=app_id)
@@ -256,6 +264,7 @@ def consolidate(src, out_dir, previous_dir, today):
                 "schema": common.SCHEMA, "source": source, "games": entries}
 
     kept = set(sorted(table, key=lambda app: -table[app][0])[:GAMES_KEPT]) | set(upcoming(games, today))
+    with_achievements(games, kept, src("steam-achievements/apps.json").get("games") or {})
     used = {t for app in kept for t in games[app].get("tags", [])}
     common.publish(out_dir, f"platforms/{STEAM}/games.json", payload(
         "Steam's store (GetItems, GetTagList), Wikidata (P1733)",

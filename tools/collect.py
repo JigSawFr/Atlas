@@ -21,6 +21,8 @@ is kept and said (common.publish_source).
 - steam-store (weekly): apps.json (GetItems, by app id), tags.json,
   most-played.json.
 - steamspy (weekly): apps.json, its owners and players by app id.
+- steam-achievements (weekly): apps.json, how many players have each achievement of the best known Steam games,
+  as [count, mean percent, rare count] by app id.
 - gog (weekly): catalog/US.json, the catalog's products by product id in its
   trending order.
 - msstore (weekly): products.json and gamepass.json.
@@ -210,6 +212,45 @@ def collect_steamspy(what, out_dir, previous_dir, fresh, today, report):
     common.publish_source(out_dir, f"{common.SOURCES}/steamspy/apps.json", payload(
         "steamspy", today, "SteamSpy (steamspy.com)", "SteamSpy's terms of use", games=answers),
         previous_dir, report)
+
+
+STEAM_ACHIEVEMENTS = ("https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/"
+                      "?gameid={}")
+RARE_PERCENT = 5.0       # an achievement fewer players than this share have is rare
+
+
+def achievement_figures(body):
+    """[achievements, mean percent of the players who have one (one decimal), rare ones (under RARE_PERCENT)] of
+    GetGlobalAchievementPercentagesForApp's answer; None for a game with none."""
+    listed = ((body or {}).get("achievementpercentages") or {}).get("achievements") if isinstance(body, dict) else None
+    percents = []
+    for a in listed or []:
+        try:
+            percents.append(float(a["percent"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+    if not percents:
+        return None
+    return [len(percents), round(sum(percents) / len(percents), 1), sum(1 for p in percents if p < RARE_PERCENT)]
+
+
+def collect_steam_achievements(what, out_dir, previous_dir, fresh, today, report):
+    """The achievements' global rates of Steam's best known games (trends.TOP, by the last popular.json's score):
+    one request a game; one refused or without achievements is left out."""
+    popular = common.previous_file(previous_dir, f"platforms/{steam.STEAM}/popular.json") if previous_dir else {}
+    answers = {}
+    for app in trends.top(popular):
+        try:
+            figures = achievement_figures(common.fetch(STEAM_ACHIEVEMENTS.format(app), tries=2, patient=False, timeout=30))
+        except (urllib.error.URLError, OSError, ValueError) as e:
+            print(f"steam-achievements: {app}: {e}", file=sys.stderr)
+            continue
+        if figures:
+            answers[app] = figures
+    print(f"steam-achievements: {len(answers)} games with achievements", file=sys.stderr)
+    common.publish_source(out_dir, f"{common.SOURCES}/steam-achievements/apps.json", payload(
+        "steam-achievements", today, "Steam's store (api.steampowered.com): ISteamUserStats/GetGlobalAchievementPercentagesForApp",
+        "Steam Web API terms of use", games=answers), previous_dir, report)
 
 
 GOG_FIELDS = ("id", "title", "slug", "releaseDate", "productType", "reviewsCount", "reviewsRating",
@@ -421,6 +462,7 @@ def collect_nlib_ctr(what, out_dir, previous_dir, fresh, today, report):
 
 COLLECTORS = {"nlib-ctr": collect_nlib_ctr, "wikidata": collect_wikidata, "titledb": collect_titledb,
               "steam-store": collect_steam_store, "steamspy": collect_steamspy, "gog": collect_gog,
+              "steam-achievements": collect_steam_achievements,
               "msstore": collect_msstore, "igdb": collect_igdb, "wikipedia": collect_wikipedia}
 
 

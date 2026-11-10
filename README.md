@@ -215,6 +215,7 @@ Monday by `tools/steam.py` in a job of its own:
   item), and its traits: `series` (its franchise), `developers` and
   `publishers` as `[id, name]`, and `tags`, its players' first 10 tags, by
   Steam's tag id, whose names are in the file's `tags`.
+  The 400 best known games also have `achievements`, `[how many, the mean percent of the players who have one, how many are rare (under 5 %)]`, from Steam's global achievement rates (`sources/steam-achievements/`): a low mean and many rare ones, a hard game.
 
   ```json
   {"schema": 1, "platform": "steam", "generated": "2026-11-02", "source": "...",
@@ -435,6 +436,7 @@ branch: the platforms' files are then made from these, asking nothing more
 | `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers, languages, number of players and age rating; the others with ids and names) | Monday |
 | `sources/steam-store/` | `apps.json` (GetItems by app id: its names, reviews, release, franchise, developers, publishers, tags, and for the sheets the platforms it runs on, the Steam Deck's verdict, the player and feature categories, the names of its header, small capsule and first 6 screenshots, and its languages with the voiced ones), `tags.json`, `most-played.json` | Monday |
 | `sources/steamspy/` | `apps.json`: owners and players by app id, as many as 10 minutes allow | Monday |
+| `sources/steam-achievements/` | `apps.json`: for the 400 best known Steam games, `[achievements, mean percent of the players who have one, rare ones (under 5 %)]` by app id; one request a game, none for a game without achievements | Monday |
 | `sources/gog/catalog/` | `US.json`: the catalog's products by product id, in its trending order, with their systems, features, age ratings and the names of their cover, poster and first 6 screenshots | Monday |
 | `sources/msstore/` | `products.json` (with each product's age ratings, capabilities, platforms and the names of its box art, poster, hero art and first 6 screenshots), `gamepass.json` | Monday |
 | `sources/nlib-ctr/` | `categories.json` (the 3DS's title ids by category), `titles.json` (each base game's name, region, publisher, product code, first day; kept from run to run) | Monday |
@@ -546,6 +548,7 @@ python3 tools/collect.py wikidata weekly out/ last/
 python3 tools/collect.py titledb weekly out/ last/          # about 90 MB a region, some 10 s
 python3 tools/collect.py steam-store weekly out/ last/ out/ # some 650 requests (some 8 minutes)
 python3 tools/collect.py steamspy weekly out/ last/ out/    # 10 minutes
+python3 tools/collect.py steam-achievements weekly out/ last/ out/   # 400 requests (some 3 minutes)
 python3 tools/collect.py gog weekly out/ last/
 python3 tools/collect.py msstore weekly out/ last/ out/
 python3 tools/collect.py igdb weekly out/ last/ out/        # with IGDB_CLIENT_ID and IGDB_CLIENT_SECRET only
