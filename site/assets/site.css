@@ -1272,3 +1272,18 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
   .sheet .traits dd .chip, .sheet .ids .chip { min-height: 32px; }
   .sheet .traits dd { gap: 8px; }
 }
+
+/* The compare button among a sheet's round ones: how many games are picked, in a small count on its corner. */
+.cmp.fab { position: fixed; z-index: 25; right: calc(clamp(12px, 2vw, 28px) + 116px); bottom: clamp(14px, 3vh, 28px); display: inline-grid; place-items: center; width: 48px; height: 48px; min-height: 0; padding: 0; border-radius: 50%; border: 1px solid var(--night-line); background: rgb(11 18 32 / 0.9); backdrop-filter: blur(8px); box-shadow: 0 6px 18px rgb(0 0 0 / 0.45); color: var(--snow); cursor: pointer; }
+.cmp.fab .ico { width: 1.25rem; height: 1.25rem; }
+.cmp.fab:hover, .cmp.fab:focus-visible { border-color: var(--mist); }
+.cmp.fab[aria-pressed="true"] { border-color: var(--aurora); color: var(--aurora); background: rgb(0 40 36 / 0.92); }
+.cmp.fab .n { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 99px; background: var(--aurora-grad); color: var(--abyss); font: 700 0.75rem/20px var(--body); text-align: center; }
+.cmp.fab .n:empty { display: none; }
+@media (prefers-reduced-motion: no-preference) { .cmp.fab.pulse { animation: pulse 0.35s ease-out; } }
+@media (max-width: 700px) {
+  .dock { gap: 6px; }
+  .dock > :is(.back, .pager, .find, .cmp, .share, .fav).fab { position: static; inset: auto; transform: none; width: 42px; height: 42px; box-shadow: none; }
+  .dock > .pager.fab { width: auto; height: 42px; gap: 2px; white-space: nowrap; }
+  .dock > .cmp.fab { position: relative; }
+}
