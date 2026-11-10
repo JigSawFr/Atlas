@@ -66,6 +66,29 @@ class Features(unittest.TestCase):
         # C's earlier figures were another app's: replaced.
         self.assertEqual(got[C], {"positive": 5, "negative": 1, "owners": 1000, "ccu": 0, "app": 3})
 
+    def test_the_known_games_are_asked_again_in_turn(self):
+        ids = [f"01000000000{i:02d}000" for i in range(10)]
+        apps = {t: 100 + i for i, t in enumerate(ids)}
+        previous = {t: {"app": apps[t], "positive": 1, "negative": 1, "owners": 0, "ccu": 0} for t in ids}
+        seen = []
+        for week in range(5):
+            asked = []
+
+            def fetch(url, asked=asked):
+                asked.append(int(url.rsplit("=", 1)[-1]))
+                return {"positive": 5, "negative": 1, "owners": "1,000 .. 2,000", "ccu": 0}
+            got = features.read_steam(apps, previous, fetch, sleep=lambda s: None, turn=week, refresh=4)
+            self.assertEqual(len(asked), 4)                               # four known games a run, not ten
+            self.assertEqual(len(got), 10)                                # the others keep what they had
+            seen += asked
+        self.assertEqual(set(seen), {apps[t] for t in ids})               # in turn, they have all been asked
+        # Without a turn the same ones again (the first of the list), and a game not known goes first.
+        a1, a2 = [], []
+        features.read_steam({**apps, "0100000000099000": 999}, previous, lambda u: a1.append(u) or None, sleep=lambda s: None, refresh=3)
+        self.assertEqual(a1[0], features.STEAMSPY.format(999))
+        features.read_steam(apps, previous, lambda u: a2.append(u) or None, sleep=lambda s: None, refresh=3)
+        self.assertEqual(a2, [features.STEAMSPY.format(100 + i) for i in range(3)])
+
     def test_similar(self):
         t = lambda *pairs: [[v, ""] for v in pairs]  # noqa: E731
         game_traits = {

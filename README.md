@@ -435,7 +435,7 @@ branch: the platforms' files are then made from these, asking nothing more
 | `sources/wikidata/` | Each query's rows, `{variable: value}`: `switch`, `switch-<series, developers, publishers, genres, modes>`, `switch-steam`, `switch-igdb`, `others-igdb` (every console's games' IGDB slugs), `steam`, `gog`, `xbox`, `links`, `retro`, `retro-<kind>`, `playstation`, `playstation-<kind>`, `playstation-dates`, `3ds` (the 3DS games' Japanese labels, English aliases, dates, GameTDB codes); `facts-age`, `facts-people`, `facts-engine`, `facts-setting` (where and when a game is set), `facts-origin` (the work it is based on), `facts-sales` (copies sold), `facts-website`, `facts-pcgw`, `facts-youtube`, `facts-awards` (the awards for the game of the year or the best game, with their year), `facts-wiki` (for the games with a platform: age ratings, director, composer and screenwriter, engine, official site, PCGamingWiki page, trailers and Wikipedia pages in the site's 11 wikis, `{qid, p, label}` or `{qid, p, v}`); `switch-pages`, `steam-pages` (daily) | Monday, every day |
 | `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers, languages, number of players and age rating; the others with ids and names) | Monday |
 | `sources/steam-store/` | `apps.json` (GetItems by app id: its names, reviews, release, franchise, developers, publishers, tags, and for the sheets the platforms it runs on, the Steam Deck's verdict, the player and feature categories, the names of its header, small capsule and first 6 screenshots, and its languages with the voiced ones), `tags.json`, `most-played.json` | Monday |
-| `sources/steamspy/` | `apps.json`: owners and players by app id, as many as 10 minutes allow | Monday |
+| `sources/steamspy/` | `apps.json`: owners and players by app id; the games not known first, then 250 of the known ones a week, a different slice each week (all in about two months), the others keeping the last run's figures in `games.json` | Monday |
 | `sources/steam-achievements/` | `apps.json`: for the 400 best known Steam games, `[achievements, mean percent of the players who have one, rare ones (under 5 %)]` by app id; one request a game the first time, then a quarter of them each week (a game's rates move slowly), none for a game without achievements | Monday |
 | `sources/gog/catalog/` | `US.json`: the catalog's products by product id, in its trending order, with their systems, features, age ratings and the names of their cover, poster and first 6 screenshots | Monday |
 | `sources/msstore/` | `products.json` (with each product's age ratings, capabilities, platforms and the names of its box art, poster, hero art and first 6 screenshots), `gamepass.json` | Monday |
@@ -547,7 +547,7 @@ Steam's and GOG's games keep their stores' traits.
 python3 tools/collect.py wikidata weekly out/ last/
 python3 tools/collect.py titledb weekly out/ last/          # about 90 MB a region, some 10 s
 python3 tools/collect.py steam-store weekly out/ last/ out/ # some 650 requests (some 8 minutes)
-python3 tools/collect.py steamspy weekly out/ last/ out/    # 10 minutes
+python3 tools/collect.py steamspy weekly out/ last/ out/    # some 250 requests (4 to 10 minutes)
 python3 tools/collect.py steam-achievements weekly out/ last/ out/   # 400 requests the first time, some 100 a week after (a minute)
 python3 tools/collect.py gog weekly out/ last/
 python3 tools/collect.py msstore weekly out/ last/ out/
