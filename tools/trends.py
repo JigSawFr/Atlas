@@ -11,6 +11,8 @@ gives their pages in each language (by the platform's id: the Switch's title
 id, Steam's app id), Wikimedia their views a day. A game read fewer than
 MIN_VIEWS times in the week has no trend; one whose views could not be read
 keeps the trend it had. When Wikimedia turns too many away, nothing changes.
+The same views also give `platforms/<platform>/reach.json`: for each game read MIN_VIEWS times in the
+days collected, the share of its views in each of LANGS (percent, in LANGS' order).
 
 Usage: tools/trends.py <out-dir> <previous-dir> <sources-dir>   (each platform's popular.json from
 previous-dir, the pages and their views from the sources tools/collect.py keeps)
@@ -133,6 +135,22 @@ def curves(src):
             weeks = weekly(total) if total else []
             if len(weeks) >= 4 and sum(weeks) >= MIN_CURVE:
                 found[tid] = weeks
+    return out
+
+
+def reach_of(by_game, pages_read):
+    """{game id: [share of its views in each of LANGS, in percent]} over the days collected, for the games
+    read MIN_VIEWS times or more in all: where a game is read (a game much read in Japanese, in French…)."""
+    out = {}
+    for tid, pages_of in by_game.items():
+        totals = dict.fromkeys(LANGS, 0)
+        for lang, title in pages_of:
+            days = pages_read.get(f"{lang}:{title}")
+            if lang in totals and isinstance(days, list) and all(isinstance(d, int) for d in days):
+                totals[lang] += sum(days)
+        total = sum(totals.values())
+        if total >= MIN_VIEWS:
+            out[tid] = [round(totals[lang] * 100 / total) for lang in LANGS]
     return out
 
 
@@ -261,6 +279,12 @@ def consolidate(src, out_dir, previous_dir, today):
         if not by_game or not collected:
             print(f"trends: {platform}: no pages or views collected today, nothing changes", file=sys.stderr)
             continue
+        reach = reach_of(by_game, collected.get("pages") or {})
+        if reach:
+            common.publish(out_dir, f"platforms/{platform}/reach.json", {
+                "schema": common.SCHEMA, "platform": platform, "generated": today.isoformat(),
+                "source": "Wikimedia pageviews, Wikidata (the games' pages)", "languages": list(LANGS), "games": reach},
+                previous_dir, report)
         trends = from_pages(by_game, collected.get("pages") or {})
         if trends is None:
             continue

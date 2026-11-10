@@ -14,6 +14,7 @@ from unittest import mock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
 import build  # noqa: E402
 import common  # noqa: E402
+import schemas  # noqa: E402
 import trends  # noqa: E402
 
 A, B, C = "0100000000010000", "0100000000020000", "0100000000030000"
@@ -259,6 +260,34 @@ class NetworkErrors(unittest.TestCase):
         with mock.patch.object(build, "views", views), mock.patch.object(build.time, "sleep"):
             self.assertEqual(sorted(build.fetch_views(["Lantern Tale", "Echo", "Moss Road"], starts, end)),
                              ["Lantern Tale", "Moss Road"])
+
+
+class Reach(unittest.TestCase):
+    def test_reach_of(self):
+        by_game = {A: [("en", "Lantern_Tale"), ("ja", "Lantern")], "0100000000002000": [("en", "Quiet_Pond")],
+                   "0100000000003000": [("fr", "Missing"), ("zz", "Odd")]}
+        pages = {"en:Lantern_Tale": [10] * 10, "ja:Lantern": [30] * 10, "en:Quiet_Pond": [1] * 10, "zz:Odd": [999] * 10}
+        got = trends.reach_of(by_game, pages)
+        self.assertEqual(got, {A: [25, 0, 0, 0, 0, 75, 0, 0]})     # LANGS order: en fr de es it ja nl pt
+        self.assertEqual(trends.reach_of(by_game, {}), {})
+
+    def test_published_with_the_trends(self):
+        today = datetime.date(2026, 10, 30)
+        sources = {"wikidata/switch-pages.json": {"rows": [flat(A, "https://en.wikipedia.org/wiki/Lantern_Tale")]},
+                   "wikipedia/daily.json": {"generated": today.isoformat(), "pages": {"en:Lantern_Tale": [100] * 35}}}
+        with tempfile.TemporaryDirectory() as tmp:
+            last, out = os.path.join(tmp, "last"), os.path.join(tmp, "out")
+            os.makedirs(os.path.join(last, "platforms", "switch"))
+            with open(os.path.join(last, "platforms", "switch", "popular.json"), "w", encoding="utf-8") as f:
+                json.dump({"schema": common.SCHEMA, "platform": "switch", "games": {A: [90, 5, 80]}}, f)
+            with contextlib.redirect_stderr(io.StringIO()):
+                trends.consolidate(lambda name: sources.get(name, {}), out, last, today)
+            with open(os.path.join(out, "platforms", "switch", "reach.json"), encoding="utf-8") as f:
+                got = json.load(f)
+            self.assertEqual(got["games"], {A: [100, 0, 0, 0, 0, 0, 0, 0]})
+            self.assertEqual((got["languages"], got["schema"]), (list(trends.LANGS), common.SCHEMA))
+            self.assertEqual(schemas.errors(got, schemas.KINDS["reach"]), [])
+            self.assertEqual(schemas.kind_of("platforms/switch/reach.json"), "reach")
 
 
 class Curves(unittest.TestCase):

@@ -36,6 +36,7 @@ jsDelivr. Each platform has a folder of its own in `platforms/`, by its id
 | `platforms/switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/similar.json` |
 | `platforms/switch/names.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/names.json` |
 | `platforms/switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/editions.json` |
+| `platforms/switch/reach.json` (and `platforms/steam/reach.json`) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/reach.json` |
 | `platforms/steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/popular.json` |
 | `platforms/steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/games.json` |
 | `platforms/steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/upcoming.json` |
@@ -187,6 +188,16 @@ likeness by words counts four fifths of one by traits, 10 at most a game and
 ```
 
 A game's other editions (a Deluxe, a Complete Edition, a Game of the Year, the game with a DLC pack), each with the game it is one of: the edition out first, under the same publisher and a name that differs only by its edition words (`tools/editions.py`). Words that make another game (Remastered, Special, Enhanced, a second title after "+") keep the games apart. `similar.json` leaves a game's own editions out of its list.
+
+`platforms/switch/reach.json` (and Steam's), made every day with the trends:
+
+```json
+{"schema": 1, "generated": "2026-11-10", "source": "Wikimedia pageviews, Wikidata (the games' pages)",
+ "languages": ["en", "fr", "de", "es", "it", "ja", "nl", "pt"],
+ "games": {"0100000000010000": [25, 5, 0, 0, 0, 70, 0, 0]}}
+```
+
+Where a game is read: for each game among the best known (the ones the trends measure) read 300 times or more in the days collected, its share of the views of its Wikipedia pages in each of `languages`, in percent and in that order (a game much read in Japanese, one much read in French). The shares are rounded, so they may not add up to exactly 100. A game read less has none.
 
 ### Steam
 
