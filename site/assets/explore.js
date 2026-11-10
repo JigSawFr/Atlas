@@ -630,6 +630,8 @@
     if (found.has("controller")) found.delete("controller_partial");
     const feat = FEATURES.filter((f) => found.has(f));
     if (feat.length) row(t("x_features"), ...chips(feat.map((f) => t(`x_f_${f}`))));
+    const access = union("access");
+    if (access.length) row(t("x_accessibility"), ...chips(access.map((a) => t(`x_access_${a}`))));
     if (wd.engine && wd.engine.length) row(t("x_engine"), ...chips(wd.engine));
     const ages = [];
     for (const system of AGES) {

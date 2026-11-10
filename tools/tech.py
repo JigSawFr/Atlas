@@ -7,6 +7,7 @@ category numbers, GOG's slugs, Microsoft's capabilities); the sheet has one set.
      "deck": 3,                                # Steam Deck: 1 unsupported, 2 playable, 3 verified (0: not tested, not kept)
      "langs": ["en", "fr"], "voices": ["en"],  # languages (BCP 47), and those with voices
      "feat": ["achievements", "cloud", "controller", "crossplay", …],
+     "access": ["captions", "text_size", …],   # accessibility options the store lists (Steam's categories, STEAM_ACCESS)
      "players": {"local": 4, "online": 8},     # the most players the store says
      "age": [["PEGI", "16"], ["ESRB", "M"]],
      "img": {"h": …, "v": …, "t": …, "s": […]}}    # horizontal, vertical, thumbnail, screenshots: the store's names
@@ -23,6 +24,11 @@ STEAM_LANGS = {0: "en", 1: "de", 2: "fr", 3: "it", 4: "ko", 5: "es", 6: "zh-Hans
                20: "ro", 21: "tr", 22: "ar", 23: "pt-BR", 24: "bg", 25: "el", 26: "uk", 27: "vi", 28: "es-419"}
 # Steam's category numbers that are features of the sheet (the others: modes, the store's own services).
 STEAM_FEATURES = {22: "achievements", 23: "cloud", 28: "controller", 18: "controller_partial", 27: "crossplay"}
+# Steam's accessibility categories (IStoreBrowseService/GetStoreCategories), by their id, in the order the sheet shows them.
+STEAM_ACCESS = {13: "captions", 64: "text_size", 65: "subtitle_options", 66: "color_alternatives", 67: "camera_comfort",
+                68: "volume_controls", 69: "stereo_sound", 70: "surround_sound", 71: "narrated_menus", 72: "chat_stt",
+                73: "chat_tts", 74: "no_timed_input", 75: "keyboard_only", 76: "mouse_only", 77: "touch_only",
+                78: "adjustable_difficulty", 79: "save_anytime"}
 GOG_FEATURES = {"achievements": "achievements", "cloud_saves": "cloud", "controller_support": "controller"}
 GOG_OS = {"windows": "windows", "osx": "mac", "linux": "linux"}
 GOG_AGES = {"pegiRating": "PEGI", "esrbRating": "ESRB", "uskRating": "USK", "ceroRating": "CERO"}
@@ -58,7 +64,8 @@ def steam(item: dict) -> dict:
             if voiced:
                 voices.append(code)
     categories = item.get("categories") or {}
-    found = {STEAM_FEATURES[c] for ids in categories.values() if isinstance(ids, list) for c in ids if c in STEAM_FEATURES}
+    every = {c for ids in categories.values() if isinstance(ids, list) for c in ids}
+    found = {STEAM_FEATURES[c] for c in every if c in STEAM_FEATURES}
     if "controller" in found:
         found.discard("controller_partial")
     assets = item.get("assets") or {}
@@ -66,6 +73,7 @@ def steam(item: dict) -> dict:
     return clean({
         "os": [name for key, name in (("windows", "windows"), ("mac", "mac"), ("steamos_linux", "linux")) if platforms.get(key)],
         "deck": deck if deck in (1, 2, 3) else 0, "langs": langs, "voices": voices, "feat": ordered(found),
+        "access": [name for number, name in STEAM_ACCESS.items() if number in every],
         "img": clean({"h": assets.get("header"), "t": assets.get("small_capsule"), "s": item.get("screenshots")})})
 
 
