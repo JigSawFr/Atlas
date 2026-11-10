@@ -62,7 +62,8 @@ import xbox
 
 TITLEDB_REGIONS = ("US.en.json", "GB.en.json", "JP.ja.json")
 TITLEDB = "https://raw.githubusercontent.com/blawar/titledb/master/{file}"
-TITLEDB_FIELDS = ("id", "name", "releaseDate", "isDemo", "publisher", "category", "intro", "description")
+TITLEDB_FIELDS = ("id", "name", "releaseDate", "isDemo", "publisher", "category", "intro", "description",
+                  "languages", "numberOfPlayers", "rating")
 # The other regions' lists give the names the US one lacks: no need of their texts.
 TITLEDB_SHORT = ("id", "name", "releaseDate", "isDemo")
 

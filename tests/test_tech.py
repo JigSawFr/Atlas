@@ -61,6 +61,23 @@ class Stores(unittest.TestCase):
         self.assertEqual(sheet["age"], [["PEGI", "7"], ["ESRB", "E10+"]])       # the systems we show, once each; E10 is E10+
         self.assertEqual(sheet["img"], {"h": "hero", "v": "box", "s": ["s1", "s2"]})
 
+    def test_switch(self):
+        sheet = tech.switch({"id": "0100AAAAAAAAA000", "languages": ["ja", "en", "zh", "zh", "fr"], "numberOfPlayers": 4, "rating": 10})
+        self.assertEqual(sheet, {"langs": ["ja", "en", "zh", "fr"], "players": {"local": 4}, "age": [["ESRB", "E10+"]]})
+        self.assertEqual(tech.switch({"numberOfPlayers": 1, "rating": 99, "languages": []}), {})       # one player, an age we do not know
+
+    def test_switch_read_by_base_title_id(self):
+        import json
+        with tempfile.TemporaryDirectory() as data:
+            os.makedirs(os.path.join(data, "sources", "titledb"))
+            games = {"7001": {"id": "0100aaaaaaaaa000", "languages": ["en"]},                  # keyed by the eShop's own key
+                     "7002": {"id": "0100AAAAAAAAA800", "languages": ["en"]},                  # an update, not a base game
+                     "7003": {"id": "0100BBBBBBBBB000", "languages": ["en"], "isDemo": True},  # a demo
+                     "7004": {"id": "0100CCCCCCCCC000"}}                                       # says nothing
+            with open(os.path.join(data, "sources", "titledb", "US.json"), "w", encoding="utf-8") as f:
+                json.dump({"schema": 1, "games": games}, f)
+            self.assertEqual(tech.read(data, "switch"), {"0100AAAAAAAAA000": {"langs": ["en"]}})
+
     def test_one_player_is_not_a_count(self):
         self.assertNotIn("players", tech.ms({"Properties": {"Attributes": [{"Name": "XblLocalMultiPlayer", "Maximum": 1}]}}))
 
@@ -72,7 +89,7 @@ class Stores(unittest.TestCase):
                 json.dump({"schema": 1, "games": {"7": {"operatingSystems": ["linux"]}, "8": {"title": "Bare"}, "9": "not a game"}}, f)
             self.assertEqual(tech.read(data, "gog"), {"7": {"os": ["linux"]}})          # the games that say something
             self.assertEqual(tech.read(data, "steam"), {})                                # its source is not there
-            self.assertEqual(tech.read(data, "switch"), {})                               # not a store
+            self.assertEqual(tech.read(data, "ps4"), {})                                  # not a store
             with open(os.path.join(data, "sources", "gog", "catalog", "US.json"), "w", encoding="utf-8") as f:
                 json.dump({"schema": 2, "games": {"7": {"operatingSystems": ["linux"]}}}, f)
             self.assertEqual(tech.read(data, "gog"), {})                                  # another schema counts as none
