@@ -1053,7 +1053,7 @@ a.chip.store-link { border-color: color-mix(in srgb, var(--tint, #33bbff) 55%, t
 @media (prefers-reduced-motion: no-preference) {
   .shots a { background: linear-gradient(100deg, var(--night) 30%, color-mix(in srgb, var(--snow) 7%, var(--night)) 50%, var(--night) 70%) 0 0 / 200% 100%; animation: sweep 1.4s linear infinite; }
 }
-.fav-actions { display: inline-flex; gap: 8px; }
+.fav-actions { display: inline-flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
 /* The keys' help. */
 dialog.help { width: min(92vw, 28rem); padding: 20px 22px; border: 1px solid var(--night-line); border-radius: 16px; background: var(--night); color: var(--snow); }
 dialog.help::backdrop { background: rgb(2 6 16 / 0.7); }
@@ -1161,12 +1161,6 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
 .palette-list li[aria-selected="true"] { background: color-mix(in srgb, var(--snow) 10%, transparent); }
 
 /* What the visitor keeps of a game: a status and a note on the sheet, shown on the favorites page; a shared list. */
-.topline .mine { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.mine select, .mine input { max-width: 14rem; min-height: 32px; box-sizing: border-box; font-size: 1rem; }
-.fav-item .fav-mine { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.8125rem; }
-.badge.st-todo { border-color: #5aa9ff; color: #5aa9ff; }
-.badge.st-doing { border-color: #ffc857; color: #ffc857; }
-.badge.st-done { border-color: #6ee7a8; color: #6ee7a8; }
 
 /* The stats page: a timeline of years and a map of genres. */
 .timeline-years { list-style: none; margin: 0; padding: 4px 2px 12px; display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; }
