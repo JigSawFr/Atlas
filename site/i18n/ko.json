@@ -473,5 +473,6 @@
   "x_skip": "결과로 건너뛰기",
   "x_undo": "실행 취소",
   "x_fav_added": "{name} 즐겨찾기에 추가됨",
-  "x_fav_removed": "{name} 즐겨찾기에서 제거됨"
+  "x_fav_removed": "{name} 즐겨찾기에서 제거됨",
+  "x_home": "홈"
 }

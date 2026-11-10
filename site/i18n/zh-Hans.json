@@ -473,5 +473,6 @@
   "x_skip": "跳到结果",
   "x_undo": "撤销",
   "x_fav_added": "已将 {name} 加入收藏",
-  "x_fav_removed": "已将 {name} 移出收藏"
+  "x_fav_removed": "已将 {name} 移出收藏",
+  "x_home": "首页"
 }

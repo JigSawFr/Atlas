@@ -473,5 +473,6 @@
   "x_skip": "Vai ai risultati",
   "x_undo": "Annulla",
   "x_fav_added": "{name} aggiunto ai preferiti",
-  "x_fav_removed": "{name} rimosso dai preferiti"
+  "x_fav_removed": "{name} rimosso dai preferiti",
+  "x_home": "Home"
 }

@@ -1211,3 +1211,17 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
 .block-skeleton { min-height: 120px; border-radius: 14px; border: 1px solid var(--night-line); background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--snow) 7%, transparent) 50%, transparent 80%) 0 0 / 200% 100%, var(--night); }
 @media (prefers-reduced-motion: no-preference) { .block-skeleton { animation: sweep 1.4s linear infinite; } }
 @media (prefers-reduced-motion: reduce) { .toast, .fav.pulse { animation: none; } }
+
+/* The bar at the foot of a phone. */
+.bottombar { display: none; }
+@media (max-width: 700px) {
+  .bottombar { position: fixed; inset-inline: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding-bottom: env(safe-area-inset-bottom, 0px); background: color-mix(in srgb, var(--abyss) 92%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--night-line); }
+  .bottombar a, .bottombar button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; padding: 6px 4px; border: 0; background: none; color: var(--mist); font: 500 0.75rem var(--body); text-decoration: none; cursor: pointer; }
+  .bottombar .ico { width: 22px; height: 22px; }
+  .bottombar [aria-current] { color: var(--snow); }
+  .bottombar [aria-current] .ico { color: var(--aurora, #6ee7c8); }
+  body:has(.explorer) { padding-bottom: 64px; }
+  .x-on-sheet .bottombar { display: none; }
+  body.x-on-sheet { padding-bottom: 0; }
+  .toast { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+}
