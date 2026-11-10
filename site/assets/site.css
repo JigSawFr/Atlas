@@ -274,7 +274,7 @@ time.late { color: #ffb347; }
 .dim { color: var(--mist); }
 .date { font-family: var(--mono); color: var(--snow); }
 
-.sheet { display: grid; gap: 22px; padding: clamp(18px, 4vw, 32px); background: var(--night); border: 1px solid var(--night-line); border-radius: 20px; }
+.sheet { --sheet-r: 20px; display: grid; gap: 22px; padding: clamp(18px, 4vw, 32px); background: var(--night); border: 1px solid var(--night-line); border-radius: var(--sheet-r); }
 .sheet[hidden] { display: none; }
 .sheet header { display: grid; gap: 10px; }
 .sheet h2 { font-size: clamp(1.5rem, 4vw, 2.25rem); letter-spacing: -0.02em; overflow-wrap: anywhere; }
@@ -335,6 +335,7 @@ a.chip:hover, a.chip:focus-visible { background: rgb(51 187 255 / 0.2); }
 .sheet .backdrop { position: absolute; inset: 0 0 auto 0; height: clamp(260px, 46vw, 460px); z-index: -1; opacity: 0; transition: opacity 0.5s ease; pointer-events: none;
   -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent); mask-image: linear-gradient(to bottom, #000 35%, transparent); }
 .sheet .backdrop.ready { opacity: 0.8; }
+.sheet .backdrop { clip-path: inset(0 round var(--sheet-r) var(--sheet-r) 0 0); }
 .sheet .backdrop img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; display: block; }
 .sheet .backdrop.blurred img { filter: blur(28px) saturate(1.3); transform: scale(1.25); }
 .sheet .backdrop::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to right, var(--night), transparent 55%), linear-gradient(to top, var(--night), transparent 60%); }
@@ -1146,7 +1147,9 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
 /* A sheet takes a glow from its picture (explore.js mood()), the picture slides as the page scrolls, the curve is drawn. */
 .sheet.moody { background: radial-gradient(90% 42% at 100% 0, color-mix(in srgb, var(--mood) 24%, transparent), transparent 70%), radial-gradient(60% 30% at 0 0, color-mix(in srgb, var(--mood) 12%, transparent), transparent 70%), var(--night); border-color: color-mix(in srgb, var(--mood) 30%, var(--night-line)); }
 @media (prefers-reduced-motion: no-preference) {
-  .sheet .backdrop { top: -70px; height: calc(clamp(260px, 46vw, 460px) + 70px); transform: translateY(calc(var(--par, 0) * 70px)); }
+  /* It starts above the sheet and slides down: it cuts itself at the sheet's top edge, as WebKit does not clip a
+     moving layer to a rounded parent (the picture showed over the search box on an iPhone). */
+  .sheet .backdrop { top: -70px; height: calc(clamp(260px, 46vw, 460px) + 70px); transform: translateY(calc(var(--par, 0) * 70px)); clip-path: inset(calc((1 - var(--par, 0)) * 70px) 0 0 0 round var(--sheet-r) var(--sheet-r) 0 0); }
   .sheet .backdrop.ready { opacity: calc(0.8 - var(--par, 0) * 0.55); }
   .views .curve polyline { stroke-dasharray: 1; animation: draw 1.3s cubic-bezier(0.3, 0.6, 0.3, 1) 0.2s both; }
   .views .curve polygon { animation: rise 0.9s ease-out 0.9s both; }
