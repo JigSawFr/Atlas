@@ -1205,8 +1205,8 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
 
 /* Interface: a two-tone focus ring, a skip link, a toast that can take back, a shimmer where figures will be. */
 .explorer :is(a, button, select, input, summary, textarea):focus-visible:not(.palette-input):not(.searchbar input) { outline: 2px solid var(--snow); outline-offset: 2px; box-shadow: 0 0 0 5px rgb(51 187 255 / 0.55); }
-.skip { position: absolute; inset-inline-start: 16px; top: -100px; z-index: 30; padding: 10px 16px; min-height: 44px; display: inline-flex; align-items: center; border-radius: 12px; background: var(--snow); color: var(--abyss); font-weight: 600; text-decoration: none; }
-.skip:focus { top: 8px; }
+.skip { position: absolute; inset-inline-start: 16px; top: 8px; z-index: 30; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; white-space: nowrap; padding: 10px 16px; min-height: 44px; display: inline-flex; align-items: center; border-radius: 12px; background: var(--snow); color: var(--abyss); font-weight: 600; text-decoration: none; }
+.skip:focus { clip-path: none; width: auto; height: auto; overflow: visible; }
 .explorer { position: relative; }
 .toast { position: fixed; inset-inline: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 60; max-width: 30rem; margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 14px; background: var(--night); color: var(--snow); border: 1px solid var(--mist); box-shadow: 0 10px 30px rgb(0 0 0 / 0.5); animation: toast-in 0.22s ease-out; }
 .toast span { min-width: 0; overflow-wrap: anywhere; }
