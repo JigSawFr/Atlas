@@ -938,34 +938,68 @@
     return new Intl.NumberFormat(LANG, { style: "unit", unit, unitDisplay: "long", maximumFractionDigits: 1 }).format(n);
   }
 
-  // The "By platform" tiles: the platform's own colour, its renown as a small ring, the release with how long after
-  // the first it came, the reviews, what the platform adds (Game Pass, Steam Deck), a link to the store where there
-  // is one, and the one it is best known on marked.
+  // The day each platform came out (its first machines or its store): a game's date before it is the game's, not the
+  // platform's (Wikidata says one first date for every machine when it names none), and is not shown there.
+  const LAUNCH = { steam: 20030912, gog: 20080908, xbox: 20131122, ps4: 20131115, ps5: 20201112, ps3: 20061111, ps2: 20000304,
+    ps1: 19941203, psp: 20041212, psv: 20111217, "3ds": 20110226, nds: 20041121, wiiu: 20121118, wii: 20061119, gamecube: 20010914,
+    n64: 19960623, snes: 19901121, nes: 19830715, "xbox-og": 20011115, xbox360: 20051122, genesis: 19881029, dreamcast: 19981127,
+    saturn: 19941122, gb: 19890421, gbc: 19981121, gba: 20010621, switch: 20170303 };
+  const shortName = (p) => SHORT[p] || S._names[p] || p;
+  // A game's day on a platform, 0 when it is the game's, from before the platform existed.
+  const dayOn = (e) => { const d = e.release || e.upcoming; return d && !(LAUNCH[e.p] && d < LAUNCH[e.p]) ? d : 0; };
+  // PlayStation 4 and 5 with the same date and score are one tile (and one row of the dates): the PS4's entry.
+  const joinedPlay = (es) => {
+    const ps4 = es.find((e) => e.p === "ps4"), ps5 = es.find((e) => e.p === "ps5");
+    const raw = (e) => e.release || e.upcoming || 0;
+    return ps4 && ps5 && raw(ps4) === raw(ps5) && JSON.stringify(ps4.popular || null) === JSON.stringify(ps5.popular || null) ? ps4 : null;
+  };
+
+  // The "By platform" tiles, oldest release first (the game's story): the platform's own colour, its name, its renown as a
+  // small ring (said once, under the title), the release with how long after which platform, what is known of it
+  // (reviews, else the players' rating), what the platform adds (Game Pass, Steam Deck), the store's link with its word,
+  // and the one it is best known on said in words. PlayStation 4 and 5 with the same figures are one tile.
   function platformTiles(es) {
-    const first = Math.min(...es.map((e) => e.release || e.upcoming || Infinity));
-    const dated = new Set(es.map((e) => e.release || e.upcoming).filter(Boolean)).size > 1;
+    // A date before the platform existed is the game's: left off the tile and out of the order and the "first".
+    const when = dayOn;
+    const ordered = [...es].sort((x, y) => (when(x) || 99999999) - (when(y) || 99999999) || ((y.popular || [0])[0] - (x.popular || [0])[0]));
+    const ps4 = ordered.find((e) => e.p === "ps4"), ps5 = ordered.find((e) => e.p === "ps5");
+    const joined = joinedPlay(es);
+    const sorted = ordered.filter((e) => e !== joined);
+    const days = sorted.map(when).filter(Boolean);
+    const first = days.length ? Math.min(...days) : 0;
+    // The first is said only when one platform alone has it (a tie says nothing).
+    const firstOnes = sorted.filter((e) => when(e) === first);
+    const dated = new Set(days).size > 1;
+    const firstPlat = sorted.find((e) => when(e) === first);
     const top = es.filter((e) => e.popular).sort((x, y) => y.popular[0] - x.popular[0])[0];
-    return es.map((e) => {
-      const when = e.release || e.upcoming;
+    const several = es.filter((e) => e.popular).length > 1;
+    return sorted.map((e) => {
+      const day = when(e);
       const rev = e.reviews || e.rating;
-      const name = S._names[e.p] || e.p;
+      const voters = !rev && e.igdb_rating && e.igdb_rating[1] >= 20 ? e.igdb_rating : null;
+      const name = e === ps5 && joined ? `${S._names.ps4 || "PlayStation 4"} · 5` : S._names[e.p] || e.p;
       const deck = e.tech && e.tech.deck >= 2 ? `Steam Deck · ${t(`x_deck_${e.tech.deck}`)}` : "";
+      const isTop = top === e && several;
       const lines = [];
-      lines.push(el("span", { class: "plat-name" }, el("span", { class: "badge", text: name }),
-        top === e && es.filter((x) => x.popular).length > 1 ? el("span", { class: "star", title: t("x_best_platform"), "aria-label": t("x_best_platform"), text: "★" }) : null));
-      if (when) {
-        const later = dated && when > first ? el("span", { class: "chip gap", title: t("x_later", { d: gap(first, when) }), text: `+${gap(first, when)}` }) : null;
-        lines.push(el("span", { class: "plat-when" }, el("span", { class: "date", text: e.release ? ymd(when) : t("x_coming", { date: ymd(when) }) }), later,
-          dated && when === first ? el("span", { class: "chip first", text: t("x_first") }) : null));
+      lines.push(el("span", { class: "plat-name" }, el("span", { class: "badge plat-title", text: name }),
+        isTop ? el("span", { class: "chip best-chip", title: t("x_best_platform"), text: `★ ${t("x_best_short")}` }) : null));
+      if (day) {
+        const later = dated && day > first && firstPlat ? el("span", { class: "chip gap", title: t("x_later", { d: gap(first, day) }),
+          text: t("x_after", { d: gap(first, day), platform: shortName(firstPlat.p) }) }) : null;
+        lines.push(el("span", { class: "plat-when" }, el("span", { class: "date", text: e.release && day === e.release ? ymd(day) : t("x_coming", { date: ymd(day) }) }), later,
+          dated && day === first && firstOnes.length === 1 ? el("span", { class: "chip first", text: t("x_first") }) : null));
       }
       const extras = [e.gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null, deck ? el("span", { class: "chip", text: deck }) : null].filter(Boolean);
-      if (rev || extras.length) lines.push(el("span", { class: "plat-more" }, rev ? el("span", { class: "dim", text: t("x_reviews", { n: num(rev[0]), p: rev[1] }) }) : null, ...extras));
+      const known = rev ? el("span", { class: "dim", text: t("x_reviews", { n: num(rev[0]), p: rev[1] }) })
+        : voters ? el("span", { class: "dim", text: `${t("x_players_rating")} ${Math.round(voters[0])} / 100 · ${num(voters[1])}` }) : null;
+      if (known || extras.length) lines.push(el("span", { class: "plat-more" }, known, ...extras));
       const main = el("a", { class: `plat-main${e.popular ? " has-ring" : ""}`, href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
         e.popular ? miniRing(e.popular[0], t("x_score")) : null, ...lines, el("span", { class: "out", "aria-hidden": "true", text: "→" }));
       const shop = storePage(e) ? el("a", { class: "store", href: storePage(e), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank",
-        title: t("x_open_store", { store: name }), "aria-label": t("x_open_store", { store: name }), text: "↗" }) : null;
+        title: t("x_open_store", { store: name }), "aria-label": t("x_open_store", { store: name }) }, el("span", { text: t("x_store") }), el("span", { "aria-hidden": "true", text: " ↗" })) : null;
       const li = platTile(e.p, main, shop);
-      if (top === e && es.filter((x) => x.popular).length > 1) li.classList.add("best");
+      if (e === ps5 && joined) li.querySelector(".wm b").textContent = "PS4·5";
+      if (isTop) li.classList.add("best");
       return li;
     });
   }
@@ -973,7 +1007,8 @@
   // The release dates of a game on several platforms on one axis: a row a platform (name, a dot where its date falls
   // between the first and the last, the date); the dot is for the eye, the names and dates are the text.
   function timeline(es) {
-    const dated = es.filter((e) => e.release).sort((x, y) => x.release - y.release || x.p.localeCompare(y.p));
+    const joined = joinedPlay(es);
+    const dated = es.filter((e) => e.release && dayOn(e) === e.release && e !== joined).sort((x, y) => x.release - y.release || x.p.localeCompare(y.p));
     if (dated.length < 2) return null;
     const a = dayOf(dated[0].release), span = dayOf(dated[dated.length - 1].release) - a;
     // Dates a few days apart say no more than the tiles' own ("+1 day"): a line is for a real gap.
@@ -1040,7 +1075,7 @@
       targets.forEach((sec, i) => { if (sec.getBoundingClientRect().top <= window.innerHeight * 0.3) here = i; });
       buttons.forEach((b, i) => { b.classList.toggle("here", i === here); if (i === here) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
       const cur = buttons[here];
-      if (cur && shownBar) { const nav = bar.querySelector("nav"); nav.scrollLeft = cur.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; }
+      if (cur && shownBar) { const nav = bar.querySelector("nav"); nav.scrollLeft = cur.offsetLeft - nav.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; }   // offsetLeft is the bar's (it is fixed), not the nav's
     };
     const ask = () => { if (!frame) frame = requestAnimationFrame(update); };
     window.addEventListener("scroll", ask, on);
@@ -1433,9 +1468,10 @@
     if (technical) side.append(technical);
 
     if (es.length > 1) {
-      side.append(section(t("x_by_platform"), el("ul", { class: "byplat" }, ...platformTiles(es)),
-        // The rings on the tiles are the game's renown on that platform (not a rating): said once, under them.
-        es.some((e) => e.popular) ? el("p", { class: "dim ring-note", text: `${t("x_score")} / 100` }) : null, timeline(es)));
+      side.append(section(t("x_by_platform"),
+        // The rings on the tiles are the game's renown on that platform (not a rating): said once, under the title.
+        es.some((e) => e.popular) ? el("p", { class: "dim ring-note", text: `${t("x_score")} / 100` }) : null,
+        el("ul", { class: "byplat" }, ...platformTiles(es)), timeline(es)));
     }
 
     // The first lines of the Wikipedia page, in the visitor's language else English, with its credit (CC BY-SA 4.0).

@@ -1287,3 +1287,18 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
   .dock > .pager.fab { width: auto; height: 42px; gap: 2px; white-space: nowrap; }
   .dock > .cmp.fab { position: relative; }
 }
+
+/* ---- The "By platform" tiles, the name first (2026-11-10): the platform's name is the title and the date a line under it;
+   the watermark fades out before the text; the store's link says what it is; the best known platform says it. */
+.byplat .plat-title { padding: 0; border: 0; background: none; color: var(--snow); font: 600 1rem/1.25 var(--display); white-space: normal; }
+.byplat .plat-when .date { font: 500 0.8125rem var(--mono); color: var(--mist); }
+.plat .wm { opacity: 0.12; -webkit-mask-image: linear-gradient(to left, #000 25%, transparent 85%); mask-image: linear-gradient(to left, #000 25%, transparent 85%); }
+.byplat li.plat:hover .wm { opacity: 0.2; }
+.plat .wm b { font-size: 2.75rem; }
+.plat .wm .ico { width: 2.75rem; height: 2.75rem; }
+.plat-name { flex-wrap: wrap; row-gap: 2px; }
+.byplat li.plat:has(a.store) .plat-name { padding-right: 84px; }
+.byplat a.store { top: 8px; right: 8px; display: inline-flex; align-items: center; min-width: 0; padding: 0 10px; border: 1px solid var(--night-line); font: 500 0.75rem var(--mono); color: var(--mist); white-space: nowrap; }
+.byplat a.store:hover, .byplat a.store:focus-visible { border-color: var(--mist); }
+.chip.best-chip { background: rgb(255 200 87 / 0.1); border-color: rgb(255 200 87 / 0.4); color: #ffc857; }
+.ring-note { margin: 0 0 0.5rem; }
