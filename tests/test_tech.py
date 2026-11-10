@@ -63,8 +63,23 @@ class Stores(unittest.TestCase):
 
     def test_switch(self):
         sheet = tech.switch({"id": "0100AAAAAAAAA000", "languages": ["ja", "en", "zh", "zh", "fr"], "numberOfPlayers": 4, "rating": 10})
-        self.assertEqual(sheet, {"langs": ["ja", "en", "zh", "fr"], "players": {"local": 4}, "age": [["ESRB", "E10+"]]})
+        self.assertEqual(sheet, {"langs": ["ja", "en", "zh-Hans", "zh-Hant", "fr"], "players": {"local": 4}, "age": [["ESRB", "E10+"]]})
         self.assertEqual(tech.switch({"numberOfPlayers": 1, "rating": 99, "languages": []}), {})       # one player, an age we do not know
+
+    def test_one_chinese_is_chinese(self):
+        self.assertEqual(tech.switch({"languages": ["en", "zh"]})["langs"], ["en", "zh"])
+
+    def test_matches_the_site_locales(self):
+        self.assertTrue(tech.matches("fr", "fr-CA"))                 # a game in French is in French for Canada
+        self.assertTrue(tech.matches("pt-BR", "pt-BR"))
+        self.assertTrue(tech.matches("pt", "pt-BR"))
+        self.assertTrue(tech.matches("pt-BR", "pt"))
+        self.assertTrue(tech.matches("es-419", "es"))
+        self.assertTrue(tech.matches("en", "en-US"))
+        self.assertTrue(tech.matches("zh", "zh-Hant"))               # Chinese, the script not said
+        self.assertFalse(tech.matches("zh-Hans", "zh-Hant"))
+        self.assertFalse(tech.matches("es-419", "pt-BR"))
+        self.assertFalse(tech.matches("de", "fr"))
 
     def test_switch_read_by_base_title_id(self):
         import json

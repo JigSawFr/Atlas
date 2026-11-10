@@ -193,11 +193,11 @@ A game's other editions (a Deluxe, a Complete Edition, a Game of the Year, the g
 
 ```json
 {"schema": 1, "generated": "2026-11-10", "source": "Wikimedia pageviews, Wikidata (the games' pages)",
- "languages": ["en", "fr", "de", "es", "it", "ja", "nl", "pt"],
- "games": {"0100000000010000": [25, 5, 0, 0, 0, 70, 0, 0]}}
+ "languages": ["en", "fr", "de", "es", "it", "ja", "nl", "pt", "ko", "ru", "zh"],
+ "games": {"0100000000010000": [25, 5, 0, 0, 0, 65, 0, 0, 0, 0, 5]}}
 ```
 
-Where a game is read: for each game among the best known (the ones the trends measure) read 300 times or more in the days collected, its share of the views of its Wikipedia pages in each of `languages`, in percent and in that order (a game much read in Japanese, one much read in French). The shares are rounded, so they may not add up to exactly 100. A game read less has none.
+Where a game is read: for each game among the best known (the ones the trends measure) read 300 times or more in the days collected, its share of the views of its Wikipedia pages in each of `languages`, in percent and in that order (a game much read in Japanese, one much read in French). `languages` are the 11 languages of the site's 15 locales (PlayShelf's too): a locale's language is the part of its tag before the dash (`pt-BR` is `pt`, `zh-Hant` is `zh`). Read `languages`, not a fixed list: the first 8 keep their place, but more may come. The shares are rounded, so they may not add up to exactly 100. A game read less has none.
 
 ### Steam
 

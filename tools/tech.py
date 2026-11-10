@@ -110,14 +110,23 @@ def ms(product: dict) -> dict:
         "feat": ordered(found), "players": players, "age": age, "img": pictures})
 
 
+def matches(lang: str, locale: str) -> bool:
+    """Whether a game's language (a sheet's `langs`: "fr", "pt-BR", "zh-Hant"…) is a site locale's (site/i18n:
+    "fr-CA", "en-US", "zh-Hans"…): the same language, and the same region or script unless one of the two names none
+    (a game in "pt" is in "pt-BR" for the visitor, "zh-Hans" is not "zh-Hant"). The explorer does the same (explore.js)."""
+    a, b = lang.split("-", 1), locale.split("-", 1)
+    return a[0] == b[0] and (len(a) == 1 or len(b) == 1 or a[1] == b[1])
+
+
 def switch(entry: dict) -> dict:
-    """A Switch game's sheet, from the entry of titledb's US list that collect.collect_titledb kept. The list
-    gives no word on the Chinese script, so its two `zh` are one language; its number of players is the most
-    that play on one console, so it is the local count."""
-    langs = []
-    for code in entry.get("languages") or []:
-        if isinstance(code, str) and code and code not in langs:
-            langs.append(code)
+    """A Switch game's sheet, from the entry of titledb's US list that collect.collect_titledb kept. Its number
+    of players is the most that play on one console, so it is the local count."""
+    langs, said = [], entry.get("languages") or []
+    for code in said:
+        # Two `zh` are the two scripts (what the site's locales tell apart); one is Chinese, whichever script.
+        for one in (("zh-Hans", "zh-Hant") if code == "zh" and said.count("zh") > 1 else (code,)):
+            if isinstance(one, str) and one and one not in langs:
+                langs.append(one)
     count = entry.get("numberOfPlayers")
     letters = SWITCH_AGES.get(entry.get("rating"))
     return clean({"langs": langs, "players": {"local": count} if isinstance(count, int) and count > 1 else {},

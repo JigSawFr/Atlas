@@ -603,6 +603,13 @@
     } catch (e) { return code; }
   };
 
+  // Whether a game's language is the visitor's (tools/tech.py's matches()): the same language, and the same region or
+  // script unless one of the two names none ("pt" is "pt-BR" for the visitor, "zh-Hans" is not "zh-Hant").
+  const ownLanguage = (code) => {
+    const a = code.split("-"), b = LANG.split("-");
+    return a[0] === b[0] && (a.length === 1 || b.length === 1 || a[1] === b[1]);
+  };
+
   function techBlock(es, wd) {
     const techs = es.map((e) => e.tech).filter(Boolean);
     wd = wd || {};
@@ -633,7 +640,9 @@
     if (ages.length) row(t("x_age"), ...chips(ages));
     const list = (label, codes) => {
       if (!codes.length) return;
-      const items = chips(codes.map((c) => languageName(c)));
+      // The visitor's own language first and marked (tools/tech.py's matches()).
+      codes = [...codes].sort((a, b) => ownLanguage(b) - ownLanguage(a));
+      const items = codes.map((c) => el("span", { class: ownLanguage(c) ? "chip mine" : "chip", text: languageName(c) }));
       const shown = items.slice(0, 6), rest = items.slice(6);
       row(label, ...shown, rest.length ? el("details", { class: "more-chips" }, el("summary", { class: "chip", text: `+${num(rest.length)}` }), ...rest) : null);
     };

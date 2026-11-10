@@ -268,7 +268,7 @@ class Reach(unittest.TestCase):
                    "0100000000003000": [("fr", "Missing"), ("zz", "Odd")]}
         pages = {"en:Lantern_Tale": [10] * 10, "ja:Lantern": [30] * 10, "en:Quiet_Pond": [1] * 10, "zz:Odd": [999] * 10}
         got = trends.reach_of(by_game, pages)
-        self.assertEqual(got, {A: [25, 0, 0, 0, 0, 75, 0, 0]})     # LANGS order: en fr de es it ja nl pt
+        self.assertEqual(got, {A: [25, 0, 0, 0, 0, 75, 0, 0, 0, 0, 0]})     # LANGS order: en fr de es it ja nl pt ko ru zh
         self.assertEqual(trends.reach_of(by_game, {}), {})
 
     def test_published_with_the_trends(self):
@@ -284,10 +284,19 @@ class Reach(unittest.TestCase):
                 trends.consolidate(lambda name: sources.get(name, {}), out, last, today)
             with open(os.path.join(out, "platforms", "switch", "reach.json"), encoding="utf-8") as f:
                 got = json.load(f)
-            self.assertEqual(got["games"], {A: [100, 0, 0, 0, 0, 0, 0, 0]})
+            self.assertEqual(got["games"], {A: [100] + [0] * (len(trends.LANGS) - 1)})
             self.assertEqual((got["languages"], got["schema"]), (list(trends.LANGS), common.SCHEMA))
             self.assertEqual(schemas.errors(got, schemas.KINDS["reach"]), [])
             self.assertEqual(schemas.kind_of("platforms/switch/reach.json"), "reach")
+
+
+class SiteLanguages(unittest.TestCase):
+    def test_every_language_of_the_site_is_read(self):
+        """The site's locales (site/i18n, PlayShelf's too) all have their language's Wikipedia in LANGS."""
+        names = [n[:-5] for n in os.listdir(os.path.join(os.path.dirname(__file__), "..", "site", "i18n")) if n.endswith(".json")]
+        self.assertEqual(len(names), 15)
+        self.assertEqual({n.split("-")[0] for n in names} - set(trends.LANGS), set())
+        self.assertEqual(trends.LANGS[:8], ("en", "fr", "de", "es", "it", "ja", "nl", "pt"))   # reach.json's first columns
 
 
 class Curves(unittest.TestCase):
