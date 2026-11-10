@@ -1295,11 +1295,7 @@
     // and bottom, and on a phone make one bar at its foot (site.css); outside the head, whose entrance animation would
     // make it their frame. The search, a phone's only (its search box is folded away on a sheet), brings the box back.
     const find = el("button", { type: "button", class: "find fab", title: t("x_search"), "aria-label": t("x_search") }, icon("i-ui-search"));
-    find.addEventListener("click", () => {
-      document.body.classList.add("x-sheet-find");
-      window.scrollTo({ top: 0, behavior: calm() ? "auto" : "smooth" });
-      search.focus();
-    });
+    find.addEventListener("click", () => { document.body.classList.add("x-sheet-find"); toTop(() => search.focus()); });
     sheet.append(el("div", { class: "dock" }, ...[back, pager(es), find, share(m), heart(m, es)].filter(Boolean)), head);
     if (!multi) {
       sheet.append(el("span", { class: "sheet-wm", "aria-hidden": "true" }, icon(PC.has(es[0].p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[es[0].p] || es[0].p.toUpperCase() })));
