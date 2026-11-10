@@ -33,6 +33,7 @@ MAX_TRAITS = 12                  # of a kind, a game's first ones
 STEAMSPY = "https://steamspy.com/api.php?request=appdetails&appid={}"
 STEAM_PAUSE = 1.05               # SteamSpy allows a request a second
 STEAM_BUDGET = 600               # seconds spent on SteamSpy a run, at most (its owners and players)
+STEAM_REFRESH = 250              # games already known asked again a run, at most: a different slice each week
 
 TRAIT_QUERY = """
 SELECT ?tid ?value ?valueLabel WHERE {{
@@ -99,13 +100,17 @@ def steam_of(body):
     return {"positive": positive, "negative": negative, "owners": owners_low(body.get("owners")), "ccu": ccu}
 
 
-def read_steam(apps, previous, fetch, budget=STEAM_BUDGET, now=time.monotonic, sleep=time.sleep):
-    """{title id: SteamSpy's figures}: asked for each game, the ones not known
-    from `previous` first, until `budget` seconds are spent; the rest keep
-    what `previous` (the last run's games.json) said of them."""
+def read_steam(apps, previous, fetch, budget=STEAM_BUDGET, now=time.monotonic, sleep=time.sleep, turn=0,
+               refresh=STEAM_REFRESH):
+    """{title id: SteamSpy's figures}: asked for each game, the ones not known from `previous` first, until
+    `budget` seconds are spent; at most `refresh` of the known ones are asked again, a slice that moves on with
+    `turn` (the week) so that they all are in turn; the rest keep what `previous` (the last run's games.json)
+    said of them. (The known ones used to be asked in the same order every run: the same first few hundred were
+    renewed each week and the others never.)"""
     out = {}
-    known = {tid for tid in apps if tid in previous and previous[tid].get("app") == apps[tid]}
-    order = sorted(apps, key=lambda tid: (tid in known, tid))
+    known = sorted(tid for tid in apps if tid in previous and previous[tid].get("app") == apps[tid])
+    shift = (turn * refresh) % len(known) if known else 0
+    order = sorted(set(apps) - set(known)) + (known[shift:] + known[:shift])[:refresh]
     start = now()
     asked = 0
     for tid in order:
@@ -121,8 +126,8 @@ def read_steam(apps, previous, fetch, budget=STEAM_BUDGET, now=time.monotonic, s
             got["app"] = apps[tid]
             out[tid] = got
         sleep(STEAM_PAUSE)
-    for tid in apps:
-        if tid not in out and tid in known:
+    for tid in known:
+        if tid not in out:
             out[tid] = previous[tid]
     print(f"steam: {asked} of {len(apps)} asked, {len(out)} known", file=sys.stderr)
     return out

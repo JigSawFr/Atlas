@@ -208,7 +208,7 @@ def collect_steamspy(what, out_dir, previous_dir, fresh, today, report):
             app = url.rsplit("=", 1)[-1]
             answers[app] = {k: body[k] for k in ("positive", "negative", "owners", "ccu") if k in body}
         return body
-    features.read_steam(apps, {t: g["steam"] for t, g in before.items() if "steam" in g}, fetch)
+    features.read_steam(apps, {t: g["steam"] for t, g in before.items() if "steam" in g}, fetch, turn=today.toordinal() // 7)
     common.publish_source(out_dir, f"{common.SOURCES}/steamspy/apps.json", payload(
         "steamspy", today, "SteamSpy (steamspy.com)", "SteamSpy's terms of use", games=answers),
         previous_dir, report)
