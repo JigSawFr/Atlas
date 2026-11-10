@@ -449,7 +449,7 @@ a.badge:hover, a.badge:focus-visible { color: var(--snow); border-color: var(--m
   .banner:has(> .poster) { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: end; gap: 14px; }
   .banner:has(> .poster) .info { display: contents; }
   .banner:has(> .poster) .info > :is(.logo, h2) { grid-column: 2; grid-row: 1; }
-  .banner:has(> .poster) .info > :is(.ids, .rings) { grid-column: 1 / -1; }
+  .banner:has(> .poster) .info > :is(.tagline, .ids, .rings) { grid-column: 1 / -1; }
   .banner .cover.poster { width: 92px; }
   .logo { max-height: 84px; }
   .ring { width: 66px; }
@@ -1225,4 +1225,25 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
   .x-on-sheet .bottombar { display: none; }
   body.x-on-sheet { padding-bottom: 0; }
   .toast { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* A sheet on a phone: the game first (the page's title and the search box fold away, the search is in the bar), its
+   buttons in one bar at the foot, above the home indicator, and the head's links on one line each. */
+.store-link .short, .dock .find { display: none; }
+.dock { display: contents; }
+@media (max-width: 700px) {
+  .x-on-sheet .hero.small { display: none; }
+  body.x-on-sheet:not(.x-sheet-find) .xc-top { display: none; }
+  .dock { position: fixed; inset-inline: 0; bottom: 0; z-index: 40; display: flex; align-items: center; gap: 8px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); background: color-mix(in srgb, var(--abyss) 92%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--night-line); }
+  .dock > :is(.back, .pager, .find, .share, .fav).fab { position: static; inset: auto; transform: none; width: 44px; height: 44px; box-shadow: none; }
+  .dock > .pager.fab { width: auto; height: 44px; }
+  .dock .find { display: inline-grid; place-items: center; min-height: 0; padding: 0; margin-inline-start: auto; border-radius: 50%; border: 1px solid var(--night-line); background: rgb(11 18 32 / 0.9); color: var(--snow); cursor: pointer; }
+  .dock .find .ico { width: 1.25rem; height: 1.25rem; }
+  body.x-on-sheet { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 600px) {
+  .topline, .topline:has(.whole) { flex-wrap: wrap; justify-content: flex-start; gap: 8px; }
+  .topline .chip, .topline a.chip:is(.store-link, .whole) { white-space: nowrap; min-height: 40px; padding: 0 10px; }
+  .store-link .long { display: none; }
+  .store-link .short { display: inline; }
 }

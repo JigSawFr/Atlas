@@ -1221,6 +1221,7 @@
 
   function renderSheet(m, backHref) {
     if (barOff) barOff();
+    document.body.classList.remove("x-sheet-find");
     sheet.replaceChildren();
     sheet.hidden = false;
     const es = m.platforms;
@@ -1273,7 +1274,8 @@
       rings.childElementCount ? rings : null, null);
     // On a platform's own sheet: its store, and the way back to the game's sheet of all its platforms.
     const p1 = es[0], shop = !multi && storePage(p1)
-      ? el("a", { class: "chip store-link", href: storePage(p1), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", text: `${t("x_open_store", { store: storeName(p1.p) })} ↗` }) : null;
+      ? el("a", { class: "chip store-link", href: storePage(p1), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", "aria-label": t("x_open_store", { store: storeName(p1.p) }) },
+        el("span", { class: "long", text: t("x_open_store", { store: storeName(p1.p) }) }), el("span", { class: "short", text: storeName(p1.p) }), " ↗") : null;
     const whole = !multi && m.unified ? el("a", { class: "chip whole", href: gameHref("u", m.unified), text: `◂ ${t("x_global_sheet")}` }) : null;
     const ck = sheetKey(m, es);
     const withOther = ck ? el("a", { class: "chip", href: `#${es[0].p}/favorites?${new URLSearchParams({ pick: ck, n: m.name || m.id || "" })}`, text: t("x_compare_with") }) : null;
@@ -1289,9 +1291,16 @@
     sheet.style.setProperty("--par", "0");
     sheet.classList.toggle("with-backdrop", !!wide);
     noteRecent(m, es);
-    // The way back, the steps through the list and the heart float in the window's corners and bottom; outside the
-    // head, whose entrance animation would make it their frame.
-    sheet.append(...[back, pager(es), heart(m, es), share(m), head].filter(Boolean));
+    // The way back, the steps through the list, the search, the share and the heart: they float in the window's corners
+    // and bottom, and on a phone make one bar at its foot (site.css); outside the head, whose entrance animation would
+    // make it their frame. The search, a phone's only (its search box is folded away on a sheet), brings the box back.
+    const find = el("button", { type: "button", class: "find fab", title: t("x_search"), "aria-label": t("x_search") }, icon("i-ui-search"));
+    find.addEventListener("click", () => {
+      document.body.classList.add("x-sheet-find");
+      window.scrollTo({ top: 0, behavior: calm() ? "auto" : "smooth" });
+      search.focus();
+    });
+    sheet.append(el("div", { class: "dock" }, ...[back, pager(es), find, share(m), heart(m, es)].filter(Boolean)), head);
     if (!multi) {
       sheet.append(el("span", { class: "sheet-wm", "aria-hidden": "true" }, icon(PC.has(es[0].p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[es[0].p] || es[0].p.toUpperCase() })));
     }
