@@ -474,5 +474,9 @@
   "x_clue_pub": "发行商",
   "x_clue_letter": "首字母",
   "x_fav_image": "分享为图片",
-  "x_fav_image_fail": "无法生成图片"
+  "x_fav_image_fail": "无法生成图片",
+  "x_skip": "跳到结果",
+  "x_undo": "撤销",
+  "x_fav_added": "已将 {name} 加入收藏",
+  "x_fav_removed": "已将 {name} 移出收藏"
 }

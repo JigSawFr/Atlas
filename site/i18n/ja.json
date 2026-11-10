@@ -474,5 +474,9 @@
   "x_clue_pub": "販売元",
   "x_clue_letter": "頭文字",
   "x_fav_image": "画像で共有",
-  "x_fav_image_fail": "画像を作れません"
+  "x_fav_image_fail": "画像を作れません",
+  "x_skip": "結果へ移動",
+  "x_undo": "元に戻す",
+  "x_fav_added": "{name} をお気に入りに追加",
+  "x_fav_removed": "{name} をお気に入りから削除"
 }

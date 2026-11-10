@@ -474,5 +474,9 @@
   "x_clue_pub": "Editore",
   "x_clue_letter": "Inizia con",
   "x_fav_image": "Condividi come immagine",
-  "x_fav_image_fail": "Immagine non disponibile"
+  "x_fav_image_fail": "Immagine non disponibile",
+  "x_skip": "Vai ai risultati",
+  "x_undo": "Annulla",
+  "x_fav_added": "{name} aggiunto ai preferiti",
+  "x_fav_removed": "{name} rimosso dai preferiti"
 }

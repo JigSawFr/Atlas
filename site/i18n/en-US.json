@@ -474,5 +474,9 @@
   "x_clue_pub": "Publisher",
   "x_clue_letter": "Starts with",
   "x_fav_image": "Share as image",
-  "x_fav_image_fail": "Image not available"
+  "x_fav_image_fail": "Image not available",
+  "x_skip": "Skip to results",
+  "x_undo": "Undo",
+  "x_fav_added": "{name} added to favorites",
+  "x_fav_removed": "{name} removed from favorites"
 }

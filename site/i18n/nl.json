@@ -474,5 +474,9 @@
   "x_clue_pub": "Uitgever",
   "x_clue_letter": "Begint met",
   "x_fav_image": "Delen als afbeelding",
-  "x_fav_image_fail": "Afbeelding niet beschikbaar"
+  "x_fav_image_fail": "Afbeelding niet beschikbaar",
+  "x_skip": "Naar de resultaten",
+  "x_undo": "Ongedaan maken",
+  "x_fav_added": "{name} aan favorieten toegevoegd",
+  "x_fav_removed": "{name} uit favorieten verwijderd"
 }
