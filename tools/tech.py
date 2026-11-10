@@ -13,6 +13,8 @@ category numbers, GOG's slugs, Microsoft's capabilities); the sheet has one set.
 
 Every key is left out when the store says nothing of it. Python's standard library only.
 """
+import re
+
 import common
 
 # Steam's language numbers (ELanguage) as BCP 47 codes; a number it adds later is left out.
@@ -30,6 +32,9 @@ MS_FEATURES = {"XblAchievements": "achievements", "XblCloudSaves": "cloud", "Xbl
 MS_LOCAL = ("XblLocalCoop", "XblLocalMultiPlayer", "SharedSplitScreen")
 MS_ONLINE = ("XblOnlineCoop", "XblOnlineMultiPlayer")
 MS_AGES = ("PEGI", "ESRB", "USK", "CERO")
+# The eShop's age rating (the US list's `rating`: the ESRB's minimum age) as its letters.
+SWITCH_AGES = {6: "E", 10: "E10+", 13: "T", 17: "M"}
+SWITCH_TID = re.compile(r"^0100[0-9A-F]{9}000$")      # a base game's title id (tools/build.py's TID)
 FEATURES = ("achievements", "cloud", "controller", "controller_partial", "crossplay", "play_anywhere", "4k", "hdr",
             "60fps", "vrr", "keyboard_mouse")       # the sheet's order
 
@@ -105,8 +110,29 @@ def ms(product: dict) -> dict:
         "feat": ordered(found), "players": players, "age": age, "img": pictures})
 
 
+def switch(entry: dict) -> dict:
+    """A Switch game's sheet, from the entry of titledb's US list that collect.collect_titledb kept. The list
+    gives no word on the Chinese script, so its two `zh` are one language; its number of players is the most
+    that play on one console, so it is the local count."""
+    langs = []
+    for code in entry.get("languages") or []:
+        if isinstance(code, str) and code and code not in langs:
+            langs.append(code)
+    count = entry.get("numberOfPlayers")
+    letters = SWITCH_AGES.get(entry.get("rating"))
+    return clean({"langs": langs, "players": {"local": count} if isinstance(count, int) and count > 1 else {},
+                  "age": [["ESRB", letters]] if letters else []})
+
+
+def switch_id(key, record):
+    """A base game's title id in titledb's list (its keys are the eShop's own); a demo is not that game."""
+    tid = str(record.get("id") or "").strip().upper()
+    return tid if SWITCH_TID.match(tid) and record.get("isDemo") not in (True, "True") else None
+
+
 READERS = {"steam": ("sources/steam-store/apps.json", steam), "gog": ("sources/gog/catalog/US.json", gog),
-           "xbox": ("sources/msstore/products.json", ms)}
+           "xbox": ("sources/msstore/products.json", ms), "switch": ("sources/titledb/US.json", switch)}
+IDENTIFIERS = {"switch": switch_id}       # a source not keyed by the game's id on the platform
 
 
 def read(data_dir: str, platform: str) -> dict:
@@ -117,9 +143,11 @@ def read(data_dir: str, platform: str) -> dict:
     name, make = READERS[platform]
     games = (common.read_records(data_dir, name) or {}).get("games") or {}
     out = {}
+    ident = IDENTIFIERS.get(platform)
     for gid, record in games.items():
         if isinstance(record, dict):
-            made = make(record)
+            gid = ident(gid, record) if ident else gid
+            made = make(record) if gid else None
             if made:
                 out[str(gid)] = made
     return out
