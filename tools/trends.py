@@ -22,6 +22,7 @@ import sys
 import time
 import urllib.error
 import urllib.parse
+import zlib
 
 import build
 import common
@@ -37,6 +38,11 @@ WEEKS = 13           # weeks of the curve
 MIN_CURVE = 100      # views in all the weeks below which a curve says nothing
 PAUSE = 0.1          # seconds between two requests
 MISSES = 5           # pages in a row not read after which the day's collection stops
+# A page read little is asked less often (each request is a day of Wikimedia's patience): up to this many views in
+# the last 28 days, once in so many days (each page on a day of its own); a page above the last limit, every day. Between
+# two readings the page's last days are the week's mean before (carried()), which a page this small does not move.
+CADENCE = ((300, 7), (1000, 3))
+MAX_AGE = 8          # days since the last run above which nothing is carried: all the pages are asked
 WAIT_MIN, WAIT_MAX = 30, 120   # seconds waited after a page not read (Wikimedia's Retry-After within them)
 WAIT_BUDGET = 600    # seconds a day's collection may wait for Wikimedia, at most
 BATCH = 80           # games a Wikidata query asks for: more makes too long an address (414)
@@ -101,6 +107,54 @@ def window(today):
     """The first and last days measured: DAYS days up to yesterday (today's are not whole)."""
     end = today - datetime.timedelta(days=1)
     return end - datetime.timedelta(days=DAYS - 1), end
+
+
+def cadence(days):
+    """Days between two readings of a page, from its last 28 days (the page's last series)."""
+    views = sum(days[-28:])
+    return next((every for limit, every in CADENCE if views <= limit), 1)
+
+
+def carried(days, shift, length):
+    """A page's last series moved forward `shift` days (the last reading was that many days ago): the days it
+    still has, the new ones the mean of its last week; None when it cannot be (another length, too old)."""
+    if not (isinstance(days, list) and len(days) == length and 0 <= shift < length and all(isinstance(d, int) for d in days)):
+        return None
+    mean = round(sum(days[-7:]) / 7)
+    return days[shift:] + [mean] * shift
+
+
+def due(key, every, today):
+    """Whether a page asked every `every` days is asked today: on a day of its own, so the readings are spread."""
+    return every <= 1 or (zlib.crc32(key.encode()) + today.toordinal()) % every == 0
+
+
+def reuse(by_game, previous, today, everything=False):
+    """{"lang:title": series} of the pages not asked today: the last run's, moved to today's window, for a page
+    read little and not due; the others (new, hot, due, or whose last series cannot be moved) are asked.
+    With `everything`, the due pages too (the stand-in for one that could not be asked). `previous` is the last
+    daily.json ({"end": day, "pages": {...}})."""
+    pages = (previous or {}).get("pages")
+    try:
+        last = datetime.date.fromisoformat(previous["end"])
+    except (KeyError, TypeError, ValueError):
+        return {}
+    if not isinstance(pages, dict):
+        return {}
+    shift = (today - datetime.timedelta(days=1) - last).days
+    out = {}
+    if shift > MAX_AGE:
+        return out
+    for langs in by_game.values():
+        for lang, title in langs:
+            key = f"{lang}:{title}"
+            days = pages.get(key)
+            if key in out or not isinstance(days, list) or (not everything and due(key, cadence(days), today)):
+                continue
+            moved = carried(days, shift, DAYS)
+            if moved is not None:
+                out[key] = moved
+    return out
 
 
 def daily(lang, title, start, end, fetch):
@@ -198,17 +252,17 @@ def trends_of(by_game, views_of, sleep=time.sleep):
     return out
 
 
-def fetch_daily(by_game, start, end, fetch, sleep=time.sleep):
+def fetch_daily(by_game, start, end, fetch, sleep=time.sleep, skip=()):
     """{"lang:title": [views a day]} of the games' pages, asked in turn
     (read_trends' order). A page refused for too many requests (429) is
     asked again once, after as long as Wikimedia says (Retry-After, within
     WAIT_MIN and WAIT_MAX), while the run has waited less than WAIT_BUDGET;
     a page not read is left out, and after MISSES in a row, no more: the
-    ones read so far kept."""
+    ones read so far kept. The pages in `skip` (reuse()'s) are not asked."""
     out, missed, waited = {}, 0, 0
     for tid, langs in by_game.items():
         for lang, title in langs:
-            if f"{lang}:{title}" in out:   # the same game on two platforms: its page read once
+            if f"{lang}:{title}" in out or f"{lang}:{title}" in skip:   # the same game on two platforms: its page read once
                 continue
             for again in (False, True):
                 try:

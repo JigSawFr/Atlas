@@ -436,12 +436,12 @@ branch: the platforms' files are then made from these, asking nothing more
 | `sources/titledb/` | `US.json`, `GB.json`, `JP.json`: titledb's lists by its key (the US one with names, descriptions, categories, publishers, languages, number of players and age rating; the others with ids and names) | Monday |
 | `sources/steam-store/` | `apps.json` (GetItems by app id: its names, reviews, release, franchise, developers, publishers, tags, and for the sheets the platforms it runs on, the Steam Deck's verdict, the player and feature categories, the names of its header, small capsule and first 6 screenshots, and its languages with the voiced ones), `tags.json`, `most-played.json` | Monday |
 | `sources/steamspy/` | `apps.json`: owners and players by app id, as many as 10 minutes allow | Monday |
-| `sources/steam-achievements/` | `apps.json`: for the 400 best known Steam games, `[achievements, mean percent of the players who have one, rare ones (under 5 %)]` by app id; one request a game, none for a game without achievements | Monday |
+| `sources/steam-achievements/` | `apps.json`: for the 400 best known Steam games, `[achievements, mean percent of the players who have one, rare ones (under 5 %)]` by app id; one request a game the first time, then a quarter of them each week (a game's rates move slowly), none for a game without achievements | Monday |
 | `sources/gog/catalog/` | `US.json`: the catalog's products by product id, in its trending order, with their systems, features, age ratings and the names of their cover, poster and first 6 screenshots | Monday |
 | `sources/msstore/` | `products.json` (with each product's age ratings, capabilities, platforms and the names of its box art, poster, hero art and first 6 screenshots), `gamepass.json` | Monday |
 | `sources/nlib-ctr/` | `categories.json` (the 3DS's title ids by category), `titles.json` (each base game's name, region, publisher, product code, first day; kept from run to run) | Monday |
 | `sources/igdb/` | `games.json`, `popularity.json`: IGDB's records of the Switch's games; `others.json`, of every console's (with its keys only) | Monday |
-| `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (the Switch's and Steam's best known games' pages' views a day, 8 languages), `extracts.json` (the first lines of the best known games' English and French pages, `{qid: {lang: text}}`, CC BY-SA 4.0: 2,500 games a Monday, most-translated first, the known ones kept; the sheet credits Wikipedia and links the page) | Monday, every day |
+| `sources/wikipedia/` | `monthly.json` (the best known games' English pages' views a month), `daily.json` (the Switch's and Steam's best known games' pages' views a day, in the site's 11 languages; a page read little is asked once in 3 or 7 days, each on a day of its own, and the last run's series moved forward between two readings: about 45 % of the requests of asking every page every day, for under 1.1 % of the views moved), `extracts.json` (the first lines of the best known games' English and French pages, `{qid: {lang: text}}`, CC BY-SA 4.0: 2,500 games a Monday, most-translated first, the known ones kept; the sheet credits Wikipedia and links the page) | Monday, every day |
 
 Each file says its source, its licence or terms, the day it was
 collected (`generated`) and its `schema` (1), which moves up like a
@@ -548,7 +548,7 @@ python3 tools/collect.py wikidata weekly out/ last/
 python3 tools/collect.py titledb weekly out/ last/          # about 90 MB a region, some 10 s
 python3 tools/collect.py steam-store weekly out/ last/ out/ # some 650 requests (some 8 minutes)
 python3 tools/collect.py steamspy weekly out/ last/ out/    # 10 minutes
-python3 tools/collect.py steam-achievements weekly out/ last/ out/   # 400 requests (some 3 minutes)
+python3 tools/collect.py steam-achievements weekly out/ last/ out/   # 400 requests the first time, some 100 a week after (a minute)
 python3 tools/collect.py gog weekly out/ last/
 python3 tools/collect.py msstore weekly out/ last/ out/
 python3 tools/collect.py igdb weekly out/ last/ out/        # with IGDB_CLIENT_ID and IGDB_CLIENT_SECRET only

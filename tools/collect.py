@@ -216,6 +216,7 @@ def collect_steamspy(what, out_dir, previous_dir, fresh, today, report):
 
 STEAM_ACHIEVEMENTS = ("https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/"
                       "?gameid={}")
+ACHIEVEMENTS_EVERY = 4    # weeks between two readings of a game
 RARE_PERCENT = 5.0       # an achievement fewer players than this share have is rare
 
 
@@ -238,8 +239,14 @@ def collect_steam_achievements(what, out_dir, previous_dir, fresh, today, report
     """The achievements' global rates of Steam's best known games (trends.TOP, by the last popular.json's score):
     one request a game; one refused or without achievements is left out."""
     popular = common.previous_file(previous_dir, f"platforms/{steam.STEAM}/popular.json") if previous_dir else {}
+    # A game's rates move slowly: the last run's are kept, and a quarter of the games (a different quarter each week) asked
+    # again; one never read is asked now.
+    last = (common.source(f"{common.SOURCES}/steam-achievements/apps.json", previous_dir) or {}).get("games") or {} if previous_dir else {}
     answers = {}
     for app in trends.top(popular):
+        if isinstance(last.get(app), list) and (zlib.crc32(app.encode()) + today.toordinal() // 7) % ACHIEVEMENTS_EVERY:
+            answers[app] = last[app]
+            continue
         try:
             figures = achievement_figures(common.fetch(STEAM_ACHIEVEMENTS.format(app), tries=2, patient=False, timeout=30))
         except (urllib.error.URLError, OSError, ValueError) as e:
@@ -247,6 +254,8 @@ def collect_steam_achievements(what, out_dir, previous_dir, fresh, today, report
             continue
         if figures:
             answers[app] = figures
+        elif isinstance(last.get(app), list):
+            answers[app] = last[app]       # not read this time: the last run's
     print(f"steam-achievements: {len(answers)} games with achievements", file=sys.stderr)
     common.publish_source(out_dir, f"{common.SOURCES}/steam-achievements/apps.json", payload(
         "steam-achievements", today, "Steam's store (api.steampowered.com): ISteamUserStats/GetGlobalAchievementPercentagesForApp",
@@ -450,7 +459,13 @@ def collect_wikipedia(what, out_dir, previous_dir, fresh, today, report):
         for game, langs in trends.pages(rows, base_id).items():
             by_game[f"{platform}:{game}"] = langs   # a page read once for both platforms' games
     start, end = trends.window(today)
-    read = trends.fetch_daily(by_game, start, end, lambda url: common.fetch(url, tries=2, patient=False, timeout=30))
+    # The pages read little are asked once in a few days (trends.CADENCE), the last run's series kept in between.
+    last = common.source(f"{common.SOURCES}/wikipedia/daily.json", previous_dir) if previous_dir else {}
+    kept = trends.reuse(by_game, last, today)
+    read = trends.fetch_daily(by_game, start, end, lambda url: common.fetch(url, tries=2, patient=False, timeout=30), skip=kept)
+    print(f"wikipedia: {len(read)} pages asked, {len(kept)} kept from the last run", file=sys.stderr)
+    # A page that was asked and not read (Wikimedia turned it away) keeps the last run's series, rather than none.
+    read = {**trends.reuse(by_game, last, today, everything=True), **read, **kept}
     common.publish_source(out_dir, f"{common.SOURCES}/wikipedia/daily.json", payload(
         "wikipedia", today, "Wikimedia pageviews (" + ", ".join(f"{l}.wikipedia" for l in trends.LANGS) + ", daily)",
         licence, start=start.isoformat(), end=end.isoformat(), pages=read), previous_dir, report)

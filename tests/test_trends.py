@@ -290,6 +290,81 @@ class Reach(unittest.TestCase):
             self.assertEqual(schemas.kind_of("platforms/switch/reach.json"), "reach")
 
 
+class Cadence(unittest.TestCase):
+    """The pages read little are asked once in a few days (2026-11-10), the last run's series kept in between."""
+    TODAY = datetime.date(2026, 11, 10)
+
+    def test_cadence_by_views(self):
+        self.assertEqual(trends.cadence([0] * 91), 7)
+        self.assertEqual(trends.cadence([10] * 91), 7)         # 280 in the last 28 days
+        self.assertEqual(trends.cadence([20] * 91), 3)         # 560
+        self.assertEqual(trends.cadence([100] * 91), 1)        # 2,800: every day
+        self.assertEqual(trends.cadence([100] * 63 + [0] * 28), 7)    # only the last 28 days count
+
+    def test_carried_series(self):
+        days = list(range(1, 92))
+        moved = trends.carried(days, 3, 91)
+        self.assertEqual(len(moved), 91)
+        self.assertEqual(moved[:88], days[3:])                  # the days it still has
+        self.assertEqual(moved[88:], [round(sum(days[-7:]) / 7)] * 3)    # the new ones: the last week's mean
+        self.assertEqual(trends.carried(days, 0, 91), days)
+        self.assertIsNone(trends.carried(days, 91, 91))         # too old
+        self.assertIsNone(trends.carried(days, -1, 91))
+        self.assertIsNone(trends.carried(days[:50], 1, 91))     # another length
+        self.assertIsNone(trends.carried(None, 1, 91))
+
+    def test_each_page_is_due_once_in_its_period(self):
+        for every in (3, 7):
+            days = [datetime.date(2026, 11, 1) + datetime.timedelta(days=i) for i in range(every * 4)]
+            for key in ("en:Lantern_Tale", "fr:Quiet_Pond", "ja:Echo"):
+                self.assertEqual(sum(trends.due(key, every, d) for d in days), 4)       # once in each period
+        self.assertTrue(all(trends.due("en:X", 1, self.TODAY + datetime.timedelta(days=i)) for i in range(5)))
+        # Not the same day for all the pages: the load is spread.
+        keys = [f"en:Page_{i}" for i in range(60)]
+        self.assertGreater(len({trends.due(k, 7, self.TODAY) for k in keys}), 1)
+        self.assertLess(sum(trends.due(k, 7, self.TODAY) for k in keys), 30)
+
+    def previous(self, **pages):
+        return {"end": "2026-11-08", "pages": pages}        # the last run was yesterday's, whose window ended 2026-11-08
+
+    def test_reuse_keeps_what_is_not_due(self):
+        keys = [f"en:Cold_{i}" for i in range(40)]
+        by_game = {f"g{i}": [("en", f"Cold_{i}")] for i in range(40)}
+        previous = self.previous(**{k: [5] * 91 for k in keys})
+        kept = trends.reuse(by_game, previous, self.TODAY)
+        self.assertTrue(0 < len(kept) < 40)                                     # most are kept, the due ones asked
+        self.assertTrue(all(k not in kept or trends.due(k, 7, self.TODAY) is False for k in keys))
+        self.assertTrue(all(v == [5] * 91 for v in kept.values()))               # one day on: a flat series stays flat
+        self.assertEqual(set(trends.reuse(by_game, previous, self.TODAY, everything=True)), set(keys))
+
+    def test_reuse_asks_the_new_hot_and_stale(self):
+        today = self.TODAY
+        by_game = {"a": [("en", "Hot")], "b": [("en", "New")], "c": [("fr", "Short")], "d": [("de", "Old")]}
+        previous = self.previous(**{"en:Hot": [100] * 91, "fr:Short": [1] * 50, "de:Old": [1] * 91})
+        previous["end"] = "2026-10-01"                                           # a last run long ago: nothing can be moved
+        self.assertEqual(trends.reuse(by_game, previous, today), {})
+        previous["end"] = "2026-11-08"
+        got = trends.reuse(by_game, previous, today, everything=True)
+        self.assertNotIn("en:New", got)                                          # never read
+        self.assertNotIn("fr:Short", got)                                        # another length
+        self.assertIn("de:Old", got)
+        self.assertNotIn("en:Hot", trends.reuse(by_game, previous, today))        # a page read much is asked every day
+        for bad in (None, {}, {"end": "no", "pages": {}}, {"end": "2026-11-08", "pages": []}):
+            self.assertEqual(trends.reuse(by_game, bad, today), {})
+
+    def test_fetch_daily_does_not_ask_the_kept(self):
+        asked = []
+
+        def daily(lang, title, start_, end_, fetch):
+            asked.append(f"{lang}:{title}")
+            return [1] * trends.DAYS
+        by_game = {A: [("en", "One"), ("fr", "Two")]}
+        start, end = trends.window(self.TODAY)
+        with mock.patch.object(trends, "daily", daily), contextlib.redirect_stderr(io.StringIO()):
+            got = trends.fetch_daily(by_game, start, end, None, sleep=lambda s: None, skip={"fr:Two"})
+        self.assertEqual((asked, list(got)), (["en:One"], ["en:One"]))
+
+
 class SiteLanguages(unittest.TestCase):
     def test_every_language_of_the_site_is_read(self):
         """The site's locales (site/i18n, PlayShelf's too) all have their language's Wikipedia in LANGS."""
