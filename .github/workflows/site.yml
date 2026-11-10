@@ -38,7 +38,8 @@ jobs:
     uses: JigSawFr/boreale-site/.github/workflows/site.yml@49844b1a733f738afdabcc1c903bbf8696028d96 # v1.0.0
     with:
       ref: ${{ github.event_name == 'workflow_run' && 'main' || '' }}
-      setup: git clone --quiet --depth 1 --branch data "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/data"
+      # The data branch, and the sources' files from their own branch (the sheets read them).
+      setup: git clone --quiet --depth 1 --branch data "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/data" && tools/sources-branch.sh "$RUNNER_TEMP/data"
       build: python3 tools/build_site.py build "$RUNNER_TEMP/data"
       check: |
         # Their links, catalogs and Content-Security-Policy, then the size.
