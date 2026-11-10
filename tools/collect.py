@@ -433,11 +433,30 @@ def monthly_wanted(fresh, previous_dir):
     return wanted
 
 
+def monthly_pages(wanted, months, last, fetch):
+    """{article: [views a month]} of the `wanted` pages over `months` ("2026-08"…). The last three whole months do
+    not change within a month, so while the last run's file is of the same months its pages are kept and only
+    the ones it lacks are asked, with `fetch(articles)`: a run a week asks them all once a month, not four times."""
+    kept = {}
+    if isinstance(last, dict) and last.get("months") == months and isinstance(last.get("pages"), dict):
+        for article in wanted:
+            views = last["pages"].get(article)
+            if isinstance(views, list) and len(views) == len(months) and all(isinstance(v, int) for v in views):
+                kept[article] = views
+    missing = [a for a in wanted if a not in kept]
+    asked = fetch(missing) if missing else {}
+    print(f"wikipedia: monthly views of {len(wanted)} pages, {len(missing)} asked, {len(kept)} kept from the last run",
+          file=sys.stderr)
+    return {**kept, **asked}
+
+
 def collect_wikipedia(what, out_dir, previous_dir, fresh, today, report):
     licence = "CC0-1.0 (Wikimedia pageviews)"
     if what == "weekly":
         starts, end = build.months(today)
-        read = build.fetch_views(monthly_wanted(fresh, previous_dir), starts, end)
+        read = monthly_pages(monthly_wanted(fresh, previous_dir), [s.strftime("%Y-%m") for s in starts],
+                             common.source(f"{common.SOURCES}/wikipedia/monthly.json", previous_dir) if previous_dir else {},
+                             lambda articles: build.fetch_views(articles, starts, end))
         common.publish_source(out_dir, f"{common.SOURCES}/wikipedia/monthly.json", payload(
             "wikipedia", today, "Wikimedia pageviews (en.wikipedia, monthly)", licence,
             months=[s.strftime("%Y-%m") for s in starts], pages=read), previous_dir, report)
