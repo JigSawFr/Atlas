@@ -67,6 +67,17 @@ class Build(unittest.TestCase):
         self.assertEqual(table["0100000000010000"][1], 50)
         self.assertEqual(table["0100000000020000"][1], 0)
 
+    def test_releases(self):
+        A, B, C = "0100000000010000", "0100000000020000", "0100000000030000"
+        files = {"titledb/US.json": {"games": {"1": {"id": A, "releaseDate": 20170303}, "2": {"id": B, "releaseDate": "bad"},
+                                                "3": {"id": C, "releaseDate": 20200101, "isDemo": True},
+                                                "4": {"id": "0100AAAAAAAAA800", "releaseDate": 20190101}}},      # an update, not a game
+                 "titledb/GB.json": {"games": {"1": {"id": A, "releaseDate": 20170401}, "2": {"id": B, "releaseDate": 20180615}}},
+                 "titledb/JP.json": {"games": {"9": {"id": C, "releaseDate": 0}}}}
+        got = build.releases_of(lambda name: files.get(name, {}))
+        self.assertEqual(got, {A: 20170303, B: 20180615})       # the US date first, else the next list's; no demo, no zero
+        self.assertEqual(build.releases_of(lambda name: {}), {})
+
     def test_upcoming(self):
         today = datetime.date(2026, 10, 28)
         titles = {

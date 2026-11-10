@@ -331,6 +331,22 @@ def names_of(src):
     return out
 
 
+def releases_of(src):
+    """{title id: YYYYMMDD} of the base games' release on the eShop, as titledb gives it: the US list's date first,
+    else the British one's, else the Japanese one's (names_of's order); a demo's date is not the game's."""
+    out = {}
+    for region in ("US", "GB", "JP"):
+        for entry in (src(f"titledb/{region}.json").get("games") or {}).values():
+            tid = base_id(entry.get("id"))
+            try:
+                date = int(entry.get("releaseDate") or 0)
+            except (TypeError, ValueError):
+                continue
+            if tid and tid not in out and 10_000_000 <= date <= 99_991_231 and entry.get("isDemo") not in (True, "True"):
+                out[tid] = date
+    return out
+
+
 def views_known(src):
     """{title id: (sitelinks, English page)}, the games whose views count."""
     return games(common.bindings(src("wikidata/switch.json").get("rows") or []))
@@ -377,9 +393,12 @@ def consolidate(src, out_dir, previous_dir, today):
     steam = steam_figures(src, apps, before)
     # Each game's name (titledb's); every game's in names.json.
     names = names_of(src)
+    releases = releases_of(src)
     table = {}
     for tid in sorted(set(game_traits) | set(steam) | set(found["ratings"]) | set(found["covers"]) | set(found["arts"])):
         entry = {"name": names[tid]} if tid in names else {}
+        if tid in releases:
+            entry["release"] = releases[tid]       # as the other platforms' games have it: the sheet's date, the lists by year
         entry.update(game_traits.get(tid, {}))
         if tid in found["ratings"]:
             entry["igdb_rating"] = found["ratings"][tid]

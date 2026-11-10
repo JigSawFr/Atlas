@@ -156,12 +156,12 @@ The games whose release date, as the US eShop gives it, is in the next year: `[Y
 
 ```json
 {"schema": 1, "generated": "2026-10-29", "source": "...",
- "games": {"0100000000010000": {"name": "Lantern Tale", "series": [["Q123", "A series"]], "developers": [["Q456", "A studio"]],
+ "games": {"0100000000010000": {"name": "Lantern Tale", "release": 20231114, "series": [["Q123", "A series"]], "developers": [["Q456", "A studio"]],
    "publishers": [...], "genres": [...], "modes": [...],
    "steam": {"app": 504230, "positive": 117545, "negative": 3057, "owners": 2000000, "ccu": 1174}}}}
 ```
 
-A game has its `name` (titledb's US list's, else the British or the Japanese one's); `platforms/switch/names.json` gives every base game titledb knows its name, `{title id: name}`. Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`, and `igdb_rating`: `[players' rating 0..100, how many rated]` (IGDB's users, not the critics), and `igdb_cover` and `igdb_art`: the names of its cover and of its first artwork (a wide picture) on IGDB's image service (names only; no picture is copied). `steam` is there for a game also sold on Steam: its reviews (`positive`, `negative`), from Steam's store at every run (its count and share of positive reviews), and the lower bound of its `owners` and its players at once (`ccu`) when SteamSpy last saw it (0 when it never did). SteamSpy allows a request a second, so each run asks it for as many games as 10 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
+A game has its `name` (titledb's US list's, else the British or the Japanese one's) and its `release` (YYYYMMDD: the eShop's date, the same lists in the same order); `platforms/switch/names.json` gives every base game titledb knows its name, `{title id: name}`. Each trait is `[Wikidata id, English label]` (the label is empty when Wikidata has none), 12 at most of a kind. With IGDB, a game may also have `themes`, `keywords` and `perspectives`, each trait `[IGDB id, name]`, and `igdb_rating`: `[players' rating 0..100, how many rated]` (IGDB's users, not the critics), and `igdb_cover` and `igdb_art`: the names of its cover and of its first artwork (a wide picture) on IGDB's image service (names only; no picture is copied). `steam` is there for a game also sold on Steam: its reviews (`positive`, `negative`), from Steam's store at every run (its count and share of positive reviews), and the lower bound of its `owners` and its players at once (`ccu`) when SteamSpy last saw it (0 when it never did). SteamSpy allows a request a second, so each run asks it for as many games as 10 minutes allow, the ones not known yet first, and keeps the last run's figures for the others.
 
 `platforms/switch/similar.json`:
 
