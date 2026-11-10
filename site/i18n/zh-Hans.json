@@ -450,5 +450,7 @@
   "x_note": "备注",
   "x_fav_share": "分享列表",
   "x_fav_shared": "与你分享的列表",
-  "x_fav_shared_add": "添加到我的收藏"
+  "x_fav_shared_add": "添加到我的收藏",
+  "x_st_timeline": "按年份的发售",
+  "x_st_map": "类型地图"
 }

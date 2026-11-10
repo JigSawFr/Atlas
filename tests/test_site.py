@@ -283,6 +283,9 @@ class SiteData(unittest.TestCase):
         site_data.build(self.data, self.out)
         st = self.read("x/steam/stats.json")
         self.assertEqual(st["games"], 3)
+        # the timeline: each year of `years` has its best known games first
+        self.assertEqual(sorted(st["by_year"]), sorted(str(y) for y, _, _ in st["years"]))
+        self.assertEqual(st["by_year"]["2024"][0][:3], ["900010", "Amber Lantern", 70])
         self.assertEqual(st["critics"], {"n": 2, "mean": 89.0, "median": 89.0, "hist": [0] * 8 + [1, 1]})
         self.assertEqual(st["renown"]["mean"], 40.0)
         self.assertEqual((len(st["renown"]["q"]), st["renown"]["q"][0], st["renown"]["q"][50], st["renown"]["q"][100]), (101, 10, 40, 70))

@@ -450,5 +450,7 @@
   "x_note": "Een notitie",
   "x_fav_share": "Lijst delen",
   "x_fav_shared": "Een met jou gedeelde lijst",
-  "x_fav_shared_add": "Toevoegen aan mijn favorieten"
+  "x_fav_shared_add": "Toevoegen aan mijn favorieten",
+  "x_st_timeline": "Releases per jaar",
+  "x_st_map": "Kaart van genres"
 }

@@ -1167,3 +1167,18 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
 .badge.st-todo { border-color: #5aa9ff; color: #5aa9ff; }
 .badge.st-doing { border-color: #ffc857; color: #ffc857; }
 .badge.st-done { border-color: #6ee7a8; color: #6ee7a8; }
+
+/* The stats page: a timeline of years and a map of genres. */
+.timeline-years { list-style: none; margin: 0; padding: 4px 2px 12px; display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; }
+.timeline-years > .yr { flex: none; width: 190px; scroll-snap-align: start; padding-inline-start: 12px; border-inline-start: 2px solid var(--night-line); }
+.timeline-years h4 { margin: 0 0 8px; display: flex; align-items: baseline; justify-content: space-between; font: 700 1.25rem var(--display); }
+.timeline-years h4 small { font: 400 0.75rem var(--body, inherit); opacity: 0.7; }
+.timeline-years .yr > ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.timeline-years .yr a.card { display: grid; }
+.bubbles { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; padding: 8px 0; }
+.bubble { display: grid; place-content: center; justify-items: center; gap: 2px; width: var(--d); height: var(--d); box-sizing: border-box; padding: 8px; border-radius: 50%; text-align: center; text-decoration: none; color: var(--snow);
+  background: radial-gradient(circle at 30% 25%, hsl(var(--h) 60% 46% / 0.55), hsl(var(--h) 55% 28% / 0.45)); border: 1px solid hsl(var(--h) 60% 55% / 0.5); transition: transform 0.2s; }
+.bubble .bn { font-size: 0.8125rem; line-height: 1.15; overflow-wrap: anywhere; }
+.bubble small { opacity: 0.75; font-size: 0.6875rem; }
+.bubble:hover, .bubble:focus-visible { transform: scale(1.06); }
+@media (prefers-reduced-motion: reduce) { .bubble { transition: none; } .bubble:hover, .bubble:focus-visible { transform: none; } }

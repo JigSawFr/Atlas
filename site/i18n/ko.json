@@ -450,5 +450,7 @@
   "x_note": "메모",
   "x_fav_share": "목록 공유",
   "x_fav_shared": "공유받은 목록",
-  "x_fav_shared_add": "내 즐겨찾기에 추가"
+  "x_fav_shared_add": "내 즐겨찾기에 추가",
+  "x_st_timeline": "연도별 출시",
+  "x_st_map": "장르 지도"
 }
