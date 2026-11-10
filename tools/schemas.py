@@ -266,7 +266,13 @@ def write(directory):
 
 
 def put_back(directory, path):
-    """A wrong file as the branch had it (git), or removed when it is new."""
+    """A wrong file as the branch had it (git; a source's, as the `sources` branch had it), or removed when it is new."""
+    if path.startswith(common.SOURCES + "/"):
+        last = subprocess.run(["git", "-C", directory, "show", f"refs/remotes/origin/sources:{path}"], capture_output=True)
+        if not last.returncode:
+            with open(os.path.join(directory, path), "wb") as f:
+                f.write(last.stdout)
+            return
     if subprocess.run(["git", "-C", directory, "checkout", "HEAD", "--", path], capture_output=True).returncode:
         os.remove(os.path.join(directory, path))
 

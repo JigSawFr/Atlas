@@ -52,4 +52,5 @@ jobs:
         run: |
           git fetch --depth 1 origin data:refs/remotes/origin/data
           git worktree add "$RUNNER_TEMP/data" origin/data
+          tools/sources-branch.sh "$RUNNER_TEMP/data"
           python3 tools/schemas.py check "$RUNNER_TEMP/data"

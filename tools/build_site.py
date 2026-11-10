@@ -151,7 +151,7 @@ def file_rows(language: str, catalog: dict, index: dict) -> str:
     """index.json's files, a source's or the old machines' kind in one row."""
     groups = {}
     for name, f in sorted(((index or {}).get("files") or {}).items()):
-        # A source's files in one row (they are not copied here: sources/ stays on the data branch).
+        # A source's files in one row (they are not copied here: sources/ is on the `sources` branch).
         key = re.sub(r"^(sources/[^/]+/).*$", r"\1…", name)
         # The old machines' files, one row a kind of file.
         key = re.sub(rf"^platforms/({MACHINES})/", "platforms/<machine>/", key)
@@ -379,7 +379,7 @@ def main() -> None:
     boreale.copy_assets(out)
     summary, index, report = {}, {}, {}
     if data:
-        # The sources are not the explorer's: left on the data branch, the site smaller.
+        # The sources are not the explorer's: left on their branch, the site smaller.
         shutil.copytree(data, out / "data", ignore=lambda d, names: [n for n in names if n.startswith(".git")
                                                                    or (Path(d) == data and n == "sources")])
         summary = site_data.build(str(data), str(out))

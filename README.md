@@ -25,7 +25,12 @@ didn't change with the name.
 
 They live on the [`data`](../../tree/data) branch, made again every Monday by
 [`build.yml`](.github/workflows/build.yml) (and on demand), and are served by
-jsDelivr. Each platform has a folder of its own in `platforms/`, by its id
+jsDelivr: read them at `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/<file>`
+rather than from GitHub (a CDN, cached, with no limit on the requests of one
+address). jsDelivr serves no branch over 50 MB, so the branch holds the
+platforms' files, `links.json`, the registry, the index and the schemas, and
+nothing else: what the sources answered is on a branch of its own (see
+[The sources](#the-sources)). Each platform has a folder of its own in `platforms/`, by its id
 (`platforms.json` lists them); the Switch's is `platforms/switch/`:
 
 | File | Address |
@@ -87,7 +92,7 @@ counts as none there. Its own `schema` is 2 since 2026-10-30, when its
 `priced` and `countries` went (no schema 1 kept: its one reader is the
 website's status page, which reads 2 and takes any other as no report).
 
-The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`): each run only needs the last files, and keeping every day's files would grow the repository by hundreds of MB a year.
+The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`), and so is the `sources` branch: each run only needs the last files, and keeping every day's files would grow the repository by hundreds of MB a year.
 
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
 meaning), the day it was `generated` and its `source`; a platform's files
@@ -424,9 +429,15 @@ Atlas's website, [atlas.boreale.dev](https://atlas.boreale.dev/?utm_source=githu
 ## The sources
 
 Each source is asked once a run, and what it answered is published as it
-came, only the fields Atlas uses, under `sources/<source>/` on the `data`
-branch: the platforms' files are then made from these, asking nothing more
-(`tools/collect.py`). A file larger than 15 MB is cut in parts
+came, only the fields Atlas uses, under `sources/<source>/` on the
+[`sources`](../../tree/sources) branch: the platforms' files are then made
+from these, asking nothing more (`tools/collect.py`). They were on the `data`
+branch until 2026-11-10 and left it because they weigh several hundred MB,
+which kept jsDelivr from serving that branch: read them from GitHub, at
+`https://raw.githubusercontent.com/JigSawFr/Atlas/sources/sources/<source>/<file>`
+(the tools get both branches in one folder: `tools/data-branch.sh`). `index.json`,
+on `data`, still lists them with the others, and their schemas are with the
+others' in `schemas/`. A file larger than 15 MB is cut in parts
 (`sources/titledb/US/1.json`…), each with the same fields, its `part` and
 `parts`; read together they are the one file.
 
