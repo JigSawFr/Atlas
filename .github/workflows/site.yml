@@ -45,11 +45,12 @@ jobs:
         python3 tools/check_site.py build
         du -sh build build/data build/x | tee -a "$GITHUB_STEP_SUMMARY"
       # The explorer is also opened on a list, the trending and a game's
-      # sheet, in English and another language, once its data is built (x/).
+      # sheet, in English and another language, and on a game's sheet across
+      # platforms by its address alone, once its data is built (x/).
       skip: '["data", "x"]'
       wait: networkidle
       extra_if: x
-      extra: '["explore/#steam/popular", "explore/#switch/trending", "fr/explore/#switch/game/0100000000010000", "explore/#steam/search/portal", "explore/#steam/game/620"]'
+      extra: '["explore/#steam/popular", "explore/#switch/trending", "fr/explore/#switch/game/0100000000010000", "explore/#steam/search/portal", "explore/#steam/game/620", "explore/#game/Q279446"]'
       pages_artifact: ${{ github.event_name != 'pull_request' }}
 
   deploy:
