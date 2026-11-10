@@ -324,6 +324,8 @@ def strings(catalog: dict, language: str, summary: dict) -> str:
     body = {k: v for k, v in catalog.items() if k.startswith("x_")}
     body["_platforms"] = {k: summary[k]["shards"] for k in summary}
     body["_names"] = dict(PLATFORMS)
+    if catalog.get("x_xbox_store"):
+        body["_names"]["xbox"] = catalog["x_xbox_store"]       # the one name with a word in it
     return json.dumps(body, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
 
