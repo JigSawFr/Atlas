@@ -22,6 +22,11 @@ class Steam(unittest.TestCase):
         self.assertEqual(sheet["feat"], ["achievements", "cloud", "controller_partial", "crossplay"])
         self.assertEqual(sheet["img"], {"h": "ab/header.jpg", "t": "cd/capsule_231x87.jpg", "s": ["ss_1.jpg", "ss_2.jpg"]})
 
+    def test_accessibility(self):
+        item = {"categories": {"feature_categoryids": [79, 22, 13, 65, 999], "supported_player_categoryids": [2], "controller_categoryids": [64]}}
+        self.assertEqual(tech.steam(item)["access"], ["captions", "text_size", "subtitle_options", "save_anytime"])   # the sheet's order, ours only
+        self.assertNotIn("access", tech.steam({"categories": {"feature_categoryids": [22, 23]}}))
+
     def test_full_controller_support_takes_the_partial(self):
         sheet = tech.steam({"categories": {"controller_categoryids": [28, 18]}})
         self.assertEqual(sheet["feat"], ["controller"])
