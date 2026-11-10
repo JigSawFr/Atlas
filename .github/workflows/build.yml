@@ -74,7 +74,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        source: [steam-store, steamspy, gog, msstore, igdb]
+        source: [steam-store, steamspy, steam-achievements, gog, msstore, igdb]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: The last run's files

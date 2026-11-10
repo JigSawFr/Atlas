@@ -155,6 +155,38 @@ class SameFiles(unittest.TestCase):
         self.assertEqual(build.steam_figures(lambda n: src.get(n, {}), apps, before), asked)
 
 
+class SteamAchievements(unittest.TestCase):
+    def test_figures(self):
+        body = {"achievementpercentages": {"achievements": [{"name": "A", "percent": "74.0"}, {"name": "B", "percent": "4.9"},
+                                                            {"name": "C", "percent": "1.1"}, {"name": "D", "percent": "bad"}]}}
+        self.assertEqual(collect.achievement_figures(body), [3, 26.7, 2])      # "bad" is no achievement; under 5 % is rare
+        self.assertIsNone(collect.achievement_figures({"achievementpercentages": {"achievements": []}}))
+        self.assertIsNone(collect.achievement_figures(None))
+        self.assertIsNone(collect.achievement_figures({"other": 1}))
+
+    def test_collect_the_best_known_games(self):
+        popular = {"schema": common.SCHEMA, "games": {"10": [90, 0, 0], "20": [80, 0, 0], "30": [70, 0, 0]}}
+        bodies = {"10": {"achievementpercentages": {"achievements": [{"name": "A", "percent": "50"}]}},
+                  "30": {"achievementpercentages": {"achievements": []}}}      # 20 is refused, 30 has none
+
+        def fetch(url, **kw):
+            app = url.rsplit("=", 1)[-1]
+            if app == "20":
+                raise urllib.error.URLError("down")
+            return bodies[app]
+        with tempfile.TemporaryDirectory() as tmp:
+            last, out = os.path.join(tmp, "last"), os.path.join(tmp, "out")
+            os.makedirs(os.path.join(last, "platforms", "steam"))
+            with open(os.path.join(last, "platforms", "steam", "popular.json"), "w", encoding="utf-8") as f:
+                json.dump(popular, f)
+            with mock.patch.object(common, "fetch", fetch), mock.patch("sys.stderr"):
+                collect.collect_steam_achievements("weekly", out, last, [], datetime.date(2026, 11, 10), [])
+            with open(os.path.join(out, "sources", "steam-achievements", "apps.json"), encoding="utf-8") as f:
+                got = json.load(f)
+        self.assertEqual(got["games"], {"10": [1, 50.0, 0]})
+        self.assertEqual(got["source_id"], "steam-achievements")
+
+
 class RicherSources(unittest.TestCase):
     """What the sheets show beyond the names and the figures (2026-11-07): where a game runs, how the
     Steam Deck takes it, the languages, the age ratings, the capabilities, and the pictures' names (the

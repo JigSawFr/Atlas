@@ -87,6 +87,13 @@ class Steam(unittest.TestCase):
         body = {"response": {"ranks": [{"rank": 1, "appid": 900010}, {"rank": 2, "appid": 900011}, {"rank": 3}]}}
         self.assertEqual(steam.most_played(body), {"900010": 1, "900011": 2})
 
+    def test_achievements(self):
+        games = {"10": {"name": "A"}, "20": {"name": "B"}, "30": {"name": "C"}}
+        steam.with_achievements(games, {"10", "20"}, {"10": [12, 31.5, 3], "20": [1, 2], "30": [5, 5.0, 0], "99": [1, 1.0, 0]})
+        self.assertEqual(games["10"]["achievements"], [12, 31.5, 3])
+        self.assertNotIn("achievements", games["20"])      # not three figures
+        self.assertNotIn("achievements", games["30"])      # not a kept game
+
     def test_similar(self):
         games = {str(900010 + i): steam.entry(item(900010 + i, f"G{i}", franchise="Lantern" if i < 3 else None,
                                                    tags=(19,) if i < 5 else (21,))) for i in range(8)}
