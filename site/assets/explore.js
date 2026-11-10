@@ -1099,6 +1099,8 @@
   }
 
 
+  // The bar at the foot of a phone: where a thumb reaches (home, browse, search, favorites). Search takes the focus.
+  document.querySelector('#x-bottom [data-go="search"]').addEventListener("click", () => { window.scrollTo({ top: 0, behavior: calm() ? "auto" : "smooth" }); search.focus(); });
   // "Skip to results": the address is the router's, so the link moves the focus itself.
   document.querySelector(".skip").addEventListener("click", (e) => { e.preventDefault(); status.focus(); status.scrollIntoView({ block: "start" }); });
   // A line at the foot of the window that says what was done and, where it can be, takes it back (5 s; one at a time).
@@ -2472,6 +2474,11 @@
     if (platform !== home) { home = platform; try { localStorage.setItem(HOME_KEY, platform); } catch (e) { /* not kept */ } }
     pickerOpen(false);
     $("x-search-all").setAttribute("aria-pressed", String(view === "searchall"));
+    for (const a of document.querySelectorAll("#x-bottom [data-go]")) {
+      if (a.tagName === "A") a.setAttribute("href", `#${platform}/${a.dataset.go}`);
+      const on = a.dataset.go === view || (a.dataset.go === "search" && (view === "search" || view === "searchall"));
+      if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    }
     rtools.hidden = !["browse", "popular", "trending", "upcoming", "search", "searchall"].includes(view);
     // The first three of a ranking carry a trophy (site.css): a list that says "best" (best known, trending, or Browse
     // sorted by a measure), not one sorted by name or date, nor a search.

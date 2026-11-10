@@ -473,5 +473,6 @@
   "x_skip": "Naar de resultaten",
   "x_undo": "Ongedaan maken",
   "x_fav_added": "{name} aan favorieten toegevoegd",
-  "x_fav_removed": "{name} uit favorieten verwijderd"
+  "x_fav_removed": "{name} uit favorieten verwijderd",
+  "x_home": "Home"
 }

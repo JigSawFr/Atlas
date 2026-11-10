@@ -90,5 +90,11 @@
     <div class="scrim" id="x-scrim" hidden></div>
     <div class="tip" id="x-tip" role="tooltip" hidden></div>
     <noscript><p class="status">{{x_noscript}}</p></noscript>
+    <nav class="bottombar" id="x-bottom" aria-label="{{x_view}}">
+      <a href="#steam/home" data-go="home"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-house"></use></svg><span>{{x_home}}</span></a>
+      <a href="#steam/browse" data-go="browse"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-compass"></use></svg><span>{{x_browse}}</span></a>
+      <button type="button" data-go="search"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-search"></use></svg><span>{{x_search}}</span></button>
+      <a href="#steam/favorites" data-go="favorites"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ui-heart"></use></svg><span>{{x_favorites}}</span></a>
+    </nav>
   </section>
   <script type="application/json" id="x-strings">{{strings}}</script>

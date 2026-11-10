@@ -473,5 +473,6 @@
   "x_skip": "結果へ移動",
   "x_undo": "元に戻す",
   "x_fav_added": "{name} をお気に入りに追加",
-  "x_fav_removed": "{name} をお気に入りから削除"
+  "x_fav_removed": "{name} をお気に入りから削除",
+  "x_home": "ホーム"
 }
