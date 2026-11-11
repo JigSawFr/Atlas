@@ -993,8 +993,7 @@
       const known = rev ? el("span", { class: "dim", text: t("x_reviews", { n: num(rev[0]), p: rev[1] }) })
         : voters ? el("span", { class: "dim", text: `${t("x_players_rating")} ${Math.round(voters[0])} / 100 · ${num(voters[1])}` }) : null;
       if (known || extras.length) lines.push(el("span", { class: "plat-more" }, known, ...extras));
-      const main = el("a", { class: `plat-main${e.popular ? " has-ring" : ""}`, href: `#${e.p}/game/${encodeURIComponent(e.id)}?alone` },
-        e.popular ? miniRing(e.popular[0], t("x_score")) : null, ...lines, el("span", { class: "out", "aria-hidden": "true", text: "→" }));
+      const main = el("div", { class: `plat-main${e.popular ? " has-ring" : ""}` }, e.popular ? miniRing(e.popular[0], t("x_score")) : null, ...lines);
       const shop = storePage(e) ? el("a", { class: "store", href: storePage(e), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank",
         title: t("x_open_store", { store: name }), "aria-label": t("x_open_store", { store: name }) }, el("span", { text: t("x_store") }), el("span", { "aria-hidden": "true", text: " ↗" })) : null;
       const li = platTile(e.p, main, shop);
@@ -1357,8 +1356,7 @@
     const p1 = es[0], shop = !multi && storePage(p1)
       ? el("a", { class: "chip store-link", href: storePage(p1), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank", "aria-label": t("x_open_store", { store: storeName(p1.p) }) },
         el("span", { class: "long", text: t("x_open_store", { store: storeName(p1.p) }) }), el("span", { class: "short", text: storeName(p1.p) }), " ↗") : null;
-    const whole = !multi && m.unified ? el("a", { class: "chip whole", href: gameHref("u", m.unified), text: `◂ ${t("x_global_sheet")}` }) : null;
-    const top = whole || shop ? el("div", { class: "topline" }, whole, shop) : null;
+    const top = shop ? el("div", { class: "topline" }, shop) : null;
     const head = el("header", { class: wide ? "masthead" : "" }, top, cover,
       wide ? el("div", { class: "banner" }, shown.poster ? pictureCover(m, shown.poster, "poster") : null, info) : info);
     if (logo) {
@@ -1404,7 +1402,7 @@
     if (stats.childElementCount) sheet.append(stats);
     if (atlas) sheet.append(recipe(atlas));
     // Where the game stands on its platform (its stats.json, a few kB, asked after the sheet is drawn).
-    if (best && !multi) {
+    if (best) {
       const where = el("p", { class: "insights", hidden: "" });
       sheet.append(where);
       get(`x/${best.p}/stats.json`).then((st) => {
@@ -1424,7 +1422,7 @@
         if (q.length) where.after(distribution(q, best.popular[0], plat));
       }, () => where.remove());
     }
-    for (const e of multi ? [] : es) {
+    for (const e of es) {
       if (e.steam && (e.steam.owners || e.steam.ccu)) {
         sheet.append(el("p", { class: "dim figures", text: t("x_steam_figures", { owners: num(e.steam.owners || 0), ccu: num(e.steam.ccu || 0) }) }));
         break;
@@ -1452,7 +1450,7 @@
       main.append(dl);
       // How many games of the platform have it, once its menus are in (a few kB, the browse view's own).
       const homeName = S._names[home] || home;
-      if (!multi) get(`x/${home}/facets.json`).then((f) => {
+      get(`x/${home}/facets.json`).then((f) => {
         for (const c of dl.querySelectorAll("a.chip[data-kind]")) {
           const found = ((f.facets || {})[c.dataset.kind] || []).find(([v]) => v === c.dataset.value);
           if (!found) continue;
@@ -1464,7 +1462,7 @@
         }
       }, () => {});
     }
-    const technical = multi ? null : techBlock(es, m.wd);
+    const technical = techBlock(es, m.wd);       // the platforms' together: where it runs, languages, ages, options, the engine
     if (technical) side.append(technical);
 
     if (es.length > 1) {
@@ -1789,8 +1787,8 @@
     renderSheet(u, backTo(from));
   }
 
-  // The sheet of a game on one platform; a game on several goes to the sheet of all of them
-  // (the address is replaced), unless the address asks for this platform's alone.
+  // The sheet of a game on one platform; a game on several goes to the sheet of all of them (the address is replaced):
+  // a game has one sheet, and what is its platforms' own is on it.
   async function game(platform, id, query) {
     leaveBrowse();
     results.hidden = true;
@@ -1799,7 +1797,7 @@
     const lists = await get(`x/${platform}/lists.json`);
     const part = await get(`x/${platform}/g/${shard(id, lists.shards)}.json`);
     const g = part[id];
-    if (g && g.unified && !query.has("alone")) {
+    if (g && g.unified) {
       history.replaceState(null, "", gameHref("u", g.qid));
       from = platform;
       return unified(g.qid);

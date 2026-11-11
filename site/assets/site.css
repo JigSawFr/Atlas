@@ -937,9 +937,8 @@ table.compare .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .sheet-wm { position: absolute; z-index: -1; top: 14px; right: clamp(14px, 3vw, 32px); display: inline-flex; align-items: center; gap: 12px; color: color-mix(in srgb, var(--tint) 75%, var(--snow)); opacity: 0.16; pointer-events: none; white-space: nowrap; }
 .sheet-wm .ico { width: clamp(36px, 6vw, 64px); height: clamp(36px, 6vw, 64px); }
 .sheet-wm b { font: 700 clamp(2rem, 7vw, 4.5rem)/1 var(--display); letter-spacing: -0.03em; }
-a.chip.store-link, a.chip.whole { min-height: 36px; padding: 4px 14px; }
+a.chip.store-link { min-height: 36px; padding: 4px 14px; }
 a.chip.store-link { border-color: color-mix(in srgb, var(--tint, #33bbff) 55%, transparent); background: color-mix(in srgb, var(--tint, #33bbff) 14%, transparent); }
-.topline:has(.whole) { justify-content: space-between; }
 
 /* The Atlas score: the first ring is larger, and a table says what it rests on. */
 .ring.atlas { transform: scale(1.12); transform-origin: left center; margin-right: 10px; filter: drop-shadow(0 0 14px rgb(51 187 255 / 0.35)); }
@@ -1246,8 +1245,8 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
   body.x-on-sheet { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (max-width: 600px) {
-  .topline, .topline:has(.whole) { flex-wrap: wrap; justify-content: flex-start; gap: 8px; }
-  .topline .chip, .topline a.chip:is(.store-link, .whole) { white-space: nowrap; min-height: 40px; padding: 0 10px; }
+  .topline { flex-wrap: wrap; justify-content: flex-start; gap: 8px; }
+  .topline .chip, .topline a.chip.store-link { white-space: nowrap; min-height: 40px; padding: 0 10px; }
   .store-link .long { display: none; }
   .store-link .short { display: inline; }
 }
