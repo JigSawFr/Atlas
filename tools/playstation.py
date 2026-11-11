@@ -5,8 +5,9 @@ and Wikipedia alone (Wikidata's games of the machine: P400 = Q5014725, the
 PS4; Q63184502, the PS5):
 
 - games.json: each game's name, its first day on the machine (release,
-  YYYYMMDD: the earliest publication date, P577, said to the day, either
-  for every machine or for this one), its PlayStation Store ids as Wikidata
+  YYYYMMDD: the publication date, P577, said to the day: the one Wikidata
+  gives for this machine, else the game's first one for every machine if
+  the machine was out by then), its PlayStation Store ids as Wikidata
   gives them (ps: concept ids, P12332; ps_product: the products of the
   machine, P5944, P5971, P5999, CUSA… for the PS4, PPSA… for the PS5), and
   its traits (series, developers, publishers, genres, modes);
@@ -43,6 +44,8 @@ import retro
 # The machines, by their folder: (Wikidata item, the prefix of its store products).
 MACHINES = {"ps4": ("Q5014725", "CUSA"), "ps5": ("Q63184502", "PPSA")}
 ITEMS = [item for item, _ in MACHINES.values()]
+# The day each machine came out (its first sales anywhere): a date before is not the machine's.
+LAUNCH = {"Q5014725": 20131115, "Q63184502": 20201112}
 KINDS = tuple(features.KINDS)   # series, developers, genres, publishers, modes
 GAMES = retro.games_query(ITEMS)
 # A query a kind (one for all of them runs past the query service's minute).
@@ -74,9 +77,14 @@ def traits_of(src):
 
 
 def releases(rows, item):
-    """{QID: YYYYMMDD}: each game's earliest publication date said to the
-    day, of the statements for every machine (no P400 qualifier) or for `item`."""
-    out = {}
+    """{QID: YYYYMMDD}: each game's date on the machine `item`, said to the day. The earliest of the statements
+    that name this machine (the P400 qualifier) when there is one; else the earliest of the statements that name none
+    (Wikidata's dates of the game, for every machine) that the machine existed for (LAUNCH): one before is the game's
+    and not the machine's, and a game with no other has none. (The earliest of both used to be taken: a game's
+    first date, from a phone or a computer, beat the PlayStation's own, and half of the PS5's games came out in
+    the 2010s.)"""
+    named, anywhere = {}, {}
+    launch = LAUNCH.get(item, 0)
     for b in rows:
         game = retro.qid(b["tid"]["value"])
         on = retro.qid(b["on"]["value"]) if "on" in b else None
@@ -88,8 +96,12 @@ def releases(rows, item):
         if not game or not m or not precise or (on and on != item):
             continue
         day = int("".join(m.groups()))
-        if day % 10000 and (game not in out or day < out[game]):
-            out[game] = day
+        if day % 10000 and (on or day >= launch):       # a date for no machine, from before this one existed, is the game's
+            kept = named if on else anywhere
+            if game not in kept or day < kept[game]:
+                kept[game] = day
+    out = dict(anywhere)
+    out.update(named)
     return out
 
 

@@ -321,9 +321,12 @@ ties them (`ps4`, `ps5`: its item) to each other and to its other
 platforms (Steam, Switch…).
 
 - `games.json`: each game's `name`, its first day on the machine
-  (`release`, YYYYMMDD: its earliest publication date,
-  [P577](https://www.wikidata.org/wiki/Property:P577), said to the day,
-  for every machine or for this one), its PlayStation Store ids as Wikidata
+  (`release`, YYYYMMDD: its publication date,
+  [P577](https://www.wikidata.org/wiki/Property:P577), said to the day: the
+  earliest one Wikidata names for this machine, else the earliest it gives for
+  every machine that is not from before the machine came out; a game with
+  neither has none: the game's first date, from a phone or a computer, is not
+  the console's), its PlayStation Store ids as Wikidata
   has them, plain identifiers (`ps`: concept ids,
   [P12332](https://www.wikidata.org/wiki/Property:P12332); `ps_product`:
   the machine's products, P5944, P5971, P5999: `CUSA…` for the PS4,
