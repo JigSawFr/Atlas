@@ -37,6 +37,29 @@ class Links(unittest.TestCase):
             "Q900001": {"switch": ["0100A1B2C3D4E000"], "steam": ["900009", "900010"],
                         "ps_product": ["EP0001-PPSA00001_00-AMBERLANTERN0000"], "epic": ["amber-lantern"]}})
 
+    def test_also(self):
+        games = {"Q1": {"switch": ["0100A1B2C3D4E000"], "steam": ["900010"], "ps_product": ["EP0001-PPSA00001_00-AMBERLANTERN0000"],
+                        "xbox": ["9ZZZZZZZZZZ1"]},
+                 "Q2": {"switch": ["0100A1B2C3D4F000", "0100A1B2C3D50000"], "gog": ["pebble_pilots"]},
+                 "Q3": {"switch": ["0100A1B2C3D51000"]},                    # on no other store
+                 "Q4": {"steam": ["900011"], "xbox": ["9ZZZZZZZZZZ2"]},     # not on the Switch
+                 "Q5": {"switch": ["0100A1B2C3D52000"], "ps_product": ["EP0001-PPSA00001_00-AMBERLANTERN0000"]}}  # a store ALSO leaves out
+        got = links.also(games)
+        self.assertEqual(got, {"0100A1B2C3D4E000": {"steam": ["900010"], "xbox": ["9ZZZZZZZZZZ1"]},
+                               "0100A1B2C3D4F000": {"gog": ["pebble_pilots"]},
+                               "0100A1B2C3D50000": {"gog": ["pebble_pilots"]}})
+        self.assertEqual(list(got), sorted(got))
+        self.assertEqual(links.also({}), {})
+
+    def test_also_file_matches_its_schema(self):
+        import schemas
+        body = {"schema": 1, "platform": "switch", "generated": "2026-11-11", "source": "x",
+                "games": links.also({"Q1": {"switch": ["0100A1B2C3D4E000"], "steam": ["900010"], "epic": ["amber-lantern"]}})}
+        self.assertEqual(schemas.errors(body, schemas.KINDS["also"]), [])
+        self.assertEqual(schemas.kind_of("platforms/switch/also.json"), "also")
+        bad = dict(body, games={"0100A1B2C3D4E000": {"steam": ["not a number"]}})
+        self.assertNotEqual(schemas.errors(bad, schemas.KINDS["also"]), [])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -81,6 +81,13 @@ KINDS = {
         "type": "array", "items": {"enum": ["console", "pc"]}}),
     "links": file_schema("Each game's ids on every platform, by Wikidata item (or \"igdb:<id>\" for a game only IGDB knows)", {
         "type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}}),
+    "also": file_schema("A Switch game's other stores: {title id: {platform: [ids]}}", {
+        "type": "object", "additionalProperties": False, "minProperties": 1, "properties": {
+            "steam": {"type": "array", "items": {"type": "string", "pattern": r"^[0-9]+$"}},
+            "ps": {"type": "array", "items": {"type": "string", "pattern": r"^[0-9]+$"}},
+            "xbox": {"type": "array", "items": {"type": "string"}},
+            "gog": {"type": "array", "items": {"type": "string"}},
+            "epic": {"type": "array", "items": {"type": "string"}}}}),
     "platforms": file_schema("The platforms' registry", {
         "type": "object", "required": ["name", "kind"], "properties": {
             "name": {"type": "string"}, "qid": {"type": "string", "pattern": r"^Q\d+$"}, "igdb": {"type": "string"},
@@ -134,7 +141,7 @@ def kind_of(path):
     if path in ("links.json", "platforms.json", "index.json", "report.json", "changes.json"):
         return path[:-5]
     m = re.match(r"^platforms/[a-z0-9-]+/(popular|games|games\.lite|similar|upcoming|editions|names|"
-                 r"gamepass|reach)\.json$", path)
+                 r"gamepass|reach|also)\.json$", path)
     if m:
         return m.group(1).replace(".lite", "")
     return None

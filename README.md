@@ -42,6 +42,7 @@ nothing else: what the sources answered is on a branch of its own (see
 | `platforms/switch/names.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/names.json` |
 | `platforms/switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/editions.json` |
 | `platforms/switch/reach.json` (and `platforms/steam/reach.json`) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/reach.json` |
+| `platforms/switch/also.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/also.json` |
 | `platforms/steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/popular.json` |
 | `platforms/steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/games.json` |
 | `platforms/steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/upcoming.json` |
@@ -203,6 +204,15 @@ A game's other editions (a Deluxe, a Complete Edition, a Game of the Year, the g
 ```
 
 Where a game is read: for each game among the best known (the ones the trends measure) read 300 times or more in the days collected, its share of the views of its Wikipedia pages in each of `languages`, in percent and in that order (a game much read in Japanese, one much read in French). `languages` are the 11 languages of the site's 15 locales (PlayShelf's too): a locale's language is the part of its tag before the dash (`pt-BR` is `pt`, `zh-Hant` is `zh`). Read `languages`, not a fixed list: the first 8 keep their place, but more may come. The shares are rounded, so they may not add up to exactly 100. A game read less has none.
+
+`platforms/switch/also.json`, made every Monday with `links.json`, which it is cut from:
+
+```json
+{"schema": 1, "platform": "switch", "generated": "2026-11-09", "source": "links.json (Wikidata: P1733, P12332, P5885, P2725, P6278)",
+ "games": {"0100A1B2C3D4E000": {"steam": ["900010"], "xbox": ["9ZZZZZZZZZZ1"]}}}
+```
+
+Each Switch game sold on another store, by its base game's title id, with its ids there: `steam` (app ids), `ps` (PlayStation Store concepts), `xbox` (Microsoft Store products), `gog` (page slugs), `epic` (page slugs); a store the game is not on is left out, and a game on none has no entry. It is `links.json` seen from the Switch (some kilobytes where that file is megabytes), for a reader that knows a game by its title id and wants to say "also on Steam".
 
 ### Steam
 

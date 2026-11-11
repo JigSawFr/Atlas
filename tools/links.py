@@ -25,7 +25,12 @@ instead of a Wikidata item; an id two games claim is left out.
 One query to Wikidata's query service a run; when it turns the run away,
 QLever's copy of Wikidata (qlever.dev) is asked the same.
 
-Usage: tools/links.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/links.json,
+platforms/switch/also.json is cut from it: each Switch game sold on another store, by its title id,
+with its ids there ({"0100A1B2C3D4E000": {"steam": ["900010"], "xbox": ["9ZZZZZZZZZZ1"]}}), some
+kilobytes where links.json is megabytes.
+
+Usage: tools/links.py <out-dir> <previous-dir> <sources-dir>   (writes out-dir/links.json and
+platforms/switch/also.json,
 from sources/wikidata/links.json, tools/collect.py's)
 """
 import datetime
@@ -45,6 +50,8 @@ PROPERTIES = {
     "P5885": "xbox", "P2725": "gog", "P6278": "epic",
 }
 PLATFORMS = ("switch", "steam", "ps", "ps_product", "xbox", "gog", "epic")
+# The platforms platforms/switch/also.json names a Switch game's other stores by.
+ALSO = ("steam", "ps", "xbox", "gog", "epic")
 QUERY = """
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 SELECT ?item ?prop ?v WHERE {
@@ -101,6 +108,19 @@ def links(rows):
     return {q: {p: out[q][p] for p in PLATFORMS if p in out[q]} for q in sorted(out, key=lambda q: int(q[1:]))}
 
 
+def also(games):
+    """{Switch title id: {platform: [ids]}} for the Switch games sold on another store (ALSO), cut
+    from links.json's games so a reader that knows a game by its title id (PlayShelf) need not read
+    all of them."""
+    out = {}
+    for found in games.values():
+        others = {p: found[p] for p in ALSO if found.get(p)}
+        if others:
+            for title_id in found.get("switch") or ():
+                out[title_id] = others
+    return dict(sorted(out.items()))
+
+
 def rows():
     """The query's rows, from Wikidata's service, else QLever's."""
     try:
@@ -153,6 +173,10 @@ def main():
     common.publish(out_dir, "links.json", {
         "schema": common.SCHEMA, "generated": datetime.date.today().isoformat(),
         "source": "Wikidata (" + ", ".join(PROPERTIES) + ")", "games": games}, previous_dir, report)
+    common.publish(out_dir, "platforms/switch/also.json", {
+        "schema": common.SCHEMA, "platform": "switch", "generated": datetime.date.today().isoformat(),
+        "source": "links.json (Wikidata: " + ", ".join(p for p in PROPERTIES if PROPERTIES[p] in ALSO) + ")",
+        "games": also(games)}, previous_dir, report)
     platforms.write_registry(out_dir)
     print(common.summary(report), file=sys.stderr)
 
