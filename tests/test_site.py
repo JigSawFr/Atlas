@@ -297,6 +297,18 @@ class SiteData(unittest.TestCase):
         self.assertEqual(every[0][:4], ["steam", 3, 2, 89.0])
         self.assertEqual((site_data.mean([]), site_data.median([3, 1, 2]), site_data.median([1, 2])), (None, 2, 1.5))
 
+    def test_reach_on_a_sheet(self):
+        body = {"schema": 1, "languages": ["en", "fr", "ja", "ko"], "games": {"1": [63, 8, 29, 0], "2": [0, 0, 0, 0], "3": [50, 50], "4": "x"}}
+        self.assertEqual(site_data.reach_of(body), {"1": [["en", 63], ["ja", 29], ["fr", 8]]})    # by share, none at 0, a row of another length left out
+        for other in ({}, {"languages": "en", "games": {}}, {"languages": ["en"], "games": []}):
+            self.assertEqual(site_data.reach_of(other), {})
+        put(self.data, "platforms/switch/reach.json", {"schema": 1, "languages": ["en", "fr"], "games": {"0100A1B2C3D4E000": [75, 25]}})
+        site_data.build(self.data, self.out)
+        sheets = [g for n in os.listdir(os.path.join(self.out, "x", "switch", "g")) for g in self.read(f"x/switch/g/{n}").items()]
+        self.assertEqual(dict(sheets)["0100A1B2C3D4E000"]["reach"], [["en", 75], ["fr", 25]])
+        unified = [u for n in os.listdir(os.path.join(self.out, "x", "u")) if n != "meta.json" for u in self.read(f"x/u/{n}").values()]
+        self.assertEqual([e.get("reach") for u in unified for e in u["platforms"] if e["p"] == "switch"], [[["en", 75], ["fr", 25]]])
+
     def test_overall_stats_count_a_game_once(self):
         """x/all/stats.json: every game once across the platforms, its renown the best of them, its critics' the mean."""
         sc = site_data.overall({"Q1": [[80, 0, 90], [60, 0, 70]], "Q2": [[40, 0, 0]], "steam:9": [[10, 0, 50]], "Q3": [[100, 0, 0], [20, 0, 0]]})
