@@ -297,6 +297,15 @@ class SiteData(unittest.TestCase):
         self.assertEqual(every[0][:4], ["steam", 3, 2, 89.0])
         self.assertEqual((site_data.mean([]), site_data.median([3, 1, 2]), site_data.median([1, 2])), (None, 2, 1.5))
 
+    def test_overall_stats_count_a_game_once(self):
+        """x/all/stats.json: every game once across the platforms, its renown the best of them, its critics' the mean."""
+        sc = site_data.overall({"Q1": [[80, 0, 90], [60, 0, 70]], "Q2": [[40, 0, 0]], "steam:9": [[10, 0, 50]], "Q3": [[100, 0, 0], [20, 0, 0]]})
+        self.assertEqual(sc["games"], 4)                                                 # a game on two platforms is one
+        self.assertEqual(sc["renown"]["q"][100], 100)                                    # its best renown: Q3's 100, not the 20
+        self.assertEqual(sc["renown"]["q"][0], 10)
+        self.assertEqual(sc["critics"], {"n": 2, "mean": 65.0, "median": 65.0})          # Q1's mean 80, steam:9's 50
+        self.assertEqual(site_data.overall({})["renown"]["q"], [])
+
     def test_browse(self):
         self.steam_games()
         summary = site_data.build(self.data, self.out)

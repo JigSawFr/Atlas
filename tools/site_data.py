@@ -501,6 +501,16 @@ def stats(platform: str, best: list, games: dict, names: dict, tags: dict, spell
     }
 
 
+def overall(everyone: dict) -> dict:
+    """The figures of all the games of all the platforms, each game once, for a sheet of a game on several platforms
+    (its standing among the platforms' games, not one's): {game: [[renown, trend, critics], …]}, a game's renown
+    being its best across its platforms (as its sheet's) and its critics' score their mean."""
+    renown = [max(sc[0] for sc in scs) for scs in everyone.values()]
+    critics = [mean([sc[2] for sc in scs if sc[2]]) for scs in everyone.values() if any(sc[2] for sc in scs)]
+    return {"games": len(renown), "critics": {"n": len(critics), "mean": mean(critics), "median": median(critics)},
+            "renown": {"mean": mean(renown), "median": median(renown), "q": quantiles(renown)}}
+
+
 def unify(entries: dict, similar_of: dict) -> dict:
     """One sheet for a game on several platforms: {platform: (id, sheet)} merged. Its name is the
     one most platforms give; each platform keeps its own figures (release, renown, reviews, ratings),
@@ -620,6 +630,7 @@ def build(data_dir: str, out_dir: str) -> dict:
         tally(found.get("games") or {}, found.get("tags") or {}, seen)
     spelled = spelled_of(seen)
     every_platform = []     # each platform's headline figures, side by side (x/stats.json)
+    everyone = {}           # each game once, its scores on every platform it is on (x/all/stats.json)
     for platform in plats:
         files = platform_files(data_dir, platform)
         scores = files["popular"].get("games") or {}
@@ -674,6 +685,10 @@ def build(data_dir: str, out_dir: str) -> dict:
         generated = files["popular"].get("generated")
         figures = stats(platform, best, games, names, tags, spelled, pic, generated)
         write(os.path.join(base, "stats.json"), figures)
+        for gid, sc in best:
+            if names.get(gid):
+                link = (links.get(platform) or {}).get(gid)
+                everyone.setdefault(link[0] if link else f"{platform}:{gid}", []).append(list(sc) + [0, 0, 0])
         every_platform.append([platform, figures["games"], figures["critics"]["n"], figures["critics"]["mean"],
                                figures["renown"]["mean"], median([y for y, n, _ in figures["years"] for _ in range(n)])])
         os.makedirs(os.path.join(base, "browse"), exist_ok=True)
@@ -753,6 +768,8 @@ def build(data_dir: str, out_dir: str) -> dict:
                              "shards": shards, "generated": files["popular"].get("generated")}
     # [platform, named games, games with a critics' score, critics' average, renown's average, median year of the last years]
     write(os.path.join(out_dir, "x", "stats.json"), {"platforms": sorted(every_platform, key=lambda r: -r[1])})
+    os.makedirs(os.path.join(out_dir, "x", "all"), exist_ok=True)
+    write(os.path.join(out_dir, "x", "all", "stats.json"), overall(everyone))
     one = {q: unify(entries, similar_refs.get(q, {})) for q, entries in kept.items()}
     os.makedirs(os.path.join(out_dir, "x", "u"), exist_ok=True)
     write(os.path.join(out_dir, "x", "u", "meta.json"),
