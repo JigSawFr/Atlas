@@ -501,6 +501,23 @@ def stats(platform: str, best: list, games: dict, names: dict, tags: dict, spell
     }
 
 
+REACH_KEPT = 6      # languages of a game's reach on its sheet
+
+
+def reach_of(body: dict) -> dict:
+    """{game: [[language, percent], …]} from a platform's reach.json: where the game is read on Wikipedia, its
+    REACH_KEPT first languages by share, the ones nobody reads it in left out; {} for a file of another shape."""
+    languages, out = body.get("languages"), {}
+    if not isinstance(languages, list) or not isinstance(body.get("games"), dict):
+        return out
+    for gid, shares in body["games"].items():
+        if isinstance(shares, list) and len(shares) == len(languages) and all(isinstance(x, int) for x in shares):
+            found = sorted(((x, lang) for lang, x in zip(languages, shares) if x > 0 and isinstance(lang, str)), key=lambda r: (-r[0], r[1]))
+            if found:
+                out[gid] = [[lang, x] for x, lang in found[:REACH_KEPT]]
+    return out
+
+
 def overall(everyone: dict) -> dict:
     """The figures of all the games of all the platforms, each game once, for a sheet of a game on several platforms
     (its standing among the platforms' games, not one's): {game: [[renown, trend, critics], …]}, a game's renown
@@ -535,7 +552,7 @@ def unify(entries: dict, similar_of: dict) -> dict:
     for p in order:
         gid, sheet = entries[p]
         entry = {"p": p, "id": gid}
-        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of", "slug"):
+        for k in ("name", "release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "reach", "steam", "gamepass", "tech", "editions", "edition_of", "slug"):
             if k in sheet:
                 entry[k] = sheet[k]
         out["platforms"].append(entry)
@@ -639,6 +656,7 @@ def build(data_dir: str, out_dir: str) -> dict:
         names = names_of(files)
         upcoming = files["upcoming"].get("games") or {}
         similar = files["similar"].get("games") or {}
+        reach = reach_of(read(os.path.join(data_dir, "platforms", platform, "reach.json")) or {})
         # A game's other editions are one game with it, not games of their own: titledb's (the Switch) and the ones the
         # names give (a name plus edition words, a company in common).
         editions = edition_map(names, games, files["editions"].get("games") or {})
@@ -721,6 +739,8 @@ def build(data_dir: str, out_dir: str) -> dict:
                     sheet["steam"] = game["steam"]
             if gid in curves.get(platform, ()):
                 sheet["views"] = curves[platform][gid]
+            if gid in reach:
+                sheet["reach"] = reach[gid]
             if gid in stores:
                 sheet["tech"] = stores[gid]
             if gid in upcoming:

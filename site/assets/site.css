@@ -1301,3 +1301,20 @@ dialog.help .viewer-btn.close { position: absolute; top: 10px; right: 10px; }
 .byplat a.store:hover, .byplat a.store:focus-visible { border-color: var(--mist); }
 .chip.best-chip { background: rgb(255 200 87 / 0.1); border-color: rgb(255 200 87 / 0.4); color: #ffc857; }
 .ring-note { margin: 0 0 0.5rem; }
+
+/* ---- A sheet's views (2026-11-11): the game as a whole or what one of its platforms says of it, a row of buttons under
+   the head (links: the address says which); and where the game is read, a bar a language. */
+.viewswitch { display: flex; gap: 6px; margin: 4px 0 14px; overflow-x: auto; scrollbar-width: none; }
+.viewswitch::-webkit-scrollbar { display: none; }
+a.chip.view { flex: none; min-height: 40px; padding: 4px 14px; text-decoration: none; background: none; border-color: var(--night-line); color: var(--mist); }
+a.chip.view:hover, a.chip.view:focus-visible { border-color: var(--mist); color: var(--snow); }
+a.chip.view[aria-current] { color: var(--snow); background: color-mix(in srgb, var(--tint, #33bbff) 22%, transparent); border-color: color-mix(in srgb, var(--tint, #33bbff) 60%, var(--night-line)); }
+.reach { margin: 0; display: grid; gap: 8px; max-width: 560px; }
+.reach figcaption { font-size: 0.8125rem; }
+.reach ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.reach li { display: grid; grid-template-columns: minmax(6.5rem, 30%) 1fr 3.25rem; align-items: center; gap: 10px; font-size: 0.875rem; color: var(--mist); }
+.reach .reach-track { height: 8px; border-radius: 99px; background: rgb(232 238 247 / 0.08); overflow: hidden; }
+.reach .reach-track i { display: block; height: 100%; border-radius: inherit; background: rgb(51 187 255 / 0.55); }
+.reach .reach-n { font: 500 0.8125rem var(--mono); text-align: end; color: var(--snow); }
+.reach li.mine { color: var(--snow); }
+.reach li.mine .reach-track i { background: var(--aurora, #00ffcc); }

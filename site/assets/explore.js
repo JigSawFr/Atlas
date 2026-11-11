@@ -1055,6 +1055,7 @@
   // The bar that slides in once the head has left the window: the game, its score, the sheet's sections (the one in
   // view marked). Buttons, not links: the address belongs to the router.
   let barOff = null;
+  let keepScroll = null;       // the scroll to come back to after the sheet is drawn again (its views' buttons)
   function sectionBar(head, name, score) {
     if (barOff) barOff();
     const targets = [...sheet.querySelectorAll(".cols section")].filter((x) => x.querySelector(":scope > h3"));
@@ -1303,7 +1304,7 @@
     return b;
   }
 
-  function renderSheet(m, backHref) {
+  function renderSheet(m, backHref, views) {
     if (barOff) barOff();
     document.body.classList.remove("x-sheet-find");
     sheet.replaceChildren();
@@ -1380,6 +1381,26 @@
     sheet.append(el("div", { class: "dock" }, ...[back, pager(es), find, comparer(m, es), share(m), heart(m, es)].filter(Boolean)), head);
     if (!multi) {
       sheet.append(el("span", { class: "sheet-wm", "aria-hidden": "true" }, icon(PC.has(es[0].p) ? "i-d-pc" : "i-d-console"), el("b", { text: SHORT[es[0].p] || es[0].p.toUpperCase() })));
+    }
+
+    if (views) {
+      const href = (p) => `${gameHref("u", views.qid)}${p ? `?p=${encodeURIComponent(p)}` : ""}`;
+      const one = (p, text) => {
+        const a = el("a", { class: "chip view", href: href(p), text });
+        if (p === views.on) a.setAttribute("aria-current", "true");
+        if (p) a.style.setProperty("--tint", TINTS[p] || `hsl(${hueOf(p)} 60% 50%)`);
+        // The same sheet, said another way: the place in the page is kept, and the address is replaced, so that the way
+        // back leaves the sheet in one step (a link all the same: it opens in a new tab, and can be shared).
+        a.addEventListener("click", (ev) => {
+          if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button) return;
+          ev.preventDefault();
+          keepScroll = window.scrollY;
+          history.replaceState(history.state, "", a.href);
+          render();
+        });
+        return a;
+      };
+      sheet.append(el("nav", { class: "viewswitch", "aria-label": t("x_view_of") }, one("", t("x_all_platforms")), ...views.all.map((e) => one(e.p, shortName(e.p)))));
     }
 
     const stats = el("dl", { class: "stats" });
@@ -1491,6 +1512,17 @@
       }
     }
 
+    // Where the game is read on Wikipedia: its pages' views by language, as shares (tools/trends.py's reach.json), the
+    // visitor's own language marked. Bars for the eye; the names and the figures are the text.
+    const reach = (es.find((e) => e.reach) || {}).reach;
+    const reachBox = reach && reach.length > 1 ? el("figure", { class: "reach" }, el("figcaption", { class: "dim", text: t("x_reach_help") }),
+      el("ul", {}, ...reach.map(([lang, share]) => {
+        const bar = el("i", { "aria-hidden": "true" });
+        bar.style.setProperty("width", `${Math.max(2, share)}%`);
+        return el("li", { class: ownLanguage(lang) ? "mine" : "" }, el("span", { class: "reach-lang", text: languageName(lang) }),
+          el("span", { class: "reach-track" }, bar), el("span", { class: "reach-n", text: `${num(share)} %` }));
+      }))) : null;
+
     // How much Wikipedia read the game, a week at a time (the best known games': tools/trends.py).
     const curve = (es.find((e) => e.views) || {}).views;
     if (curve && curve.length >= 4) {
@@ -1527,6 +1559,7 @@
       main.append(section(t("x_views_title"), el("div", { class: "views-box" }, wrap,
         el("p", { class: "dim", text: `${t("x_views_peak", { n: num(top) })} · ${t("x_views_curve", { n: curve.length, first: num(curve[0]), last: num(curve[curve.length - 1]) })}` }))));
     }
+    if (reachBox) main.append(section(t("x_reach_title"), reachBox));
 
     const won = m.wd && m.wd.awards;
     if (won && won.length) {
@@ -1638,7 +1671,9 @@
     fitSide();
     setStatus("");
     head.querySelector("h2").focus({ preventScroll: true });
-    window.scrollTo({ top: sheet.getBoundingClientRect().top + window.scrollY - 16 });
+    // Drawn again by one of its views' buttons: where the page was (the row of buttons stays under the finger).
+    if (keepScroll !== null) { window.scrollTo({ top: keepScroll }); keepScroll = null; }
+    else window.scrollTo({ top: sheet.getBoundingClientRect().top + window.scrollY - 16 });
   }
 
   // The facts' column stays in view while the story scrolls, only when it fits the window: a taller one scrolls
@@ -1771,7 +1806,7 @@
   });
 
   // The sheet of a game on several platforms, by its Wikidata item.
-  async function unified(qid) {
+  async function unified(qid, query) {
     leaveBrowse();
     results.hidden = true;
     pressed("x-views", "view", "");
@@ -1791,7 +1826,10 @@
       pressed("x-platforms", "platform", from);
       syncPlatform(from);
     }
-    renderSheet(u, backTo(from));
+    // The game as a whole, or what one of its platforms says of it (`?p=<platform>`): the same sheet, the same
+    // address but for that, and a row of buttons on it to pass from one to the other.
+    const only = query && u.platforms.length > 1 ? u.platforms.find((e) => e.p === query.get("p")) : null;
+    renderSheet(only ? { ...u, platforms: [only] } : u, backTo(from), u.platforms.length > 1 ? { qid, all: u.platforms, on: only ? only.p : "" } : null);
   }
 
   // The sheet of a game on one platform; a game on several goes to the sheet of all of them (the address is replaced):
@@ -1821,7 +1859,7 @@
   // The sheet of one platform's game, as renderSheet and the comparison take it.
   function platformSheet(platform, id, g) {
     const entry = { p: platform, id };
-    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "steam", "gamepass", "tech", "editions", "edition_of", "slug"]) if (g[k]) entry[k] = g[k];
+    for (const k of ["release", "upcoming", "popular", "reviews", "rating", "igdb_rating", "igdb_cover", "igdb_art", "views", "reach", "steam", "gamepass", "tech", "editions", "edition_of", "slug"]) if (g[k]) entry[k] = g[k];
     return { name: g.name, id, qid: g.qid, unified: g.unified ? g.qid : "", wd: g.wd, platforms: [entry], traits: g.traits,
       similar: (g.similar || []).map(([o, name, s, pic, shared]) => [platform, o, name, s, pic, shared]),
       family: g.family ? [g.family[0], g.family[1].map((r) => [platform, ...r])] : null, links: g.links };
@@ -2599,7 +2637,7 @@
     try {
       if (view === "home") await homeView(platform);
       else if (view === "browse") await browse(platform, query);
-      else if (view === "ugame") await unified(arg);
+      else if (view === "ugame") await unified(arg, query);
       else if (view === "game") await game(platform, arg, query);
       else if (view === "stats") await statsView(platform);
       else if (view === "play") await playView(platform);
