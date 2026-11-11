@@ -619,8 +619,11 @@
     const row = (label, ...content) => dl.append(el("div", {}, el("dt", { text: label }), el("dd", {}, ...content)));
     const chips = (items) => items.map((x) => el("span", { class: "chip", text: x }));
 
-    const os = union("os");
-    if (os.length) row(t("x_runs_on"), ...chips(os.map((o) => OS_NAMES[o] || o)));
+    // On a sheet of several platforms these are the PC's systems only (the platforms are the tiles): "Runs on Windows"
+    // would say the game is not on the consoles.
+    const several = es.length > 1;
+    const os = union("os").filter((o) => !several || ["windows", "mac", "linux"].includes(o));
+    if (os.length) row(several ? t("x_runs_on_pc") : t("x_runs_on"), ...chips(os.map((o) => OS_NAMES[o] || o)));
     const deck = techs.map((x) => x.deck).find(Boolean);
     if (deck) row("Steam Deck", ...chips([t(`x_deck_${deck}`)]));
     const most = (key) => Math.max(0, ...techs.map((x) => (x.players && x.players[key]) || 0));
@@ -1023,7 +1026,7 @@
 
   // Where a score falls among the platform's: its 101 cut points counted in bands of 5, one bar a band, one line for
   // the game. The sentence under it is the chart's text.
-  function distribution(q, v, platform) {
+  function distribution(q, v, platform, all) {
     const BANDS = 20, count = new Array(BANDS).fill(0);
     for (const x of q) count[Math.min(BANDS - 1, Math.floor(x / (100 / BANDS)))] += 1;
     const top = Math.max(...count, 1), W = 240, H = 56, w = W / BANDS;
@@ -1032,7 +1035,8 @@
     svg.setAttribute("viewBox", `0 0 ${W} ${H + 4}`);
     svg.setAttribute("class", "dist-chart");
     svg.setAttribute("role", "img");
-    svg.setAttribute("aria-label", `${t("x_dist_title", { platform })}. ${t("x_dist_help", { p: num(p) })}`);
+    const title = all ? t("x_dist_title_all") : t("x_dist_title", { platform });
+    svg.setAttribute("aria-label", `${title}. ${t("x_dist_help", { p: num(p) })}`);
     count.forEach((n, i) => {
       const h = Math.max(n ? 2 : 0, (n / top) * H);
       const r = document.createElementNS(SVG, "rect");
@@ -1044,7 +1048,7 @@
     const line = document.createElementNS(SVG, "line");
     for (const [k, x] of [["x1", at.toFixed(1)], ["x2", at.toFixed(1)], ["y1", "0"], ["y2", String(H + 4)], ["class", "mark"]]) line.setAttribute(k, x);
     svg.append(line);
-    return el("figure", { class: "dist" }, el("figcaption", { text: t("x_dist_title", { platform }) }), svg,
+    return el("figure", { class: "dist" }, el("figcaption", { text: title }), svg,
       el("p", { class: "dim", text: t("x_dist_help", { p: num(p) }) }));
   }
 
@@ -1346,7 +1350,7 @@
       !multi && es[0].tech && es[0].tech.deck >= 2 ? el("span", { class: "chip", text: `Steam Deck · ${t(`x_deck_${es[0].tech.deck}`)}` }) : null,
       !m.name ? el("small", { text: t("x_no_name") }) : null);
     // One line under the title that says what the game is, from what the sheet already holds: genres, studio, year.
-    const tr = m.traits || {}, born = es.map((e) => e.release).filter(realDay);
+    const tr = m.traits || {}, born = es.filter((e) => e.release && dayOn(e) === e.release).map((e) => e.release).filter(realDay);
     const tag = [(tr.genres || []).slice(0, 2).map((g) => labelOf("genres", g)).join(", "), (tr.developers || [])[0],
       born.length ? String(Math.floor(Math.min(...born) / 10000)) : ""].filter(Boolean).join(" · ");
     const tagline = tag ? el("p", { class: "tagline", text: tag }) : null;
@@ -1387,15 +1391,14 @@
       let n = 0, sum = 0;
       for (const e of es) for (const r of [e.reviews, e.rating]) if (r && r[0]) { n += r[0]; sum += r[0] * r[1]; }
       if (n) stat(t("x_pooled_label"), t("x_pooled_value", { p: num(Math.round(sum / n)), n: num(n) }));
-      const known = es.map((e) => (e.popular ? e.popular[0] : 0)).filter(Boolean);
-      if (known.length) stat(t("x_score_avg"), fmt1.format(known.reduce((a, b) => a + b, 0) / known.length));
+      if (best) stat(t("x_score"), String(best.popular[0]));
     } else {
       if (best && best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
       for (const e of es) {
         for (const r of [e.reviews, e.rating]) if (r && r[0]) stat(storeName(e.p), t("x_review_count", { n: num(r[0]) }));
       }
     }
-    const out = es.map((e) => e.release).filter(Boolean);
+    const out = es.filter((e) => e.release && dayOn(e) === e.release).map((e) => e.release);   // not a date from before the platform
     const soon = es.map((e) => e.upcoming).filter(Boolean);
     if (out.length) stat(t("x_release"), ymd(Math.min(...out)));
     else if (soon.length) stat(t("x_release"), t("x_coming", { date: ymd(Math.min(...soon)) }));
@@ -1405,21 +1408,25 @@
     if (best) {
       const where = el("p", { class: "insights", hidden: "" });
       sheet.append(where);
-      get(`x/${best.p}/stats.json`).then((st) => {
+      // A game on several platforms stands among the games of all of them (each once, its best renown, its critics' mean:
+      // x/all/stats.json); a game on one, among its platform's.
+      get(multi ? "x/all/stats.json" : `x/${best.p}/stats.json`).then((st) => {
         const plat = S._names[best.p] || best.p, items = [];
         const q = (st.renown && st.renown.q) || [];
         if (q.length) {
           const p = Math.round((q.filter((x) => x < best.popular[0]).length / q.length) * 100);
-          if (p >= 50) items.push(el("span", { class: "chip insight" }, t("x_rank", { p: num(p), platform: plat })));
+          if (p >= 50) items.push(el("span", { class: "chip insight" }, multi ? t("x_rank_all", { p: num(p) }) : t("x_rank", { p: num(p), platform: plat })));
         }
-        const c = best.popular[2], avg = st.critics && st.critics.mean;
+        const c = multi ? critics : best.popular[2], avg = st.critics && st.critics.mean;
         if (c && avg) {
           const d = Math.round(c - avg);
-          if (d) items.push(el("span", { class: `chip insight ${d > 0 ? "above" : "below"}` }, t(d > 0 ? "x_vs_above" : "x_vs_below", { d: num(Math.abs(d)), platform: plat, avg: fmt1.format(avg) })));
+          if (d) items.push(el("span", { class: `chip insight ${d > 0 ? "above" : "below"}` },
+            multi ? t(d > 0 ? "x_vs_above_all" : "x_vs_below_all", { d: num(Math.abs(d)), avg: fmt1.format(avg) })
+              : t(d > 0 ? "x_vs_above" : "x_vs_below", { d: num(Math.abs(d)), platform: plat, avg: fmt1.format(avg) })));
         }
         where.replaceChildren(...items);
         where.hidden = !items.length;
-        if (q.length) where.after(distribution(q, best.popular[0], plat));
+        if (q.length) where.after(distribution(q, best.popular[0], plat, multi));
       }, () => where.remove());
     }
     for (const e of es) {
