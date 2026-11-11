@@ -69,7 +69,8 @@ class Machines(unittest.TestCase):
         lantern = got["ps4"]["Q900001"]
         self.assertEqual(lantern["name"], "Lantern Tale")
         self.assertEqual(lantern["release"], 20190314)
-        self.assertEqual(got["ps5"]["Q900001"]["release"], 20190314)   # the earliest day said for every machine
+        self.assertEqual(got["ps5"]["Q900001"]["release"], 20201112)   # the day said for this machine, not the earlier one said for every machine
+        self.assertEqual(got["ps4"]["Q900001"]["release"], 20190314)   # none for the PS4 in particular: the game's first, the PS4 being out by then
         self.assertEqual(lantern["ps"], ["10900001"])
         self.assertEqual(lantern["ps_product"], ["UP0001-CUSA00001_00-LANTERNTALE00000"])   # CUSA: the PS4's
         self.assertEqual(got["ps5"]["Q900001"]["ps_product"], ["EP0001-PPSA00001_00-LANTERNTALE00000"])
@@ -93,9 +94,26 @@ class Machines(unittest.TestCase):
 
     def test_releases(self):
         rows = common.bindings(SOURCES["wikidata/playstation-dates.json"]["rows"])
-        self.assertEqual(playstation.releases(rows, PS5), {"Q900001": 20190314, "Q900003": 20270220})
+        self.assertEqual(playstation.releases(rows, PS5), {"Q900001": 20201112, "Q900003": 20270220})
         self.assertEqual(playstation.releases([{"tid": {"value": E + "Q1"}, "date": {"value": "nonsense"},
                                                 "precision": {"value": "x"}}], PS4), {})
+
+    def test_a_date_before_the_machine_is_the_games(self):
+        rows = common.bindings([
+            date("Q1", "2018-11-16T00:00:00Z"),                                       # a game's first date (a phone), for every machine
+            date("Q2", "2018-11-16T00:00:00Z"), date("Q2", "2021-12-14T00:00:00Z"),   # and a later one, for every machine
+            date("Q3", "2018-11-16T00:00:00Z"), date("Q3", "2021-12-14T00:00:00Z", on=PS4),   # the PS4's own, after the game's first
+            date("Q4", "2012-05-01T00:00:00Z", on=PS4),                               # said for the machine: kept as it is
+            date("Q5", "2020-11-12T00:00:00Z")])                                      # the PS5's launch day: it was out
+        ps4, ps5 = playstation.releases(rows, PS4), playstation.releases(rows, PS5)
+        self.assertNotIn("Q1", ps5)                       # before the PS5 existed: the game's, not the PS5's
+        self.assertEqual(ps4["Q1"], 20181116)             # the PS4 was out
+        self.assertEqual(ps5["Q2"], 20211214)             # the earliest one the PS5 was out for
+        self.assertEqual(ps4["Q2"], 20181116)
+        self.assertEqual(ps4["Q3"], 20211214)             # its own date beats the game's earlier one
+        self.assertNotIn("Q3", ps5)                       # (the PS4's own says nothing of the PS5)
+        self.assertEqual(ps4["Q4"], 20120501)             # not second-guessed
+        self.assertEqual(ps5["Q5"], 20201112)
 
     def test_upcoming(self):
         games = {"Q1": {"name": "Soon", "release": 20270101}, "Q2": {"name": "Out", "release": 20261030},
