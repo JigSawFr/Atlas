@@ -46,8 +46,12 @@ def other_schema(path):
 
 
 def last(directory, path):
-    """The file as the branch's last commit has it (the last run's), {} when it had none."""
-    got = subprocess.run(["git", "-C", directory, "show", f"HEAD:{path}"], capture_output=True)
+    """The file as its branch's last commit has it (the last run's: `data`'s, or the branch beside it that holds
+    the path, tools/branches.conf), {} when it had none."""
+    branch = common.side_branch(path)
+    got = subprocess.run(["git", "-C", directory, "show", f"refs/remotes/origin/{branch}:{path}"], capture_output=True) if branch else None
+    if got is None or got.returncode:   # `data`'s own, or the run that first moves the path to its branch
+        got = subprocess.run(["git", "-C", directory, "show", f"HEAD:{path}"], capture_output=True)
     if got.returncode:
         return {}
     try:

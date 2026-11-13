@@ -27,10 +27,16 @@ They live on the [`data`](../../tree/data) branch, made again every Monday by
 [`build.yml`](.github/workflows/build.yml) (and on demand), and are served by
 jsDelivr: read them at `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/<file>`
 rather than from GitHub (a CDN, cached, with no limit on the requests of one
-address). jsDelivr serves no branch over 50 MB, so the branch holds the
-platforms' files, `links.json`, the registry, the index and the schemas, and
-nothing else: what the sources answered is on a branch of its own (see
-[The sources](#the-sources)). Each platform has a folder of its own in `platforms/`, by its id
+address). jsDelivr serves no branch over 50 MB (over it, it answers 403 for
+any file not in its cache yet), so the branch holds the platforms' files, the
+registry, the index and the schemas, and nothing else. The heaviest files are
+on branches beside it ([`tools/branches.conf`](tools/branches.conf)): the PC
+stores' (`platforms/steam/`, `platforms/gog/`) and `links.json` on
+[`data-stores`](../../tree/data-stores), read at
+`https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data-stores/<file>` since
+2026-11-13 (their addresses on `@data` stopped then), and what the sources
+answered on a branch of its own (see [The sources](#the-sources)). `index.json`
+lists every file, whatever its branch. Each platform has a folder of its own in `platforms/`, by its id
 (`platforms.json` lists them); the Switch's is `platforms/switch/`:
 
 | File | Address |
@@ -41,19 +47,19 @@ nothing else: what the sources answered is on a branch of its own (see
 | `platforms/switch/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/similar.json` |
 | `platforms/switch/names.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/names.json` |
 | `platforms/switch/editions.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/editions.json` |
-| `platforms/switch/reach.json` (and `platforms/steam/reach.json`) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/reach.json` |
+| `platforms/switch/reach.json` (and `platforms/steam/reach.json`, on `@data-stores`) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/reach.json` |
 | `platforms/switch/also.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/switch/also.json` |
-| `platforms/steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/popular.json` |
-| `platforms/steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/games.json` |
-| `platforms/steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/upcoming.json` |
-| `platforms/steam/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/steam/similar.json` |
-| `platforms/gog/popular.json`, `platforms/gog/games.json`, `platforms/gog/upcoming.json`, `platforms/gog/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/gog/popular.json`… |
+| `platforms/steam/popular.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data-stores/platforms/steam/popular.json` |
+| `platforms/steam/games.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data-stores/platforms/steam/games.json` |
+| `platforms/steam/upcoming.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data-stores/platforms/steam/upcoming.json` |
+| `platforms/steam/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data-stores/platforms/steam/similar.json` |
+| `platforms/gog/popular.json`, `platforms/gog/games.json`, `platforms/gog/upcoming.json`, `platforms/gog/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data-stores/platforms/gog/popular.json`… |
 | `platforms/xbox/popular.json`, `platforms/xbox/games.json`, `platforms/xbox/gamepass.json`, `platforms/xbox/upcoming.json`, `platforms/xbox/similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/xbox/popular.json`… |
 | `platforms/3ds/games.json`, `popular.json`, `similar.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/3ds/games.json`… |
 | `platforms/ps4/games.json`, `popular.json`, `similar.json`, `upcoming.json` (and `platforms/ps5/`) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/ps4/games.json`… |
 | `platforms/<machine>/popular.json`, `games.json`, `similar.json` (the old machines: `nes`, `snes`, `gba`, `ps2`…) | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms/nes/popular.json`… |
 | `platforms.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/platforms.json` |
-| `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/links.json` |
+| `links.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data-stores/links.json` |
 | `index.json` | `https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/index.json` |
 
 The files have moved twice: until 2026-10-30 the Switch's were at the
@@ -93,7 +99,7 @@ counts as none there. Its own `schema` is 2 since 2026-10-30, when its
 `priced` and `countries` went (no schema 1 kept: its one reader is the
 website's status page, which reads 2 and takes any other as no report).
 
-The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`), and so is the `sources` branch: each run only needs the last files, and keeping every day's files would grow the repository by hundreds of MB a year.
+The `data` branch is one commit with no history, replaced at each run (`tools/publish.sh`), and so are the branches beside it (`data-stores`, `sources`): each run only needs the last files, and keeping every day's files would grow the repository by hundreds of MB a year.
 
 Each has a `schema` (1 for now: a new field may come, an old one keeps its
 meaning), the day it was `generated` and its `source`; a platform's files
