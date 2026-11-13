@@ -300,6 +300,10 @@ class SiteData(unittest.TestCase):
     def test_reach_on_a_sheet(self):
         body = {"schema": 1, "languages": ["en", "fr", "ja", "ko"], "games": {"1": [63, 8, 29, 0], "2": [0, 0, 0, 0], "3": [50, 50], "4": "x"}}
         self.assertEqual(site_data.reach_of(body), {"1": [["en", 63], ["ja", 29], ["fr", 8]]})    # by share, none at 0, a row of another length left out
+        # With the file's standing: the rank, how many games have one, and the share against the language's.
+        full = dict(body, ranks={"1": [3, 40, 7, 0], "2": [0, 0, 0, 0]}, counts=[380, 300, 150, 0], base=[40.0, 20.0, 10.0, 0])
+        self.assertEqual(site_data.reach_of(full)["1"], [["en", 63, 3, 380, 1.6], ["ja", 29, 7, 150, 2.9], ["fr", 8, 40, 300, 0.4]])
+        self.assertEqual(site_data.reach_of(dict(full, ranks={"1": [0, 0, 5, 0]}))["1"][1], ["ja", 29, 5, 150, 2.9])   # none in English: no rank there
         for other in ({}, {"languages": "en", "games": {}}, {"languages": ["en"], "games": []}):
             self.assertEqual(site_data.reach_of(other), {})
         put(self.data, "platforms/switch/reach.json", {"schema": 1, "languages": ["en", "fr"], "games": {"0100A1B2C3D4E000": [75, 25]}})

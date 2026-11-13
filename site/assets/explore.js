@@ -1516,11 +1516,21 @@
     // visitor's own language marked. Bars for the eye; the names and the figures are the text.
     const reach = (es.find((e) => e.reach) || {}).reach;
     const reachBox = reach && reach.length > 1 ? el("figure", { class: "reach" }, el("figcaption", { class: "dim", text: t("x_reach_help") }),
-      el("ul", {}, ...reach.map(([lang, share]) => {
+      el("ul", {}, ...reach.map(([lang, share, rank, many, ratio]) => {
         const bar = el("i", { "aria-hidden": "true" });
         bar.style.setProperty("width", `${Math.max(2, share)}%`);
+        // Among the platform's best known games read in that language: its rank, and whether it is read there more or
+        // less than games are (its share against the language's share of all the views).
+        const notes = [];
+        if (rank) notes.push(el("span", { class: "reach-rank", text: t("x_reach_rank", { r: num(rank), n: num(many) }) }));
+        if (ratio && (ratio >= 1.3 || ratio <= 0.7)) {
+          const up = ratio >= 1;
+          notes.push(el("span", { class: `reach-ratio ${up ? "reach-hi" : "reach-lo"}`, title: t("x_reach_ratio", { x: fmt1.format(ratio) }),
+            "aria-label": t("x_reach_ratio", { x: fmt1.format(ratio) }), text: `${up ? "▲" : "▼"} ×${fmt1.format(ratio)}` }));
+        }
         return el("li", { class: ownLanguage(lang) ? "mine" : "" }, el("span", { class: "reach-lang", text: languageName(lang) }),
-          el("span", { class: "reach-track" }, bar), el("span", { class: "reach-n", text: `${num(share)} %` }));
+          el("span", { class: "reach-track" }, bar), el("span", { class: "reach-n", text: `${num(share)} %` }),
+          notes.length ? el("span", { class: "reach-notes" }, ...notes) : null);
       }))) : null;
 
     // How much Wikipedia read the game, a week at a time (the best known games': tools/trends.py).
