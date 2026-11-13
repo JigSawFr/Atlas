@@ -450,6 +450,8 @@
   "x_empty_all": "Zoeken op alle platforms",
   "x_empty_browse": "Bladeren met filters",
   "x_trailer": "Trailer",
+  "x_trailer_play": "Trailer afspelen",
+  "x_trailer_note": "De YouTube-speler laadt pas na een klik (modus zonder cookies): YouTube ziet dan je IP-adres.",
   "x_views_peak": "Piek: {n} keer gelezen per week",
   "x_views_ago": "{w} wkn geleden: {n}",
   "x_share": "Delen",

@@ -1323,3 +1323,11 @@ a.chip.view[aria-current] { color: var(--snow); background: color-mix(in srgb, v
 .reach .reach-notes { grid-area: notes; display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: -2px; font: 500 0.75rem var(--mono); color: var(--mist); }
 .reach .reach-hi { color: #00ffcc; }
 .reach .reach-lo { color: #ffc857; }
+
+/* A trailer's player: a button first, YouTube's frame only after the press. */
+.sheet .trailer { margin: 0; display: grid; gap: 8px; }
+.sheet .trailer-play { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; aspect-ratio: 16 / 9; max-height: 320px; border-radius: 14px; border: 1px solid var(--night-line); background: var(--abyss); color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.sheet .trailer-play:hover, .sheet .trailer-play:focus-visible { border-color: var(--aurora, currentColor); }
+.sheet .trailer-play span[aria-hidden] { font-size: 1.6em; }
+.sheet .trailer-frame { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 14px; background: #000; }
+.sheet .trailer figcaption { font-size: 0.85em; }

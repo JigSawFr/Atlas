@@ -450,6 +450,8 @@
   "x_empty_all": "すべてのプラットフォームで検索",
   "x_empty_browse": "フィルターで探す",
   "x_trailer": "トレーラー",
+  "x_trailer_play": "トレーラーを再生",
+  "x_trailer_note": "YouTube のプレーヤーは再生を押したときだけ読み込まれます（Cookie なしモード）。そのとき YouTube にあなたの IP アドレスが見えます。",
   "x_views_peak": "ピーク：週 {n} 回",
   "x_views_ago": "{w} 週間前：{n}",
   "x_share": "共有",

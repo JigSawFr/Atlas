@@ -450,6 +450,8 @@
   "x_empty_all": "Auf allen Plattformen suchen",
   "x_empty_browse": "Mit Filtern durchsuchen",
   "x_trailer": "Trailer",
+  "x_trailer_play": "Trailer abspielen",
+  "x_trailer_note": "Der YouTube-Player lädt erst beim Klick (Modus ohne Cookies): YouTube sieht dann Ihre IP-Adresse.",
   "x_views_peak": "Spitze: {n} Aufrufe pro Woche",
   "x_views_ago": "Vor {w} Wo.: {n}",
   "x_share": "Teilen",

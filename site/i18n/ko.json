@@ -450,6 +450,8 @@
   "x_empty_all": "모든 플랫폼에서 검색",
   "x_empty_browse": "필터로 둘러보기",
   "x_trailer": "트레일러",
+  "x_trailer_play": "트레일러 재생",
+  "x_trailer_note": "YouTube 플레이어는 재생을 누를 때만 로드됩니다(쿠키 없는 모드). 이때 YouTube가 IP 주소를 볼 수 있습니다.",
   "x_views_peak": "최고: 주당 {n}회",
   "x_views_ago": "{w}주 전: {n}",
   "x_share": "공유",
