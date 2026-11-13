@@ -72,9 +72,12 @@ KINDS = {
             {"type": "string"}, {"type": "integer", "minimum": 1, "maximum": 100}]}}),
     "upcoming": file_schema("The games still to come: [YYYYMMDD, name] (or with IGDB's hypes)", {
         "type": "array", "minItems": 2, "maxItems": 3, "prefixItems": [DAY, {"type": "string"}, {"type": "integer"}]}),
-    "reach": file_schema("Where a game is read on Wikipedia: its share of views (percent) in each of `languages`", {
+    "reach": file_schema("Where a game is read on Wikipedia: its share of views (percent) in each of `languages`, and its rank in each among the file's games", {
         "type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 0, "maximum": 100}},
-        extra={"languages": {"type": "array", "items": {"type": "string"}, "minItems": 1}}),
+        extra={"languages": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+               "base": {"type": "array", "items": {"type": "number", "minimum": 0, "maximum": 100}},
+               "counts": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+               "ranks": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "integer", "minimum": 0}}}}),
     "editions": file_schema("An edition's game: {edition id: game id}", {"type": "string"}),
     "names": file_schema("Every game's name: {id: name}", {"type": "string"}),
     "gamepass": file_schema("The Game Pass's games: {id: [console, pc]}", {

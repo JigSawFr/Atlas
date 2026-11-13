@@ -214,6 +214,8 @@ Where a game is read: for each game among the best known (the ones the trends me
 
 Each Switch game sold on another store, by its base game's title id, with its ids there: `steam` (app ids), `ps` (PlayStation Store concepts), `xbox` (Microsoft Store products), `gog` (page slugs), `epic` (page slugs); a store the game is not on is left out, and a game on none has no entry. It is `links.json` seen from the Switch (some kilobytes where that file is megabytes), for a reader that knows a game by its title id and wants to say "also on Steam".
 
+`reach.json` also gives, for each language of `languages` and among the games of the file (those read 300 times or more in the days collected): `ranks`, `{game id: [rank in each language, 1 the most read, 0 when nobody read it there]}`; `counts`, how many games have a rank in each language; and `base`, each language's share of all the views, in percent: a game whose share is twice `base` is read there twice as much as games are ("more popular in French than in English" is the rank and the ratio of the French and English columns). The ranks are among the platform's best known games (400 at most), not among every game read in the language.
+
 ### Steam
 
 `platforms/steam/` has the Switch's files' formats, by Steam app id (`"620"`), made every

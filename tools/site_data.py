@@ -505,16 +505,33 @@ REACH_KEPT = 6      # languages of a game's reach on its sheet
 
 
 def reach_of(body: dict) -> dict:
-    """{game: [[language, percent], …]} from a platform's reach.json: where the game is read on Wikipedia, its
-    REACH_KEPT first languages by share, the ones nobody reads it in left out; {} for a file of another shape."""
+    """{game: [[language, percent, rank, how many, ratio], …]} from a platform's reach.json: where the game is read on
+    Wikipedia, its REACH_KEPT first languages by share, the ones nobody reads it in left out. `rank` (1 the most read)
+    and `how many` games have one in the language are the file's `ranks` and `counts`; `ratio` is its share against
+    the language's share of all the views (`base`): 2 is read twice as much there as games are. A row is only
+    [language, percent] where the file has no rank; {} for a file of another shape."""
     languages, out = body.get("languages"), {}
     if not isinstance(languages, list) or not isinstance(body.get("games"), dict):
         return out
+    ranks, counts, base = body.get("ranks"), body.get("counts"), body.get("base")
+    ranks = ranks if isinstance(ranks, dict) else {}
+    counts = counts if isinstance(counts, list) and len(counts) == len(languages) else None
+    base = base if isinstance(base, list) and len(base) == len(languages) else None
     for gid, shares in body["games"].items():
         if isinstance(shares, list) and len(shares) == len(languages) and all(isinstance(x, int) for x in shares):
-            found = sorted(((x, lang) for lang, x in zip(languages, shares) if x > 0 and isinstance(lang, str)), key=lambda r: (-r[0], r[1]))
+            mine = ranks.get(gid) if isinstance(ranks.get(gid), list) and len(ranks.get(gid)) == len(languages) else None
+            found = []
+            for i, (lang, x) in enumerate(zip(languages, shares)):
+                if x <= 0 or not isinstance(lang, str):
+                    continue
+                row = [lang, x]
+                if mine and counts and isinstance(mine[i], int) and mine[i] > 0:
+                    row += [mine[i], counts[i]]
+                    if base and isinstance(base[i], (int, float)) and base[i] > 0:
+                        row.append(round(x / base[i], 1))
+                found.append((x, lang, row))
             if found:
-                out[gid] = [[lang, x] for x, lang in found[:REACH_KEPT]]
+                out[gid] = [row for _, _, row in sorted(found, key=lambda r: (-r[0], r[1]))[:REACH_KEPT]]
     return out
 
 

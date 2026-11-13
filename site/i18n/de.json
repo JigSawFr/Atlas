@@ -173,6 +173,8 @@
   "x_view_of": "Ansicht",
   "x_reach_title": "Wo es gelesen wird",
   "x_reach_help": "Anteil der Aufrufe seiner Wikipedia-Seiten je Sprache, über 13 Wochen",
+  "x_reach_rank": "Nr. {r} von {n}",
+  "x_reach_ratio": "{x}-fache Leseanteil der Spiele in dieser Sprache",
   "x_views_curve": "Wikipedia-Aufrufe pro Woche in den letzten {n} Wochen: {first}, dann {last}",
   "x_save_view": "Ansicht speichern",
   "x_view_name": "Name dieser Ansicht",

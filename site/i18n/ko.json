@@ -173,6 +173,8 @@
   "x_view_of": "보기",
   "x_reach_title": "어디서 읽히는가",
   "x_reach_help": "언어별 위키백과 문서 조회수 비율(13주)",
+  "x_reach_rank": "{n}개 중 {r}위",
+  "x_reach_ratio": "이 언어에서 게임 평균 비중의 {x}배",
   "x_views_curve": "최근 {n}주간 주별 위키백과 조회수: {first}에서 {last}로",
   "x_save_view": "이 보기 저장",
   "x_view_name": "이 보기의 이름",

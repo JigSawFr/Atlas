@@ -1318,3 +1318,8 @@ a.chip.view[aria-current] { color: var(--snow); background: color-mix(in srgb, v
 .reach .reach-n { font: 500 0.8125rem var(--mono); text-align: end; color: var(--snow); }
 .reach li.mine { color: var(--snow); }
 .reach li.mine .reach-track i { background: var(--aurora, #00ffcc); }
+.reach li { grid-template-areas: "lang track n" ". notes notes"; }
+.reach .reach-lang { grid-area: lang; } .reach .reach-track { grid-area: track; } .reach .reach-n { grid-area: n; }
+.reach .reach-notes { grid-area: notes; display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: -2px; font: 500 0.75rem var(--mono); color: var(--mist); }
+.reach .reach-hi { color: #00ffcc; }
+.reach .reach-lo { color: #ffc857; }

@@ -173,6 +173,8 @@
   "x_view_of": "视图",
   "x_reach_title": "在哪里被阅读",
   "x_reach_help": "其维基百科页面浏览量按语言的占比（13 周）",
+  "x_reach_rank": "第 {r} 名，共 {n}",
+  "x_reach_ratio": "该语言中游戏平均占比的 {x} 倍",
   "x_views_curve": "最近 {n} 周每周的维基百科阅读量：从 {first} 到 {last}",
   "x_save_view": "保存此视图",
   "x_view_name": "此视图的名称",

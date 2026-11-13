@@ -12,7 +12,8 @@ id, Steam's app id), Wikimedia their views a day. A game read fewer than
 MIN_VIEWS times in the week has no trend; one whose views could not be read
 keeps the trend it had. When Wikimedia turns too many away, nothing changes.
 The same views also give `platforms/<platform>/reach.json`: for each game read MIN_VIEWS times in the
-days collected, the share of its views in each of LANGS (percent, in LANGS' order).
+days collected, the share of its views in each of LANGS (percent, in LANGS' order) and its rank in each
+language among those games (`ranks`, with `counts` and `base`: standing_of()).
 
 Usage: tools/trends.py <out-dir> <previous-dir> <sources-dir>   (each platform's popular.json from
 previous-dir, the pages and their views from the sources tools/collect.py keeps)
@@ -194,9 +195,8 @@ def curves(src):
     return out
 
 
-def reach_of(by_game, pages_read):
-    """{game id: [share of its views in each of LANGS, in percent]} over the days collected, for the games
-    read MIN_VIEWS times or more in all: where a game is read (a game much read in Japanese, in French…)."""
+def totals_of(by_game, pages_read):
+    """{game id: {language: views}} over the days collected, for the games read MIN_VIEWS times or more in all."""
     out = {}
     for tid, pages_of in by_game.items():
         totals = dict.fromkeys(LANGS, 0)
@@ -204,10 +204,32 @@ def reach_of(by_game, pages_read):
             days = pages_read.get(f"{lang}:{title}")
             if lang in totals and isinstance(days, list) and all(isinstance(d, int) for d in days):
                 totals[lang] += sum(days)
-        total = sum(totals.values())
-        if total >= MIN_VIEWS:
-            out[tid] = [round(totals[lang] * 100 / total) for lang in LANGS]
+        if sum(totals.values()) >= MIN_VIEWS:
+            out[tid] = totals
     return out
+
+
+def reach_of(by_game, pages_read):
+    """{game id: [share of its views in each of LANGS, in percent]} over the days collected, for the games
+    read MIN_VIEWS times or more in all: where a game is read (a game much read in Japanese, in French…)."""
+    return {tid: [round(t[lang] * 100 / sum(t.values())) for lang in LANGS] for tid, t in totals_of(by_game, pages_read).items()}
+
+
+def standing_of(totals):
+    """How the games stand in each language, among those of `totals` (totals_of's): `ranks`, {game id: [its rank by
+    views in each of LANGS, 1 the most read, 0 when nobody read it in that language]}; `counts`, how many games
+    have a rank in each language; `base`, each language's share of all the views, in percent (one decimal): a game's
+    share against it says whether it is read there more or less than games are."""
+    every = sum(sum(t.values()) for t in totals.values())
+    ranks = {tid: [0] * len(LANGS) for tid in totals}
+    counts = []
+    for i, lang in enumerate(LANGS):
+        read = sorted(((t[lang], tid) for tid, t in totals.items() if t[lang] > 0), key=lambda r: (-r[0], r[1]))
+        for place, (_, tid) in enumerate(read, 1):
+            ranks[tid][i] = place
+        counts.append(len(read))
+    base = [round(sum(t[lang] for t in totals.values()) * 100 / every, 1) if every else 0 for lang in LANGS]
+    return {"base": base, "counts": counts, "ranks": ranks}
 
 
 def trend(days):
@@ -335,12 +357,13 @@ def consolidate(src, out_dir, previous_dir, today):
         if not by_game or not collected:
             print(f"trends: {platform}: no pages or views collected today, nothing changes", file=sys.stderr)
             continue
-        reach = reach_of(by_game, collected.get("pages") or {})
-        if reach:
+        totals = totals_of(by_game, collected.get("pages") or {})
+        if totals:
             common.publish(out_dir, f"platforms/{platform}/reach.json", {
                 "schema": common.SCHEMA, "platform": platform, "generated": today.isoformat(),
-                "source": "Wikimedia pageviews, Wikidata (the games' pages)", "languages": list(LANGS), "games": reach},
-                previous_dir, report)
+                "source": "Wikimedia pageviews, Wikidata (the games' pages)", "languages": list(LANGS),
+                "games": {tid: [round(t[lang] * 100 / sum(t.values())) for lang in LANGS] for tid, t in totals.items()},
+                **standing_of(totals)}, previous_dir, report)
         trends = from_pages(by_game, collected.get("pages") or {})
         if trends is None:
             continue

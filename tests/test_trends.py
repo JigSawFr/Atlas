@@ -271,6 +271,22 @@ class Reach(unittest.TestCase):
         self.assertEqual(got, {A: [25, 0, 0, 0, 0, 75, 0, 0, 0, 0, 0]})     # LANGS order: en fr de es it ja nl pt ko ru zh
         self.assertEqual(trends.reach_of(by_game, {}), {})
 
+    def test_standing_in_each_language(self):
+        by_game = {"g1": [("en", "A"), ("fr", "A_fr")], "g2": [("en", "B"), ("ja", "B_ja")], "g3": [("fr", "C")], "g4": [("en", "Rare")]}
+        pages = {"en:A": [100] * 4, "fr:A_fr": [50] * 4, "en:B": [20] * 4, "ja:B_ja": [200] * 4, "fr:C": [100] * 4, "en:Rare": [1] * 4}
+        totals = trends.totals_of(by_game, pages)
+        self.assertEqual(sorted(totals), ["g1", "g2", "g3"])              # g4 read under MIN_VIEWS: out
+        st = trends.standing_of(totals)
+        i = {lang: n for n, lang in enumerate(trends.LANGS)}
+        rank = lambda lang: [st["ranks"][g][i[lang]] for g in ("g1", "g2", "g3")]   # noqa: E731
+        self.assertEqual(rank("en"), [1, 2, 0])                           # English: g1 400, g2 80; g3 none
+        self.assertEqual(rank("fr"), [2, 0, 1])                           # French: g3 400, g1 200
+        self.assertEqual(rank("ja"), [0, 1, 0])
+        self.assertEqual((st["counts"][i["en"]], st["counts"][i["fr"]], st["counts"][i["ja"]], st["counts"][i["de"]]), (2, 2, 1, 0))
+        self.assertEqual(st["base"][i["ja"]], round(800 * 100 / 1880, 1))   # Japanese: 800 of the 1,880 views (600 + 880 + 400)
+        self.assertEqual(round(sum(st["base"])), 100)
+        self.assertEqual(trends.standing_of({}), {"base": [0] * len(trends.LANGS), "counts": [0] * len(trends.LANGS), "ranks": {}})
+
     def test_published_with_the_trends(self):
         today = datetime.date(2026, 10, 30)
         sources = {"wikidata/switch-pages.json": {"rows": [flat(A, "https://en.wikipedia.org/wiki/Lantern_Tale")]},
@@ -286,6 +302,8 @@ class Reach(unittest.TestCase):
                 got = json.load(f)
             self.assertEqual(got["games"], {A: [100] + [0] * (len(trends.LANGS) - 1)})
             self.assertEqual((got["languages"], got["schema"]), (list(trends.LANGS), common.SCHEMA))
+            self.assertEqual(got["ranks"][A][0], 1)                                  # the one game: first in English
+            self.assertEqual((len(got["base"]), len(got["counts"])), (len(trends.LANGS), len(trends.LANGS)))
             self.assertEqual(schemas.errors(got, schemas.KINDS["reach"]), [])
             self.assertEqual(schemas.kind_of("platforms/switch/reach.json"), "reach")
 

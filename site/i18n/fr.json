@@ -173,6 +173,8 @@
   "x_view_of": "Vue",
   "x_reach_title": "Où il est lu",
   "x_reach_help": "Part des lectures de ses pages Wikipédia par langue, sur 13 semaines",
+  "x_reach_rank": "N° {r} sur {n}",
+  "x_reach_ratio": "{x} fois la part moyenne des jeux dans cette langue",
   "x_views_curve": "Lectures Wikipédia par semaine sur les {n} dernières semaines : {first} puis {last}",
   "x_save_view": "Enregistrer cette vue",
   "x_view_name": "Nom de cette vue",
