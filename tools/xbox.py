@@ -98,8 +98,11 @@ def rating(product):
 
 
 def day_of(text):
+    """A day as YYYYMMDD, 0 for none or a placeholder: 1753 (SQL Server's smallest date) and the far
+    years the store puts on a game not dated yet (9998-12-30)."""
     digits = (text or "")[:10].replace("-", "")
-    return int(digits) if len(digits) == 8 and digits.isdigit() and not digits.startswith("1753") else 0
+    ok = len(digits) == 8 and digits.isdigit() and not digits.startswith("1753") and int(digits[:4]) < 2100
+    return int(digits) if ok else 0
 
 
 def entry(product, qid=None, gamepass=()):

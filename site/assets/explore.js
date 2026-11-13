@@ -23,6 +23,8 @@
   };
   // A game's page at its store: GOG's wants the slug, not the number the games are keyed by.
   const storePage = (e) => {
+    // PlayStation's entries are Wikidata items: their store page is the concept id the item names.
+    if ((e.p === "ps4" || e.p === "ps5") && e.links && e.links.ps && /^\d+$/.test(e.links.ps[0] || "")) return STORES.ps(e.links.ps[0]);
     const key = e.p === "gog" ? e.slug : e.id;
     return STORES[e.p] && key && /^[\w-]+$/.test(key) ? STORES[e.p](key) : null;
   };
@@ -949,7 +951,9 @@
     saturn: 19941122, gb: 19890421, gbc: 19981121, gba: 20010621, switch: 20170303 };
   const shortName = (p) => SHORT[p] || S._names[p] || p;
   // A game's day on a platform, 0 when it is the game's, from before the platform existed.
-  const dayOn = (e) => { const d = e.release || e.upcoming; return d && !(LAUNCH[e.p] && d < LAUNCH[e.p]) ? d : 0; };
+  // A store's placeholder for a game not dated yet (the Microsoft Store's 9998-12-30) is no day either.
+  const dayOn = (e) => { const d = e.release || e.upcoming; return d && d < 21000101 && !(LAUNCH[e.p] && d < LAUNCH[e.p]) ? d : 0; };
+  const todayNum = () => Number(new Date().toISOString().slice(0, 10).replace(/-/g, ""));
   // PlayStation 4 and 5 with the same date and score are one tile (and one row of the dates): the PS4's entry.
   const joinedPlay = (es) => {
     const ps4 = es.find((e) => e.p === "ps4"), ps5 = es.find((e) => e.p === "ps5");
@@ -989,7 +993,7 @@
       if (day) {
         const later = dated && day > first && firstPlat ? el("span", { class: "chip gap", title: t("x_later", { d: gap(first, day) }),
           text: t("x_after", { d: gap(first, day), platform: shortName(firstPlat.p) }) }) : null;
-        lines.push(el("span", { class: "plat-when" }, el("span", { class: "date", text: e.release && day === e.release ? ymd(day) : t("x_coming", { date: ymd(day) }) }), later,
+        lines.push(el("span", { class: "plat-when" }, el("span", { class: "date", text: e.release && day === e.release && day <= todayNum() ? ymd(day) : t("x_coming", { date: ymd(day) }) }), later,
           dated && day === first && firstOnes.length === 1 ? el("span", { class: "chip first", text: t("x_first") }) : null));
       }
       const extras = [e.gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null, deck ? el("span", { class: "chip", text: deck }) : null].filter(Boolean);
