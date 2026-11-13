@@ -35,6 +35,36 @@ class SourceFiles(unittest.TestCase):
             self.assertEqual(list(got["games"].items()), list(games.items()))   # order kept
             self.assertNotIn("part", got)
 
+    def test_other_form_removed(self):
+        # A file that grows past the cut leaves its whole form behind in the last run's folder, and one that
+        # shrinks its parts: read_records takes the whole file first, so the stale one would hide the new.
+        with tempfile.TemporaryDirectory() as out:
+            report = []
+            name = "sources/demo/apps.json"
+            small = {"schema": 1, "games": {"1": {"name": "Old"}}}
+            common.publish_source(out, name, small, None, report)
+            big = {"schema": 1, "games": {str(n): {"name": f"Lantern Tale {n}"} for n in range(1, 41)}}
+            with mock.patch.object(common, "SHARD_BYTES", 200):
+                common.publish_source(out, name, big, None, report)
+            self.assertFalse(os.path.exists(os.path.join(out, name)))
+            self.assertEqual(len(common.read_records(out, name)["games"]), 40)
+            common.publish_source(out, name, small, None, report)
+            self.assertFalse(os.path.exists(os.path.join(out, "sources/demo/apps")))
+            self.assertEqual(list(common.read_records(out, name)["games"]), ["1"])
+
+    def test_newer_form_read(self):
+        with tempfile.TemporaryDirectory() as out, mock.patch.object(common, "SHARD_BYTES", 200):
+            name = "sources/demo/apps.json"
+            os.makedirs(os.path.join(out, "sources/demo"))
+            with open(os.path.join(out, name), "w", encoding="utf-8") as f:   # an old whole file, left on a branch
+                json.dump({"schema": 1, "generated": "2026-11-07", "games": {"1": {"name": "Old"}}}, f)
+            big = {"schema": 1, "generated": "2026-11-13", "games": {str(n): {"name": f"Lantern Tale {n}"} for n in range(1, 41)}}
+            parts = common._parts(big, "games")
+            os.makedirs(os.path.join(out, "sources/demo/apps"))
+            for part in parts:
+                common._dump(os.path.join(out, "sources/demo/apps", f"{part['part']}.json"), part)
+            self.assertEqual(len(common.read_records(out, name)["games"]), 40)
+
     def test_guard(self):
         with tempfile.TemporaryDirectory() as last, tempfile.TemporaryDirectory() as out:
             report = []

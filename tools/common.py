@@ -7,8 +7,8 @@ published, the last run's is kept and said.
 import json
 import math
 import os
-import shutil
 import random
+import shutil
 import sys
 import threading
 import time
@@ -277,9 +277,17 @@ def _read_records(directory, name):
     path = os.path.join(directory, name)
     try:
         with open(path, encoding="utf-8") as f:
-            return json.load(f)
+            whole = json.load(f)
     except (OSError, ValueError):
-        pass
+        return _read_parts(path)
+    # Both forms (a file that grew past the cut kept its old whole file on a branch): the newer one's.
+    parts = _read_parts(path)
+    if isinstance(whole, dict) and isinstance(parts, dict) and str(parts.get("generated")) > str(whole.get("generated")):
+        return parts
+    return whole
+
+
+def _read_parts(path):
     folder = path[:-len(".json")]
     try:
         names = sorted((n for n in os.listdir(folder) if n.endswith(".json") and n[:-5].isdigit()),
@@ -334,14 +342,20 @@ def publish_source(out_dir, name, payload, previous_dir, report):
                 f.write(f"`{name}` came out with {now} records against {before} last time: the last run's was kept.\n")
     parts = _parts(payload, key)
     path = os.path.join(out_dir, name)
+    folder = path[:-len(".json")]
     if len(parts) == 1:
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         _dump(path, parts[0])
+        shutil.rmtree(folder, ignore_errors=True)     # the parts of an earlier run, when the file was larger
     else:
-        folder = path[:-len(".json")]
         os.makedirs(folder, exist_ok=True)
         for part in parts:
             _dump(os.path.join(folder, f"{part['part']}.json"), part)
+        for n in os.listdir(folder):                  # parts a smaller file no longer has
+            if n.endswith(".json") and n[:-5].isdigit() and int(n[:-5]) > len(parts):
+                os.remove(os.path.join(folder, n))
+        if os.path.isfile(path):                      # the whole file of an earlier run: read_records takes it first
+            os.remove(path)
     print(f"{name}: {now} records" + (f", {len(parts)} parts" if len(parts) > 1 else ""), file=sys.stderr)
     report.append((name, before, now, kept))
     return not kept
