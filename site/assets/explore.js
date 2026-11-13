@@ -1155,6 +1155,15 @@
 
   // The bar at the foot of a phone: where a thumb reaches (home, browse, search, favorites). Search takes the focus.
   document.querySelector('#x-bottom [data-go="search"]').addEventListener("click", () => { window.scrollTo({ top: 0, behavior: calm() ? "auto" : "smooth" }); search.focus(); });
+  // A round arrow at the foot of the window (a phone's only: site.css) that takes the page back to its top, shown once
+  // more than a screen has been scrolled.
+  const toTopBtn = el("button", { type: "button", class: "totop", title: t("x_to_top"), "aria-label": t("x_to_top"), hidden: "", text: "↑" });
+  toTopBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: calm() ? "auto" : "smooth" }));
+  document.body.append(toTopBtn);
+  let toTopOn = false;
+  const syncToTop = () => { const on = window.scrollY > window.innerHeight; if (on !== toTopOn) { toTopOn = on; toTopBtn.hidden = !on; } };
+  window.addEventListener("scroll", syncToTop, { passive: true });
+  syncToTop();
   // "Skip to results": the address is the router's, so the link moves the focus itself.
   document.querySelector(".skip").addEventListener("click", (e) => { e.preventDefault(); status.focus(); status.scrollIntoView({ block: "start" }); });
   // A line at the foot of the window that says what was done and, where it can be, takes it back (5 s; one at a time).
