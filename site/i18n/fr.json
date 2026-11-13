@@ -174,6 +174,7 @@
   "x_reach_title": "Où il est lu",
   "x_reach_help": "Part des lectures de ses pages Wikipédia par langue, sur 13 semaines",
   "x_reach_rank": "N° {r} sur {n}",
+  "x_reach_rank_tip": "Rang parmi les {n} jeux les plus lus dans cette langue, sur cette plateforme",
   "x_reach_ratio": "{x} fois la part moyenne des jeux dans cette langue",
   "x_views_curve": "Lectures Wikipédia par semaine sur les {n} dernières semaines : {first} puis {last}",
   "x_save_view": "Enregistrer cette vue",

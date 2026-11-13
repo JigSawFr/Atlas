@@ -174,6 +174,7 @@
   "x_reach_title": "Waar het wordt gelezen",
   "x_reach_help": "Aandeel van de weergaven van zijn Wikipedia-pagina's per taal, over 13 weken",
   "x_reach_rank": "Nr. {r} van {n}",
+  "x_reach_rank_tip": "Plek onder de {n} meest gelezen games in deze taal, op dit platform",
   "x_reach_ratio": "{x} keer het gemiddelde aandeel van games in deze taal",
   "x_views_curve": "Wikipedia-weergaven per week in de laatste {n} weken: {first}, daarna {last}",
   "x_save_view": "Deze weergave opslaan",

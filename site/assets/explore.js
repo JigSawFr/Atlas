@@ -1522,10 +1522,11 @@
         // Among the platform's best known games read in that language: its rank, and whether it is read there more or
         // less than games are (its share against the language's share of all the views).
         const notes = [];
-        if (rank) notes.push(el("span", { class: "reach-rank", text: t("x_reach_rank", { r: num(rank), n: num(many) }) }));
+        if (rank) notes.push(el("span", { class: "reach-rank", title: t("x_reach_rank_tip", { n: num(many) }), tabindex: "0",
+          text: t("x_reach_rank", { r: num(rank), n: num(many) }) }));
         if (ratio && (ratio >= 1.3 || ratio <= 0.7)) {
           const up = ratio >= 1;
-          notes.push(el("span", { class: `reach-ratio ${up ? "reach-hi" : "reach-lo"}`, title: t("x_reach_ratio", { x: fmt1.format(ratio) }),
+          notes.push(el("span", { class: `reach-ratio ${up ? "reach-hi" : "reach-lo"}`, tabindex: "0", title: t("x_reach_ratio", { x: fmt1.format(ratio) }),
             "aria-label": t("x_reach_ratio", { x: fmt1.format(ratio) }), text: `${up ? "▲" : "▼"} ×${fmt1.format(ratio)}` }));
         }
         return el("li", { class: ownLanguage(lang) ? "mine" : "" }, el("span", { class: "reach-lang", text: languageName(lang) }),
