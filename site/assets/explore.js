@@ -1010,6 +1010,22 @@
     });
   }
 
+  // A trailer's player: nothing is asked of YouTube until the visitor presses play (a button, the note under it says what
+  // loads), then its privacy-enhanced player (youtube-nocookie.com: no cookie before the video plays) in a sandboxed frame
+  // that sends no referrer. The Content-Security-Policy's frame-src is that address alone. The link out stays in "Links".
+  function trailerPlayer(id) {
+    const box = el("figure", { class: "trailer" });
+    const play = el("button", { type: "button", class: "trailer-play" }, el("span", { "aria-hidden": "true", text: "▶" }), el("span", { text: t("x_trailer_play") }));
+    play.addEventListener("click", () => {
+      const frame = el("iframe", { class: "trailer-frame", title: t("x_trailer"), loading: "lazy", referrerpolicy: "no-referrer", allowfullscreen: "",
+        allow: "autoplay; encrypted-media; picture-in-picture; fullscreen", sandbox: "allow-scripts allow-same-origin allow-presentation",
+        src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&playsinline=1` });
+      box.replaceChildren(frame);
+    });
+    box.append(play, el("figcaption", { class: "dim", text: t("x_trailer_note") }));
+    return box;
+  }
+
   // The release dates of a game on several platforms on one axis: a row a platform (name, a dot where its date falls
   // between the first and the last, the date); the dot is for the eye, the names and dates are the text.
   function timeline(es) {
@@ -1669,7 +1685,9 @@
       for (const l of langs) open(langs.length > 1 ? `Wikipedia (${l})` : "Wikipedia", `https://${l}.wikipedia.org/wiki/${wd.wiki[l]}`);
     }
     if (wd.pcgw) open("PCGamingWiki", `https://www.pcgamingwiki.com/wiki/${encodeURIComponent(wd.pcgw)}`);
-    (wd.yt || []).forEach((id, i, all) => open(all.length > 1 ? `${t("x_trailer")} ${i + 1}` : t("x_trailer"), `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`));
+    const trailers = (wd.yt || []).filter((id) => /^[\w-]{11}$/.test(id));
+    trailers.forEach((id, i, all) => open(all.length > 1 ? `${t("x_trailer")} ${i + 1}` : t("x_trailer"), `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`));
+    if (trailers.length) side.append(section(t("x_trailer"), trailerPlayer(trailers[0])));
     if (outside.length) side.append(section(t("x_links"), el("ul", { class: "links" }, ...outside)));
     if (m.links && Object.keys(m.links).length) {
       const items = [];

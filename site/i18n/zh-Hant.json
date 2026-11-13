@@ -450,6 +450,8 @@
   "x_empty_all": "在所有平台中搜尋",
   "x_empty_browse": "用篩選條件瀏覽",
   "x_trailer": "預告片",
+  "x_trailer_play": "播放預告片",
+  "x_trailer_note": "僅在點擊播放時才會載入 YouTube 播放器（無 Cookie 模式），此時 YouTube 會看到你的 IP 位址。",
   "x_to_top": "回到頂端",
   "x_views_peak": "峰值：每週 {n} 次",
   "x_views_ago": "{w} 週前：{n}",

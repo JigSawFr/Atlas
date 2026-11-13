@@ -1324,6 +1324,13 @@ a.chip.view[aria-current] { color: var(--snow); background: color-mix(in srgb, v
 .reach .reach-hi { color: #00ffcc; }
 .reach .reach-lo { color: #ffc857; }
 
+/* A trailer's player: a button first, YouTube's frame only after the press. */
+.sheet .trailer { margin: 0; display: grid; gap: 8px; }
+.sheet .trailer-play { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; aspect-ratio: 16 / 9; max-height: 320px; border-radius: 14px; border: 1px solid var(--night-line); background: var(--abyss); color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.sheet .trailer-play:hover, .sheet .trailer-play:focus-visible { border-color: var(--aurora, currentColor); }
+.sheet .trailer-play span[aria-hidden] { font-size: 1.6em; }
+.sheet .trailer-frame { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 14px; background: #000; }
+.sheet .trailer figcaption { font-size: 0.85em; }
 /* The explorer on a phone: a slimmer header (the page's nav goes while a sheet is read: the round arrow goes back), a
    sheet's head that gets to its figures sooner (a ring beside its label, less room above the cover), and a round
    arrow back to the top once a screen has been scrolled. */
