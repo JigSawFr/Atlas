@@ -452,6 +452,7 @@
   "x_trailer": "Tráiler",
   "x_trailer_play": "Reproducir el tráiler",
   "x_trailer_note": "El reproductor de YouTube solo se carga al presionar (modo sin cookies): YouTube verá entonces tu dirección IP.",
+  "x_to_top": "Volver arriba",
   "x_views_peak": "Pico: {n} lecturas por semana",
   "x_views_ago": "Hace {w} sem.: {n}",
   "x_share": "Compartir",

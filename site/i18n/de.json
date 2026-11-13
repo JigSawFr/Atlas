@@ -452,6 +452,7 @@
   "x_trailer": "Trailer",
   "x_trailer_play": "Trailer abspielen",
   "x_trailer_note": "Der YouTube-Player lädt erst beim Klick (Modus ohne Cookies): YouTube sieht dann Ihre IP-Adresse.",
+  "x_to_top": "Nach oben",
   "x_views_peak": "Spitze: {n} Aufrufe pro Woche",
   "x_views_ago": "Vor {w} Wo.: {n}",
   "x_share": "Teilen",

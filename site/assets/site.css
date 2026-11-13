@@ -1331,3 +1331,26 @@ a.chip.view[aria-current] { color: var(--snow); background: color-mix(in srgb, v
 .sheet .trailer-play span[aria-hidden] { font-size: 1.6em; }
 .sheet .trailer-frame { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 14px; background: #000; }
 .sheet .trailer figcaption { font-size: 0.85em; }
+/* The explorer on a phone: a slimmer header (the page's nav goes while a sheet is read: the round arrow goes back), a
+   sheet's head that gets to its figures sooner (a ring beside its label, less room above the cover), and a round
+   arrow back to the top once a screen has been scrolled. */
+.totop { display: none; }
+@media (max-width: 700px) {
+  body:has(.explorer) .top { padding-block: 8px; gap: 2px 12px; }
+  body:has(.explorer) .nav { margin: 0; }
+  body:has(.explorer) .nav a { min-height: 40px; }
+  body:has(.explorer) .hero.small { padding-block: 8px 0; }
+  body:has(.explorer) .hero.small .lede { display: none; }
+  .x-on-sheet .top .nav { display: none; }
+  .totop { position: fixed; inset-inline-end: 12px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 41; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid var(--night-line); background: rgb(11 18 32 / 0.92); color: var(--snow); font: 600 1.25rem var(--display); cursor: pointer; box-shadow: 0 6px 18px rgb(0 0 0 / 0.4); }
+  .totop[hidden] { display: none; }
+  .totop:focus-visible { outline: 2px solid var(--aurora, #6ee7c8); outline-offset: 2px; }
+}
+@media (max-width: 600px) {
+  .sheet header.masthead { padding-top: 20px; }
+  .banner { gap: 12px 14px; }
+  .rings { gap: 6px 18px; }
+  .ring { width: auto; grid-template-columns: 52px auto; justify-items: start; align-items: center; column-gap: 10px; gap: 0 10px; }
+  .ring b { left: 0; width: 52px; }
+  .ring small { text-align: start; max-width: 11ch; }
+}

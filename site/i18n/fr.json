@@ -452,6 +452,7 @@
   "x_trailer": "Bande-annonce",
   "x_trailer_play": "Lire la bande-annonce",
   "x_trailer_note": "Le lecteur de YouTube ne se charge qu'au clic (mode sans cookies) : YouTube verra alors votre adresse IP.",
+  "x_to_top": "Remonter en haut",
   "x_views_peak": "Pic : {n} lectures par semaine",
   "x_views_ago": "Il y a {w} sem. : {n}",
   "x_share": "Partager",
