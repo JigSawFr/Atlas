@@ -111,7 +111,8 @@ def ms(product: dict) -> dict:
         elif purpose in ("BoxArt", "Poster"):
             pictures.setdefault("v", name)
         elif purpose == "Screenshot":
-            pictures.setdefault("s", []).append(name)
+            if name not in pictures.get("s", []):       # the catalog lists some of them twice
+                pictures.setdefault("s", []).append(name)
     platforms = props.get("Platforms") or []
     return clean({
         "os": [o for o, p in (("windows", "Windows.Desktop"), ("xbox", "Windows.Xbox")) if p in platforms],

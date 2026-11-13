@@ -101,6 +101,11 @@ class Stores(unittest.TestCase):
     def test_one_player_is_not_a_count(self):
         self.assertNotIn("players", tech.ms({"Properties": {"Attributes": [{"Name": "XblLocalMultiPlayer", "Maximum": 1}]}}))
 
+    def test_ms_screenshots_once(self):
+        images = [["Screenshot", "a"], ["Poster", "p"], ["Screenshot", "a"], ["Screenshot", "b"]]
+        sheet = tech.ms({"LocalizedProperties": [{"Images": images}]})
+        self.assertEqual(sheet["img"], {"s": ["a", "b"], "v": "p"})
+
     def test_read(self):
         import json
         with tempfile.TemporaryDirectory() as data:
