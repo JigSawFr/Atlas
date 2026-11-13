@@ -24,6 +24,12 @@ class Xbox(unittest.TestCase):
         self.assertEqual(xbox.big_id(" 9zzzzzzzzzz1 "), A)
         self.assertIsNone(xbox.big_id("9ZZZ"))
 
+    def test_day_of(self):
+        self.assertEqual(xbox.day_of("2026-11-19T00:00:00.0000000Z"), 20261119)
+        self.assertEqual(xbox.day_of("9998-12-30T00:00:00.0000000Z"), 0)   # not dated yet
+        self.assertEqual(xbox.day_of("1753-01-01T00:00:00Z"), 0)
+        self.assertEqual(xbox.day_of(None), 0)
+
     def test_entry(self):
         self.assertEqual(xbox.entry(product(A, "Amber Lantern"), "Q900001", ["pc", "console"]), {
             "name": "Amber Lantern", "qid": "Q900001", "release": 20201023, "rating": [463, 84],
