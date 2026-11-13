@@ -1,5 +1,6 @@
-"""The data's two branches (2026-11-10): `data` without sources/, which jsDelivr serves whole, and `sources`.
-tools/data-branch.sh puts both in ./data-branch, tools/publish.sh sends each back to its own."""
+"""The data's branches (tools/branches.conf): `data`, which jsDelivr serves whole, without sources/ (`sources`,
+2026-11-10) nor the PC stores' files and links.json (`data-stores`, 2026-11-13).
+tools/data-branch.sh puts them all in ./data-branch, tools/publish.sh sends each back to its own."""
 import json
 import os
 import subprocess
@@ -89,6 +90,65 @@ class Branches(unittest.TestCase):
         heads = run(self.origin, "git", "rev-parse", "data", "sources")
         self.assertIn("nothing changed", run(again, "tools/publish.sh", "data-branch", "data: 2026-11-12"))
         self.assertEqual(run(self.origin, "git", "rev-parse", "data", "sources"), heads)
+
+    def test_the_stores_leave_the_data_branch_and_come_back_to_the_tools(self):
+        day = {"schema": 1, "generated": "2026-11-12", "games": {}}
+        # As the branch was: the stores' files and links.json on `data`.
+        first = self.clone("first")
+        run(first, "tools/data-branch.sh")
+        data = os.path.join(first, "data-branch")
+        for name in ("platforms/switch/games.json", "platforms/steam/games.json", "platforms/gog/games.json", "links.json"):
+            put(data, name, day)
+        run(data, "git", "add", "-A")
+        run(data, "git", "commit", "-q", "-m", "as it was")
+        run(data, "git", "push", "-q", "origin", "HEAD:data")
+
+        # The first run after: they go to `data-stores`, `data` keeps the Switch's and the index of all.
+        job = self.clone("job")
+        run(job, "tools/data-branch.sh")
+        run(job, "tools/publish.sh", "data-branch", "data: 2026-11-13")
+        stores = {"platforms/steam/games.json", "platforms/gog/games.json", "links.json"}
+        self.assertEqual(self.files("data-stores"), stores)
+        self.assertEqual(self.files("data"), {"index.json", "platforms/switch/games.json"})
+        index = json.loads(run(self.origin, "git", "show", "data:index.json"))
+        self.assertTrue(stores <= set(index["files"]))
+        self.assertEqual(run(self.origin, "git", "rev-list", "--count", "data-stores").strip(), "1")
+
+        # The next run reads them where the tools expect them; a store's file that changes leaves the others' branch
+        # as it is but for the index, and a wrong one is put back from its branch.
+        nxt = self.clone("next")
+        run(nxt, "tools/data-branch.sh")
+        data = os.path.join(nxt, "data-branch")
+        for name in stores:
+            self.assertTrue(os.path.exists(os.path.join(data, name)), name)
+        import sys
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import changes
+        import common
+        import schemas
+        self.assertEqual(common.side_branch("platforms/steam/games.json"), "data-stores")
+        self.assertEqual(common.side_branch("links.json"), "data-stores")
+        self.assertEqual(common.side_branch("sources/titledb/US.json"), "sources")
+        self.assertIsNone(common.side_branch("platforms/steamdeck/games.json"))
+        self.assertIsNone(common.side_branch("platforms/switch/games.json"))
+        self.assertEqual(changes.last(data, "platforms/gog/games.json"), day)      # the last run's, from its branch
+        self.assertEqual(changes.last(data, "platforms/switch/games.json"), day)
+        put(data, "links.json", {"schema": 1})
+        schemas.put_back(data, "links.json")
+        with open(os.path.join(data, "links.json"), encoding="utf-8") as f:
+            self.assertEqual(json.load(f), day)
+        put(data, "platforms/gog/games.json", {**day, "generated": "2026-11-14"})
+        run(nxt, "tools/publish.sh", "data-branch", "data: 2026-11-14")
+        self.assertEqual(self.files("data-stores"), stores)
+        self.assertEqual(json.loads(run(self.origin, "git", "show", "data-stores:platforms/gog/games.json"))["generated"], "2026-11-14")
+        self.assertEqual(self.files("data"), {"index.json", "platforms/switch/games.json"})
+
+        # Nothing changed: nothing pushed, on any branch.
+        again = self.clone("again")
+        run(again, "tools/data-branch.sh")
+        heads = run(self.origin, "git", "rev-parse", "data", "data-stores")
+        self.assertIn("nothing changed", run(again, "tools/publish.sh", "data-branch", "data: 2026-11-15"))
+        self.assertEqual(run(self.origin, "git", "rev-parse", "data", "data-stores"), heads)
 
     def test_a_wrong_source_is_put_back_from_its_branch(self):
         import sys

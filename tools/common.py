@@ -400,3 +400,13 @@ def timed(out_dir, name, run):
         os.makedirs(os.path.join(out_dir, ".runtimes"), exist_ok=True)
         with open(os.path.join(out_dir, ".runtimes", f"{name}.json"), "w", encoding="utf-8") as f:
             json.dump({"seconds": round(clock.monotonic() - start, 1)}, f)
+
+
+def side_branch(path):
+    """The branch beside `data` a path is published on (tools/branches.conf), None when it is `data`'s own."""
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "branches.conf"), encoding="utf-8") as f:
+        for line in f:
+            words = line.split()
+            if words and not words[0].startswith("#") and any(path == p or path.startswith(p + "/") for p in words[1:]):
+                return words[0]
+    return None
