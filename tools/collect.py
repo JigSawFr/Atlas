@@ -40,6 +40,7 @@ Usage: tools/collect.py <source> weekly|daily <out-dir> <previous-dir> [fresh-di
 """
 import datetime
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -148,11 +149,13 @@ SHOTS = 6      # screenshots kept for a game
 
 
 def steam_pictures(item):
-    """The names of a game's first screenshots (ss_<hash>.jpg), and its languages as [Steam's language
-    number, 1 when its voices are in it]; the paths and the cache stamps the store puts around are dropped."""
+    """The names of a game's first screenshots (ss_<hash>.jpg, or <hash>/ss_<hash>.jpg for the newer ones), and its
+    languages as [Steam's language number, 1 when its voices are in it]; the app's path and the cache stamps the
+    store puts around are dropped."""
     out = {}
     shots = (item.get("screenshots") or {}).get("all_ages_screenshots") or []
-    names = [s["filename"].split("?")[0].rsplit("/", 1)[-1] for s in shots if isinstance(s, dict) and s.get("filename")]
+    # Steam files newer games' screenshots in a folder of their own (steam/apps/<id>/<hash>/ss_<hash>.jpg): the name keeps it.
+    names = [re.sub(r"^steam/apps/\d+/", "", s["filename"].split("?")[0]) for s in shots if isinstance(s, dict) and s.get("filename")]
     if names:
         out["screenshots"] = names[:SHOTS]
     langs = [[l["elanguage"], 1 if l.get("full_audio") else 0] for l in item.get("supported_languages") or []

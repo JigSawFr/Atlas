@@ -294,6 +294,9 @@ class RicherSources(unittest.TestCase):
         self.assertEqual(kept["categories"], {"supported_player_categoryids": [2, 1], "feature_categoryids": [22], "controller_categoryids": [28]})
         self.assertEqual(kept["assets"], {"header": "ab12/header.jpg", "small_capsule": "cd34/capsule_231x87.jpg"})
         self.assertEqual(kept["screenshots"], [f"ss_{i}.jpg" for i in range(collect.SHOTS)])    # the first ones, by name
+        newer = collect.steam_pictures({"screenshots": {"all_ages_screenshots": [
+            {"filename": "steam/apps/900002/ab12/ss_ab12.jpg?t=1"}, {"filename": "steam/apps/900002/ss_old.jpg?t=1"}]}})
+        self.assertEqual(newer["screenshots"], ["ab12/ss_ab12.jpg", "ss_old.jpg"])    # a newer game's folder is kept
         self.assertEqual(kept["languages"], [[0, 1], [2, 0]])                                    # the supported ones
         self.assertNotIn("trailers", kept)
         self.assertNotIn("supported_languages", kept)
