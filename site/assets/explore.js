@@ -442,7 +442,7 @@
       card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [score(s), trend(tr)], pic));
     const seen = recents().slice().reverse().slice(0, 12).map((f) => {
       const at = f.k.indexOf("/");
-      return card(favHref(f.k), f.k.slice(0, at), f.k.slice(at + 1), f.name, [], "");
+      return card(favHref(f.k), f.k.slice(0, at), f.k.slice(at + 1), f.name, [], picOf(f));
     });
     const soon = (lists.upcoming || []).slice(0, 12).map(([id, name, when, , pic]) =>
       card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
@@ -1244,10 +1244,19 @@
     } catch (e) { return []; }
   };
   const sheetKey = (m, es) => (es.length > 1 ? (m.qid ? `u/${m.qid}` : "") : `${es[0].p}/${es[0].id}`);
+  // The picture a sheet's card can be drawn with later, with nothing fetched for it (tileOrigin): Steam's header of the game
+  // ("s<app>"), else IGDB's cover ("i<id>"), kept beside a viewed or favourite game's name; "" when the sheet has neither.
+  function picRefOf(es) {
+    const steamApp = es.find((e) => e.p === "steam" && /^\d+$/.test(String(e.id)));
+    if (steamApp) return `s${steamApp.id}`;
+    const cover = es.find((e) => /^\w+$/.test(e.igdb_cover || ""));
+    return cover ? `i${cover.igdb_cover}` : "";
+  }
+  const picOf = (f) => (typeof f.pic === "string" && /^[si]\w{1,40}$/.test(f.pic) ? f.pic : "");
   function noteRecent(m, es) {
     const k = sheetKey(m, es);
     if (!k) return;
-    try { localStorage.setItem(RECENT, JSON.stringify(recents().filter((r) => r.k !== k).concat({ k, name: m.name || m.id || "" }).slice(-12))); } catch (e) { /* not kept */ }
+    try { localStorage.setItem(RECENT, JSON.stringify(recents().filter((r) => r.k !== k).concat({ k, name: m.name || m.id || "", pic: picRefOf(es) }).slice(-12))); } catch (e) { /* not kept */ }
   }
   const favHref = (k) => { const at = k.indexOf("/"); return gameHref(k.slice(0, at), k.slice(at + 1)); };
   const favButton = $("x-fav");
@@ -1267,7 +1276,7 @@
     };
     b.addEventListener("click", () => {
       const before = favs(), had = before.some((f) => f.k === k), name = m.name || m.id || "";
-      keepFavs(had ? before.filter((f) => f.k !== k) : before.concat({ k, name }));
+      keepFavs(had ? before.filter((f) => f.k !== k) : before.concat({ k, name, pic: picRefOf(es) }));
       draw();
       countFavs();
       if (!had && !calm()) { b.classList.remove("pulse"); void b.offsetWidth; b.classList.add("pulse"); }
@@ -2115,7 +2124,7 @@
         go(`#${route().platform}/favorites`);
       });
       results.replaceChildren(el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_shared") }), el("span", { class: "fav-actions" }, games.length ? add : "")),
-        ...games.map((f) => { const at = f.k.indexOf("/"); return el("li", { class: "fav-item" }, el("a", { href: favHref(f.k) }, tile(f.k.slice(0, at), f.k.slice(at + 1), f.name, true, ""), nameOf(f.k.slice(at + 1), f.name))); }));
+        ...games.map((f) => { const at = f.k.indexOf("/"); return el("li", { class: "fav-item" }, el("a", { href: favHref(f.k) }, tile(f.k.slice(0, at), f.k.slice(at + 1), f.name, true, picOf(f)), nameOf(f.k.slice(at + 1), f.name))); }));
       setStatus(games.length ? t("x_count", { n: num(games.length) }) : t("x_not_found"));
       return;
     }
@@ -2233,7 +2242,7 @@
         keepFavs(favs().map((x) => { if (x.k !== f.k) return x; const { l, ...rest } = x; return move.value ? { ...rest, l: move.value } : rest; }));
         again();
       });
-      return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, ""), nameOf(ref, f.name)), move, drop);
+      return el("li", { class: "fav-item" }, box, el("a", { href: favHref(f.k) }, tile(kind, ref, f.name, true, picOf(f)), nameOf(ref, f.name)), move, drop);
     });
     sync();
     results.replaceChildren(tabs, el("li", { class: "fav-bar" }, el("span", { class: "dim", text: t("x_fav_note") }), el("span", { class: "fav-actions" }, delList(), importBtn, importIn, exportBtn, shareBtn, imageBtn, compare)), ...items);
