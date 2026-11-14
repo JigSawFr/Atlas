@@ -796,6 +796,10 @@
       // connection can drop); if it still does not, it goes, and a strip left with none takes its heading with it.
       let again = false;
       img.addEventListener("error", () => {
+        // Steam files a newer game's screenshots in a folder of their own (steam/apps/<id>/<hash>/ss_<hash>.jpg): until the
+        // build of 2026-11-16 republishes steam-store with the folder in the name, a name without it is tried that way.
+        const hashed = origin.replace(/\/apps\/(\d+)\/(ss_([0-9a-f]{40})\.jpg)$/, "/apps/$1/$3/$2");
+        if (!again && hashed !== origin) { again = true; origins[i] = hashed; img.src = proxied(hashed, i ? 320 : 480, i ? 180 : 270); link.href = proxied(hashed, 1280); return; }
         if (!again) { again = true; setTimeout(() => { img.src = `${img.src}${img.src.includes("?") ? "&" : "?"}retry=1`; }, 1500); return; }
         link.remove();
         if (!strip.childElementCount) strip.closest("section")?.remove();
