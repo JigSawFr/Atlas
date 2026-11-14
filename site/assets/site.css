@@ -1354,3 +1354,5 @@ a.chip.view[aria-current] { color: var(--snow); background: color-mix(in srgb, v
   .ring b { left: 0; width: 52px; }
   .ring small { text-align: start; max-width: 11ch; }
 }
+
+.sheet-bar .tab[hidden] { display: none; }

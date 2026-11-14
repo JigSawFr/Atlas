@@ -782,7 +782,7 @@
     if (!origins.length) return null;
     const strip = el("div", { class: `shots n${Math.min(origins.length, 5)}` });
     origins.forEach((origin, i) => {
-      const img = el("img", { src: proxied(origin, i ? 320 : 480, i ? 180 : 270), alt: t("x_screenshot", { n: i + 1 }), loading: "lazy", decoding: "async",
+      const img = el("img", { src: proxied(origin, i ? 320 : 480, i ? 180 : 270), alt: t("x_screenshot", { n: i + 1 }), loading: i < 2 ? "eager" : "lazy", decoding: "async",
         referrerpolicy: "no-referrer", width: i ? "240" : "360", height: i ? "135" : "203" });
       // On a wide screen the first is large and four more beside it; the last of them says how many are left.
       const link = el("a", { href: proxied(origin, 1280), target: "_blank", rel: "noreferrer noopener", referrerpolicy: "no-referrer", class: i ? "" : "first",
@@ -792,7 +792,14 @@
         ev.preventDefault();
         openViewer(origins, i);
       });
-      img.addEventListener("error", () => link.remove());
+      // A picture that does not come is asked once more a moment later (the image service can answer late, a phone's
+      // connection can drop); if it still does not, it goes, and a strip left with none takes its heading with it.
+      let again = false;
+      img.addEventListener("error", () => {
+        if (!again) { again = true; setTimeout(() => { img.src = `${img.src}${img.src.includes("?") ? "&" : "?"}retry=1`; }, 1500); return; }
+        link.remove();
+        if (!strip.childElementCount) strip.closest("section")?.remove();
+      });
       strip.append(link);
     });
     return section(t("x_gallery"), strip);
@@ -1097,7 +1104,8 @@
       bar.classList.toggle("on", shownBar);
       bar.toggleAttribute("inert", !shownBar);
       let here = -1;
-      targets.forEach((sec, i) => { if (sec.getBoundingClientRect().top <= window.innerHeight * 0.3) here = i; });
+      // A section that left the page (a screenshots strip none of whose pictures came) leaves the bar too.
+      targets.forEach((sec, i) => { buttons[i].hidden = !sec.isConnected; if (sec.isConnected && sec.getBoundingClientRect().top <= window.innerHeight * 0.3) here = i; });
       buttons.forEach((b, i) => { b.classList.toggle("here", i === here); if (i === here) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
       const cur = buttons[here];
       if (cur && shownBar) { const nav = bar.querySelector("nav"); nav.scrollLeft = cur.offsetLeft - nav.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; }   // offsetLeft is the bar's (it is fixed), not the nav's
