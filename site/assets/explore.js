@@ -1012,12 +1012,13 @@
 
   // A trailer's player: nothing is asked of YouTube until the visitor presses play (a button, the note under it says what
   // loads), then its privacy-enhanced player (youtube-nocookie.com: no cookie before the video plays) in a sandboxed frame
-  // that sends no referrer. The Content-Security-Policy's frame-src is that address alone. The link out stays in "Links".
+  // that sends YouTube the site's address only (strict-origin: the player refuses to start without a referrer, "error 153").
+  // The Content-Security-Policy's frame-src is that address alone. The link out stays in "Links".
   function trailerPlayer(id) {
     const box = el("figure", { class: "trailer" });
     const play = el("button", { type: "button", class: "trailer-play" }, el("span", { "aria-hidden": "true", text: "▶" }), el("span", { text: t("x_trailer_play") }));
     play.addEventListener("click", () => {
-      const frame = el("iframe", { class: "trailer-frame", title: t("x_trailer"), loading: "lazy", referrerpolicy: "no-referrer", allowfullscreen: "",
+      const frame = el("iframe", { class: "trailer-frame", title: t("x_trailer"), loading: "lazy", referrerpolicy: "strict-origin", allowfullscreen: "",
         allow: "autoplay; encrypted-media; picture-in-picture; fullscreen", sandbox: "allow-scripts allow-same-origin allow-presentation",
         src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&playsinline=1` });
       box.replaceChildren(frame);
@@ -1491,6 +1492,9 @@
     sheet.append(el("div", { class: "cols" }, main, side));
     const shots = gallery(shown.shots);
     if (shots) main.append(shots);
+    // The trailer comes right after the screenshots (the same column on a wide screen, the story's end on a phone).
+    const trailerIds = ((m.wd || {}).yt || []).filter((id) => /^[\w-]{11}$/.test(id));
+    if (trailerIds.length) main.append(section(t("x_trailer"), trailerPlayer(trailerIds[0])));
 
     // A trait is a way into the platform's games with it: the studio's, the series', the genre's page is the browse view filtered.
     const home = (es[0] && es[0].p) || from || PLATFORMS[0];
@@ -1687,7 +1691,6 @@
     if (wd.pcgw) open("PCGamingWiki", `https://www.pcgamingwiki.com/wiki/${encodeURIComponent(wd.pcgw)}`);
     const trailers = (wd.yt || []).filter((id) => /^[\w-]{11}$/.test(id));
     trailers.forEach((id, i, all) => open(all.length > 1 ? `${t("x_trailer")} ${i + 1}` : t("x_trailer"), `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`));
-    if (trailers.length) side.append(section(t("x_trailer"), trailerPlayer(trailers[0])));
     if (outside.length) side.append(section(t("x_links"), el("ul", { class: "links" }, ...outside)));
     if (m.links && Object.keys(m.links).length) {
       const items = [];
