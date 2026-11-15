@@ -27,6 +27,7 @@ Python's standard library only. Usage: see tools/build_site.py.
 import datetime
 import html
 import json
+import math
 import os
 import re
 from bisect import bisect_left
@@ -552,12 +553,14 @@ def all_lists(pool: dict) -> dict:
     """The first page of all the platforms at once. `pool` has, for each of the lists (popular, trending, upcoming,
     recent), (key, platform, row) of every platform's list: key is the game's Wikidata item when it has one, so a
     game on several platforms is one row, the one of the platform that ranks it first (today's big platforms win a
-    tie). Each row is its platform's, with the platform in front: [platform, id, name, ...]."""
+    tie). Trending is ranked by the renown times the log of the rise, not by the rise alone. Each row is its platform's, with the platform in front: [platform, id, name, ...]."""
     def seat(platform):
         return PRIORITY.index(platform) if platform in PRIORITY else len(PRIORITY)
     order = {
         "popular": lambda x: (-x[2][2], seat(x[1]), x[1]),
-        "trending": lambda x: (-x[2][3], -x[2][2], seat(x[1]), x[1]),
+        # A rise of 600 % on a game few know is not the first of all the platforms: the renown counts with the rise
+        # (its logarithm, so a rise ten times larger is not ten times better).
+        "trending": lambda x: (-x[2][2] * math.log1p(max(x[2][3], 0)), -x[2][2], seat(x[1]), x[1]),
         "upcoming": lambda x: (x[2][2], seat(x[1]), x[1]),
         "recent": lambda x: (-x[2][2], seat(x[1]), x[1]),
     }
@@ -734,7 +737,8 @@ def build(data_dir: str, out_dir: str) -> dict:
         }
         for kind in pool:
             for row in lists[kind]:
-                pool[kind].append(((own_links.get(row[0]) or [""])[0] or f"{platform}:{row[0]}", platform, row))
+                # The game's Wikidata item is its key: from links.json, or its own id on the platforms that key games by it.
+                pool[kind].append(((own_links.get(row[0]) or [""])[0] or (row[0] if re.match(r"^Q\d+$", row[0]) else f"{platform}:{row[0]}"), platform, row))
         for gid, _ in best[:SHARE_LIST]:
             if names.get(gid) and SHARE_ID.match(gid):
                 folder = os.path.join(out_dir, "g", platform, gid)
