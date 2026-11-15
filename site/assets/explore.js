@@ -1178,9 +1178,16 @@
   // How the Atlas score came out: a table, a signal a row (its value as a bar and a number, its weight, what it rests on).
   function recipe(atlas) {
     const label = { critics: "x_critics", store: "x_sig_store", players: "x_players_rating", reach: "x_sig_reach" };
+    // What each signal counts for, side by side: a bar of four parts (a width each, set by script: the CSP allows no style attribute),
+    // the same colours as the dots of the table's rows.
+    const bar = el("div", { class: "recipe-bar", role: "img", "aria-label": atlas.parts.map((x) => `${t(label[x.key])} ${Math.round(x.share * 100)} %`).join(", ") },
+      ...atlas.parts.map((x) => { const seg = el("i", { class: `seg ${x.key}` }); seg.style.flexGrow = String(x.share); return seg; }));
+    const top = atlas.parts.reduce((a, x) => (x.share > a.share ? x : a), atlas.parts[0]);
     return el("details", { class: "recipe" }, el("summary", { text: `${t("x_atlas_score")} · ${t("x_atlas_how")}` }),
+      atlas.parts.length > 1 ? el("p", { class: "recipe-top", text: t("x_atlas_driver", { signal: t(label[top.key]), p: num(Math.round(top.share * 100)) }) }) : null,
+      bar,
       el("table", {}, el("thead", {}, el("tr", {}, el("th", { scope: "col", text: t("x_signal") }), el("th", { scope: "col", text: t("x_value") }), el("th", { scope: "col", text: t("x_weight") }))),
-        el("tbody", {}, ...atlas.parts.map((x) => el("tr", {}, el("th", { scope: "row" }, t(label[x.key]), x.n ? el("small", { class: "dim", text: ` ${t("x_review_count", { n: num(x.n) })}` }) : null),
+        el("tbody", {}, ...atlas.parts.map((x) => el("tr", {}, el("th", { scope: "row" }, el("span", { class: `dot ${x.key}`, "aria-hidden": "true" }), t(label[x.key]), x.n ? el("small", { class: "dim", text: ` ${t("x_review_count", { n: num(x.n) })}` }) : null),
           el("td", {}, el("span", { class: "score" }, el("span", { class: "bar" }, el("i", { "data-w": String(Math.round(x.value)) })), String(Math.round(x.value)))),
           el("td", { text: `${Math.round(x.share * 100)} %` }))))),
       el("p", { class: "dim", text: t("x_atlas_note") }));

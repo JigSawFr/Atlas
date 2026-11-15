@@ -438,6 +438,7 @@
   "x_atlas_help": "Une seule note à partir de la critique, des joueurs et de la notoriété, chacune pesée selon ce sur quoi elle repose ({n} signaux).",
   "x_atlas_how": "Comment il est calculé",
   "x_atlas_note": "Les avis des boutiques et la note des joueurs sont ramenés vers 70 quand ils sont peu nombreux. La portée est la racine carrée de la meilleure notoriété : elle pèse peu face à la qualité. Les poids sont recalculés sur les signaux présents.",
+  "x_atlas_driver": "{signal} pèse le plus ici : {p} % du score.",
   "x_sig_store": "Avis des boutiques",
   "x_sig_reach": "Portée",
   "x_signal": "Signal",

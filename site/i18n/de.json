@@ -438,6 +438,7 @@
   "x_atlas_help": "Eine Wertung aus Kritik, Spielern und Bekanntheit, jeweils danach gewichtet, worauf sie beruht ({n} Signale).",
   "x_atlas_how": "So wird sie berechnet",
   "x_atlas_note": "Shop-Bewertungen und Spielerwertung werden bei wenigen Stimmen Richtung 70 gezogen. Die Reichweite ist die Wurzel der höchsten Bekanntheit und zählt neben der Qualität wenig. Die Gewichte werden über die vorhandenen Signale neu berechnet.",
+  "x_atlas_driver": "{signal} zählt hier am meisten: {p} % der Punktzahl.",
   "x_sig_store": "Shop-Bewertungen",
   "x_sig_reach": "Reichweite",
   "x_signal": "Signal",
