@@ -66,6 +66,26 @@ class SiteData(unittest.TestCase):
         self.assertEqual(lists["popular"][0][1], "Amber Lantern")
         self.assertEqual(self.read("x/switch/lists.json")["upcoming"][0][:3], ["0100C0C0C0C0C000", "Frost Harbor", 20261204])
 
+    def test_the_first_page_of_all_the_platforms(self):
+        everything = self.read("x/all/lists.json")
+        self.assertEqual(everything["platform"], "all")
+        popular = everything["popular"]
+        # A row is its platform's, the platform in front; a game on both platforms is one row, the better ranked's.
+        self.assertTrue(all(row[0] in ("steam", "switch") for row in popular))
+        # Amber Lantern is on both (links.json): one row, not two.
+        self.assertEqual(sum(1 for row in popular if row[1] in ("900010", "0100A1B2C3D4E000")), 1)
+
+    def test_all_lists_keeps_a_game_once_and_the_better_ranked_row(self):
+        pool = {"popular": [("Q1", "switch", ["a", "Game", 70, 0, 0]), ("Q1", "steam", ["1", "Game", 80, 0, 0]), ("steam:2", "steam", ["2", "Other", 60, 0, 0])],
+                "trending": [("Q1", "switch", ["a", "Game", 70, 5]), ("Q1", "steam", ["1", "Game", 80, 5])],
+                "upcoming": [("Q2", "steam", ["3", "Soon", 20270101, 0]), ("Q2", "switch", ["b", "Soon", 20270101, 0])],
+                "recent": []}
+        lists = site_data.all_lists(pool)
+        self.assertEqual([r[:3] for r in lists["popular"]], [["steam", "1", "Game"], ["steam", "2", "Other"]])
+        self.assertEqual(lists["trending"][0][:2], ["steam", "1"])     # the same trend: the better known row
+        self.assertEqual(lists["upcoming"][0][:2], ["steam", "3"])     # a tie on the day: the big platform
+        self.assertEqual(lists["recent"], [])
+
     def test_sheet(self):
         s = self.sheet("switch", "0100A1B2C3D4E000")
         self.assertEqual(s["popular"], [80, 12, 90])
