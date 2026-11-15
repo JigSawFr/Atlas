@@ -655,6 +655,7 @@
     };
     list(t("x_languages"), union("langs"));
     list(t("x_voices"), union("voices"));
+    scrollFades(dl);
     return dl.childElementCount ? section(t("x_tech"), dl) : null;
   }
 
@@ -1690,6 +1691,7 @@
       for (const [role, key] of [["director", "x_director"], ["composer", "x_composer"], ["writer", "x_writer"]]) {
         if (team[role] && team[role].length) dl.append(el("div", {}, el("dt", { text: t(key) }), el("dd", {}, ...team[role].map((n) => el("span", { class: "chip", text: n })))));
       }
+      scrollFades(dl);
       if (dl.childElementCount) side.append(section(t("x_team"), dl));
     }
 
@@ -1701,6 +1703,7 @@
       if (wdb.setting && wdb.setting.length) line(t("x_setting"), ...wdb.setting.map((x) => el("span", { class: "chip", text: x })));
       if (wdb.based_on && wdb.based_on.length) line(t("x_based_on"), ...wdb.based_on.map((x) => el("span", { class: "chip", text: x })));
       if (wdb.sold) line(t("x_sold"), el("span", { class: "chip", text: new Intl.NumberFormat(LANG, { notation: "compact", maximumFractionDigits: 1 }).format(wdb.sold) }));
+      scrollFades(dl);
       side.append(section(t("x_background"), dl));
     }
 
