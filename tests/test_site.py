@@ -86,6 +86,12 @@ class SiteData(unittest.TestCase):
         self.assertEqual(lists["upcoming"][0][:2], ["steam", "3"])     # a tie on the day: the big platform
         self.assertEqual(lists["recent"], [])
 
+    def test_all_lists_trending_weighs_the_renown_with_the_rise(self):
+        pool = {"trending": [("a", "steam", ["1", "Unknown", 20, 600]), ("b", "steam", ["2", "Known", 80, 150]), ("c", "steam", ["3", "Flat", 90, 0])]}
+        lists = site_data.all_lists(pool)
+        # 600 % on a renown of 20 is worth less than 150 % on 80 (and no rise is last, whatever the renown).
+        self.assertEqual([r[1] for r in lists["trending"]], ["2", "1", "3"])
+
     def test_sheet(self):
         s = self.sheet("switch", "0100A1B2C3D4E000")
         self.assertEqual(s["popular"], [80, 12, 90])
