@@ -994,7 +994,6 @@
     return sorted.map((e) => {
       const day = when(e);
       const rev = e.reviews || e.rating;
-      const voters = !rev && e.igdb_rating && e.igdb_rating[1] >= 20 ? e.igdb_rating : null;
       const name = e === ps5 && joined ? `${S._names.ps4 || "PlayStation 4"} · 5` : S._names[e.p] || e.p;
       const deck = e.tech && e.tech.deck >= 2 ? `Steam Deck · ${t(`x_deck_${e.tech.deck}`)}` : "";
       const isTop = top === e && several;
@@ -1008,8 +1007,11 @@
           dated && day === first && firstOnes.length === 1 ? el("span", { class: "chip first", text: t("x_first") }) : null));
       }
       const extras = [e.gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null, deck ? el("span", { class: "chip", text: deck }) : null].filter(Boolean);
-      const known = rev ? el("span", { class: "dim", text: t("x_reviews", { n: num(rev[0]), p: rev[1] }) })
-        : voters ? el("span", { class: "dim", text: `${t("x_players_rating")} ${Math.round(voters[0])} / 100 · ${num(voters[1])}` }) : null;
+      // The store's reviews: the share of good ones large in the rings' colours, how many beside it, a thin bar. The
+      // players' rating (IGDB's) is the game's, not the platform's: it is in the head's rings, not on every tile.
+      const known = rev ? el("span", { class: "rev-line", title: t("x_reviews", { n: num(rev[0]), p: rev[1] }) },
+        el("b", { class: `pct ${toneOf(rev[1])}`, text: `${num(rev[1])} %` }), el("span", { class: "dim", text: t("x_pooled_value", { n: num(rev[0]) }) }),
+        el("span", { class: "bar wide", "aria-hidden": "true" }, el("i", { "data-w": String(rev[1]) }))) : null;
       if (known || extras.length) lines.push(el("span", { class: "plat-more" }, known, ...extras));
       const main = el("div", { class: `plat-main${e.popular ? " has-ring" : ""}` }, e.popular ? miniRing(e.popular[0], t("x_score")) : null, ...lines);
       const shop = storePage(e) ? el("a", { class: "store", href: storePage(e), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank",
@@ -1756,7 +1758,7 @@
             STORES[p] ? el("a", { class: "out", href: STORES[p](other), rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: "↗", "aria-label": `${STORE_NAMES[p]} ${other}` }) : null));
         }
       }
-      if (items.length) side.append(section(t("x_other_platforms"), el("ul", { class: "links" }, ...items)));
+      if (items.length) side.append(section(t("x_other_platforms"), el("ul", { class: "links stores" }, ...items)));
     }
     const bar = sectionBar(head, m.name || m.id || "", best ? best.popular[0] : 0);
     if (bar) sheet.append(bar);
