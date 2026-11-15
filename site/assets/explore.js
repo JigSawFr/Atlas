@@ -1093,6 +1093,8 @@
       const update = () => {
         row.classList.toggle("fade-l", row.scrollLeft > 2);
         row.classList.toggle("fade-r", Math.abs(row.scrollLeft) + row.clientWidth < row.scrollWidth - 2);
+        // A row that scrolls is reached by the keyboard too (arrows scroll it once focused); one that fits is left out of the tab order.
+        if (row.scrollWidth > row.clientWidth + 1) row.tabIndex = 0; else row.removeAttribute("tabindex");
       };
       row.addEventListener("scroll", update, { passive: true });
       if (window.ResizeObserver) new ResizeObserver(update).observe(row);
