@@ -110,7 +110,9 @@
   // The platform last visited is where an empty address opens (kept in this browser only).
   const SHARE_LIST = 60;   // the best known games that have a page for a shared link (site_data.py)
   const HOME_KEY = "atlas-platform";
-  let home = PLATFORMS[0];
+  // Where an empty address opens for a first visit: the platform with the most to see, not the first by name.
+  const FIRST_VISIT = ["steam", "switch", "ps5", "xbox", "gog"];
+  let home = FIRST_VISIT.find((p) => PLATFORMS.includes(p)) || PLATFORMS[0];
   try { const kept = localStorage.getItem(HOME_KEY); if (PLATFORMS.includes(kept)) home = kept; } catch (e) { /* no storage: the first platform */ }
   let from = "";               // the platform last shown, which a sheet of all a game's platforms goes back to ("" before any)
   function route() {
@@ -431,7 +433,7 @@
     sheet.hidden = true;
     pressed("x-views", "view", "");
     setStatus(t("x_loading"));
-    const lists = await get(`x/${platform}/lists.json`);
+    const [lists, every] = await Promise.all([get(`x/${platform}/lists.json`), get("x/stats.json").catch(() => null)]);
     const home = $("x-home");
     home.dataset.platform = platform;
     const row = (title, link, items) => (items.length ? el("section", { class: "homerow" },
@@ -484,9 +486,19 @@
       }
     } catch (e) { /* no storage: no such row */ }
     const lead = hero(platform, home, (lists.trending || []).length >= 3 ? lists.trending : (lists.popular || []), (lists.trending || []).length >= 3 ? t("x_trending") : t("x_popular"));
+    // The other platforms, the biggest first, each a tile to its own first page.
+    const tiles = every && Array.isArray(every.platforms) ? every.platforms.filter((r) => PLATFORMS.includes(r[0]) && r[0] !== platform && r[1])
+      .sort((x, y) => (FIRST_VISIT.indexOf(x[0]) + 1 || 99) - (FIRST_VISIT.indexOf(y[0]) + 1 || 99)).slice(0, 16) : [];   // today's big platforms first, then by size
+    const platRow = tiles.length ? el("section", { class: "homerow" }, el("div", { class: "homerow-head" }, el("h3", { text: t("x_home_platforms") })),
+      el("ul", { class: "platiles" }, ...tiles.map(([p, n]) => {
+        const a = el("a", { class: "platile", href: `#${p}/home` }, el("b", { text: shortName(p) }), el("small", { class: "dim", text: `${t("x_st_games")} · ${num(n)}` }));
+        a.style.setProperty("--tint", tintOf(p));
+        return el("li", {}, a);
+      }))) : null;
     home.replaceChildren(...[
       banner,
       lead,
+      platRow,
       row(t("x_recent"), null, seen),
       row(t("x_since"), null, fresh),
       row(t("x_fav_soon"), null, mineSoon),
