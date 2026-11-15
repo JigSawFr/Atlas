@@ -1382,10 +1382,12 @@ a.chip.view[aria-current] { color: var(--snow); background: color-mix(in srgb, v
 .sheet-bar .tab[hidden] { display: none; }
 
 /* A platform's reviews on its tile: the share large and coloured, the count beside it, a thin bar under. */
-.plat-more .rev-line { flex: 1 1 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 2px 8px; }
-.plat-more .rev-line .pct { font: 600 1.25rem/1.1 var(--display); }
-.plat-more .rev-line .dim { font-size: 0.8125rem; }
-.plat-more .rev-line .bar.wide { grid-column: 1 / -1; width: 100%; height: 4px; }
+.rev-line { display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: end; gap: 0 6px; }
+.rev-line .pct { font: 600 1.125rem/1.1 var(--display); }
+.rev-line .dim { font-size: 0.75rem; white-space: nowrap; }
+.rev-line .bar.wide { grid-column: 1 / -1; height: 4px; margin-top: 3px; }
+.plat-when .rev-line { margin-left: auto; flex: none; }
+.plat-more .rev-line { flex: 1 1 100%; }
 .bar.wide { width: 100%; }
 @media (max-width: 600px) {
   /* The store link shrinks to its arrow, so a long platform name keeps its line. */

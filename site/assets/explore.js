@@ -1000,19 +1000,20 @@
       const lines = [];
       lines.push(el("span", { class: "plat-name" }, el("span", { class: "badge plat-title", text: name }),
         isTop ? el("span", { class: "chip best-chip", title: t("x_best_platform"), text: `★ ${t("x_best_short")}` }) : null));
+      // The store's reviews: the share of good ones large in the rings' colours, how many beside it, a thin bar. The
+      // players' rating (IGDB's) is the game's, not the platform's: it is in the head's rings, not on every tile.
+      const known = rev ? el("span", { class: "rev-line", title: t("x_reviews", { n: num(rev[0]), p: rev[1] }) },
+        el("b", { class: `pct ${toneOf(rev[1])}`, text: `${num(rev[1])} %` }), el("span", { class: "dim", text: t("x_review_count", { n: num(rev[0]) }) }),
+        el("span", { class: "bar wide", "aria-hidden": "true" }, el("i", { "data-w": String(rev[1]) }))) : null;
       if (day) {
         const later = dated && day > first && firstPlat ? el("span", { class: "chip gap", title: t("x_later", { d: gap(first, day) }),
           text: t("x_after", { d: gap(first, day), platform: shortName(firstPlat.p) }) }) : null;
         lines.push(el("span", { class: "plat-when" }, el("span", { class: "date", text: e.release && day === e.release && day <= todayNum() ? ymd(day) : t("x_coming", { date: ymd(day) }) }), later,
-          dated && day === first && firstOnes.length === 1 ? el("span", { class: "chip first", text: t("x_first") }) : null));
+          dated && day === first && firstOnes.length === 1 ? el("span", { class: "chip first", text: t("x_first") }) : null, known));
       }
       const extras = [e.gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null, deck ? el("span", { class: "chip", text: deck }) : null].filter(Boolean);
-      // The store's reviews: the share of good ones large in the rings' colours, how many beside it, a thin bar. The
-      // players' rating (IGDB's) is the game's, not the platform's: it is in the head's rings, not on every tile.
-      const known = rev ? el("span", { class: "rev-line", title: t("x_reviews", { n: num(rev[0]), p: rev[1] }) },
-        el("b", { class: `pct ${toneOf(rev[1])}`, text: `${num(rev[1])} %` }), el("span", { class: "dim", text: t("x_pooled_value", { n: num(rev[0]) }) }),
-        el("span", { class: "bar wide", "aria-hidden": "true" }, el("i", { "data-w": String(rev[1]) }))) : null;
-      if (known || extras.length) lines.push(el("span", { class: "plat-more" }, known, ...extras));
+      // The reviews stand on the date's line; with no date they go with the extras.
+      if ((known && !day) || extras.length) lines.push(el("span", { class: "plat-more" }, day ? null : known, ...extras));
       const main = el("div", { class: `plat-main${e.popular ? " has-ring" : ""}` }, e.popular ? miniRing(e.popular[0], t("x_score")) : null, ...lines);
       const shop = storePage(e) ? el("a", { class: "store", href: storePage(e), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank",
         title: t("x_open_store", { store: name }), "aria-label": t("x_open_store", { store: name }) }, el("span", { text: t("x_store") }), el("span", { "aria-hidden": "true", text: " ↗" })) : null;
