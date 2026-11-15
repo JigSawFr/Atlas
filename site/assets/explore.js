@@ -655,6 +655,7 @@
     };
     list(t("x_languages"), union("langs"));
     list(t("x_voices"), union("voices"));
+    scrollFades(dl);
     return dl.childElementCount ? section(t("x_tech"), dl) : null;
   }
 
@@ -994,23 +995,26 @@
     return sorted.map((e) => {
       const day = when(e);
       const rev = e.reviews || e.rating;
-      const voters = !rev && e.igdb_rating && e.igdb_rating[1] >= 20 ? e.igdb_rating : null;
       const name = e === ps5 && joined ? `${S._names.ps4 || "PlayStation 4"} · 5` : S._names[e.p] || e.p;
       const deck = e.tech && e.tech.deck >= 2 ? `Steam Deck · ${t(`x_deck_${e.tech.deck}`)}` : "";
       const isTop = top === e && several;
       const lines = [];
       lines.push(el("span", { class: "plat-name" }, el("span", { class: "badge plat-title", text: name }),
         isTop ? el("span", { class: "chip best-chip", title: t("x_best_platform"), text: `★ ${t("x_best_short")}` }) : null));
+      // The store's reviews: the share of good ones large in the rings' colours, how many beside it, a thin bar. The
+      // players' rating (IGDB's) is the game's, not the platform's: it is in the head's rings, not on every tile.
+      const known = rev ? el("span", { class: "rev-line", title: t("x_reviews", { n: num(rev[0]), p: rev[1] }) },
+        el("b", { class: `pct ${toneOf(rev[1])}`, text: `${num(rev[1])} %` }), el("span", { class: "dim", text: t("x_review_count", { n: num(rev[0]) }) }),
+        el("span", { class: "bar wide", "aria-hidden": "true" }, el("i", { "data-w": String(rev[1]) }))) : null;
       if (day) {
         const later = dated && day > first && firstPlat ? el("span", { class: "chip gap", title: t("x_later", { d: gap(first, day) }),
           text: t("x_after", { d: gap(first, day), platform: shortName(firstPlat.p) }) }) : null;
         lines.push(el("span", { class: "plat-when" }, el("span", { class: "date", text: e.release && day === e.release && day <= todayNum() ? ymd(day) : t("x_coming", { date: ymd(day) }) }), later,
-          dated && day === first && firstOnes.length === 1 ? el("span", { class: "chip first", text: t("x_first") }) : null));
+          dated && day === first && firstOnes.length === 1 ? el("span", { class: "chip first", text: t("x_first") }) : null, known));
       }
       const extras = [e.gamepass ? el("span", { class: "chip", text: "Game Pass" }) : null, deck ? el("span", { class: "chip", text: deck }) : null].filter(Boolean);
-      const known = rev ? el("span", { class: "dim", text: t("x_reviews", { n: num(rev[0]), p: rev[1] }) })
-        : voters ? el("span", { class: "dim", text: `${t("x_players_rating")} ${Math.round(voters[0])} / 100 · ${num(voters[1])}` }) : null;
-      if (known || extras.length) lines.push(el("span", { class: "plat-more" }, known, ...extras));
+      // The reviews stand on the date's line; with no date they go with the extras.
+      if ((known && !day) || extras.length) lines.push(el("span", { class: "plat-more" }, day ? null : known, ...extras));
       const main = el("div", { class: `plat-main${e.popular ? " has-ring" : ""}` }, e.popular ? miniRing(e.popular[0], t("x_score")) : null, ...lines);
       const shop = storePage(e) ? el("a", { class: "store", href: storePage(e), rel: "noreferrer noopener", referrerpolicy: "no-referrer", target: "_blank",
         title: t("x_open_store", { store: name }), "aria-label": t("x_open_store", { store: name }) }, el("span", { text: t("x_store") }), el("span", { "aria-hidden": "true", text: " ↗" })) : null;
@@ -1084,6 +1088,21 @@
       el("p", { class: "dim", text: t("x_dist_help", { p: num(p) }) }));
   }
 
+  // A row that scrolls sideways says so: a fade on the edge that has more beyond it (site.css, under 600px).
+  function scrollFades(...rows) {
+    for (const row of rows.flatMap((r) => (r.matches && r.matches("dd, nav") ? [r] : [...r.querySelectorAll("dd")]))) {
+      const update = () => {
+        row.classList.toggle("fade-l", row.scrollLeft > 2);
+        row.classList.toggle("fade-r", Math.abs(row.scrollLeft) + row.clientWidth < row.scrollWidth - 2);
+        // A row that scrolls is reached by the keyboard too (arrows scroll it once focused); one that fits is left out of the tab order.
+        if (row.scrollWidth > row.clientWidth + 1) row.tabIndex = 0; else row.removeAttribute("tabindex");
+      };
+      row.addEventListener("scroll", update, { passive: true });
+      if (window.ResizeObserver) new ResizeObserver(update).observe(row);
+      update();
+    }
+  }
+
   // The bar that slides in once the head has left the window: the game, its score, the sheet's sections (the one in
   // view marked). Buttons, not links: the address belongs to the router.
   let barOff = null;
@@ -1098,6 +1117,14 @@
       b.addEventListener("click", () => sec.scrollIntoView({ behavior: MOTION.matches ? "smooth" : "auto", block: "start" }));
       return b;
     });
+    // On a phone the same sections stand as a row under the head from the start (the fixed bar only comes once the head is gone).
+    const jump = el("nav", { class: "jump", "aria-label": t("x_sections") }, ...targets.map((sec) => {
+      const b = el("button", { type: "button", class: "tab", text: sec.querySelector(":scope > h3").textContent });
+      b.addEventListener("click", () => sec.scrollIntoView({ behavior: MOTION.matches ? "smooth" : "auto", block: "start" }));
+      return b;
+    }));
+    head.after(jump);
+    scrollFades(jump);
     const bar = el("div", { class: "sheet-bar", inert: "" },
       el("p", { class: "bar-title" }, el("span", { text: name }), score ? el("b", { text: String(score) }) : null),
       el("nav", { "aria-label": t("x_sections") }, ...buttons));
@@ -1109,7 +1136,7 @@
       bar.toggleAttribute("inert", !shownBar);
       let here = -1;
       // A section that left the page (a screenshots strip none of whose pictures came) leaves the bar too.
-      targets.forEach((sec, i) => { buttons[i].hidden = !sec.isConnected; if (sec.isConnected && sec.getBoundingClientRect().top <= window.innerHeight * 0.3) here = i; });
+      targets.forEach((sec, i) => { buttons[i].hidden = jump.children[i].hidden = !sec.isConnected; if (sec.isConnected && sec.getBoundingClientRect().top <= window.innerHeight * 0.3) here = i; });
       buttons.forEach((b, i) => { b.classList.toggle("here", i === here); if (i === here) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
       const cur = buttons[here];
       if (cur && shownBar) { const nav = bar.querySelector("nav"); nav.scrollLeft = cur.offsetLeft - nav.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; }   // offsetLeft is the bar's (it is fixed), not the nav's
@@ -1117,7 +1144,7 @@
     const ask = () => { if (!frame) frame = requestAnimationFrame(update); };
     window.addEventListener("scroll", ask, on);
     window.addEventListener("resize", ask, on);
-    barOff = () => { ctl.abort(); barOff = null; };
+    barOff = () => { ctl.abort(); jump.remove(); barOff = null; };
     ask();
     return bar;
   }
@@ -1152,9 +1179,16 @@
   // How the Atlas score came out: a table, a signal a row (its value as a bar and a number, its weight, what it rests on).
   function recipe(atlas) {
     const label = { critics: "x_critics", store: "x_sig_store", players: "x_players_rating", reach: "x_sig_reach" };
+    // What each signal counts for, side by side: a bar of four parts (a width each, set by script: the CSP allows no style attribute),
+    // the same colours as the dots of the table's rows.
+    const bar = el("div", { class: "recipe-bar", role: "img", "aria-label": atlas.parts.map((x) => `${t(label[x.key])} ${Math.round(x.share * 100)} %`).join(", ") },
+      ...atlas.parts.map((x) => { const seg = el("i", { class: `seg ${x.key}` }); seg.style.flexGrow = String(x.share); return seg; }));
+    const top = atlas.parts.reduce((a, x) => (x.share > a.share ? x : a), atlas.parts[0]);
     return el("details", { class: "recipe" }, el("summary", { text: `${t("x_atlas_score")} · ${t("x_atlas_how")}` }),
+      atlas.parts.length > 1 ? el("p", { class: "recipe-top", text: t("x_atlas_driver", { signal: t(label[top.key]), p: num(Math.round(top.share * 100)) }) }) : null,
+      bar,
       el("table", {}, el("thead", {}, el("tr", {}, el("th", { scope: "col", text: t("x_signal") }), el("th", { scope: "col", text: t("x_value") }), el("th", { scope: "col", text: t("x_weight") }))),
-        el("tbody", {}, ...atlas.parts.map((x) => el("tr", {}, el("th", { scope: "row" }, t(label[x.key]), x.n ? el("small", { class: "dim", text: ` ${t("x_review_count", { n: num(x.n) })}` }) : null),
+        el("tbody", {}, ...atlas.parts.map((x) => el("tr", {}, el("th", { scope: "row" }, el("span", { class: `dot ${x.key}`, "aria-hidden": "true" }), t(label[x.key]), x.n ? el("small", { class: "dim", text: ` ${t("x_review_count", { n: num(x.n) })}` }) : null),
           el("td", {}, el("span", { class: "score" }, el("span", { class: "bar" }, el("i", { "data-w": String(Math.round(x.value)) })), String(Math.round(x.value)))),
           el("td", { text: `${Math.round(x.share * 100)} %` }))))),
       el("p", { class: "dim", text: t("x_atlas_note") }));
@@ -1462,7 +1496,13 @@
       // The game as a whole: the stores' reviews pooled, how many platforms, the renown on average.
       let n = 0, sum = 0;
       for (const e of es) for (const r of [e.reviews, e.rating]) if (r && r[0]) { n += r[0]; sum += r[0] * r[1]; }
-      if (n) stat(t("x_pooled_label"), t("x_pooled_value", { p: num(Math.round(sum / n)), n: num(n) }));
+      if (n) {
+        // The share of good reviews large in the rings' colours, a thin bar under it, how many reviews beside the word.
+        const pct = Math.round(sum / n);
+        stats.append(el("div", { class: "rev pooled" }, el("dt", { text: t("x_pooled_label") }),
+          el("dd", {}, el("span", { class: `pct ${toneOf(pct)}`, text: `${num(pct)} %` }), el("small", { text: t("x_pooled_value", { n: num(n) }) }),
+            el("span", { class: "bar wide", "aria-hidden": "true" }, el("i", { "data-w": String(pct) })))));
+      }
       if (best) stat(t("x_score"), String(best.popular[0]));
     } else {
       if (best && best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
@@ -1530,6 +1570,7 @@
         }))));
       }
       main.append(dl);
+      scrollFades(dl);
       // How many games of the platform have it, once its menus are in (a few kB, the browse view's own).
       const homeName = S._names[home] || home;
       get(`x/${home}/facets.json`).then((f) => {
@@ -1650,6 +1691,7 @@
       for (const [role, key] of [["director", "x_director"], ["composer", "x_composer"], ["writer", "x_writer"]]) {
         if (team[role] && team[role].length) dl.append(el("div", {}, el("dt", { text: t(key) }), el("dd", {}, ...team[role].map((n) => el("span", { class: "chip", text: n })))));
       }
+      scrollFades(dl);
       if (dl.childElementCount) side.append(section(t("x_team"), dl));
     }
 
@@ -1661,6 +1703,7 @@
       if (wdb.setting && wdb.setting.length) line(t("x_setting"), ...wdb.setting.map((x) => el("span", { class: "chip", text: x })));
       if (wdb.based_on && wdb.based_on.length) line(t("x_based_on"), ...wdb.based_on.map((x) => el("span", { class: "chip", text: x })));
       if (wdb.sold) line(t("x_sold"), el("span", { class: "chip", text: new Intl.NumberFormat(LANG, { notation: "compact", maximumFractionDigits: 1 }).format(wdb.sold) }));
+      scrollFades(dl);
       side.append(section(t("x_background"), dl));
     }
 
@@ -1728,7 +1771,7 @@
             STORES[p] ? el("a", { class: "out", href: STORES[p](other), rel: "noreferrer noopener", referrerpolicy: "no-referrer", text: "↗", "aria-label": `${STORE_NAMES[p]} ${other}` }) : null));
         }
       }
-      if (items.length) side.append(section(t("x_other_platforms"), el("ul", { class: "links" }, ...items)));
+      if (items.length) side.append(section(t("x_other_platforms"), el("ul", { class: "links stores" }, ...items)));
     }
     const bar = sectionBar(head, m.name || m.id || "", best ? best.popular[0] : 0);
     if (bar) sheet.append(bar);
