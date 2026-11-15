@@ -112,8 +112,13 @@
   const HOME_KEY = "atlas-platform";
   // Where an empty address opens for a first visit: the platform with the most to see, not the first by name.
   const FIRST_VISIT = ["steam", "switch", "ps5", "xbox", "gog"];
-  let home = FIRST_VISIT.find((p) => PLATFORMS.includes(p)) || PLATFORMS[0];
-  try { const kept = localStorage.getItem(HOME_KEY); if (PLATFORMS.includes(kept)) home = kept; } catch (e) { /* no storage: the first platform */ }
+  let lastReal = FIRST_VISIT.find((p) => PLATFORMS.includes(p)) || PLATFORMS[0];   // the platform the views that need one show when "all" is picked
+  let home = S._all ? "all" : lastReal;                                              // "all": the first page of all the platforms
+  try {
+    const kept = localStorage.getItem(HOME_KEY);
+    if (PLATFORMS.includes(kept) || (kept === "all" && S._all)) home = kept;
+    if (PLATFORMS.includes(kept)) lastReal = kept;
+  } catch (e) { /* no storage: the first platform */ }
   let from = "";               // the platform last shown, which a sheet of all a game's platforms goes back to ("" before any)
   function route() {
     const raw = location.hash.slice(1), q = raw.indexOf("?");
@@ -121,8 +126,14 @@
     const query = new URLSearchParams(q < 0 ? "" : raw.slice(q + 1));
     if (parts[0] === "all" && parts[1] === "search") return { platform: from || PLATFORMS[0], view: "searchall", arg: parts.slice(2).join("/"), query };
     if (parts[0] === "game" && parts[1]) return { platform: from || PLATFORMS[0], view: "ugame", arg: parts.slice(1).join("/"), query };
-    const platform = PLATFORMS.includes(parts[0]) ? parts[0] : home;
+    // The first page of all the platforms: its own address, and what an empty one opens when that was the last.
+    if (S._all && ((parts[0] === "all" && (!parts[1] || parts[1] === "home")) || (home === "all" && !PLATFORMS.includes(parts[0]) && parts[0] !== "all"))) {
+      return { platform: "all", view: "home", arg: "", query };
+    }
+    // The other views need a platform: "all" there is the one last looked at.
+    const platform = PLATFORMS.includes(parts[0]) ? parts[0] : home === "all" || parts[0] === "all" ? lastReal : home;
     from = platform;
+    lastReal = platform;
     const view = ["home", "browse", "popular", "trending", "upcoming", "search", "game", "stats", "favorites", "compare", "play"].includes(parts[1]) ? parts[1] : parts[1] ? "popular" : "home";
     return { platform, view, arg: parts.slice(2).join("/"), query };
   }
@@ -339,12 +350,13 @@
   function hero(platform, root, rows, kicker) {
     const items = rows.slice(0, 5);
     if (!items.length) return null;
-    const art = (id, pic) => {
-      const wide = platform === "steam" && /^\d+$/.test(id) ? STORE_PICTURES.steam(id, "library_hero.jpg") : null;
-      return [wide, tileOrigin(platform, id, pic)];
+    const art = (p, id, pic) => {
+      const wide = p === "steam" && /^\d+$/.test(id) ? STORE_PICTURES.steam(id, "library_hero.jpg") : null;
+      return [wide, tileOrigin(p, id, pic)];
     };
-    const slides = items.map(([id, name, s, tr, , pic], i) => {
-      const [wide, plain] = art(id, pic);
+    const slides = items.map((row, i) => {
+      const [id, name, s, tr, , pic] = row, p = row.p || platform;     // on the first page of all the platforms a row has its own
+      const [wide, plain] = art(p, id, pic);
       const fit = (o) => proxied(o, 1280, 480) + (pic && pic[0] === "i" ? "&a=top" : "");
       const figure = el("figure", { class: "stage-art" });
       const draw = () => figure.replaceChildren(drawnCover({ id, name }, "tile"));
@@ -354,7 +366,7 @@
         img.addEventListener("error", () => { if (!tried && plain) { tried = true; img.src = fit(plain); } else draw(); });
         figure.append(img);
       } else draw();
-      return el("a", { class: "stage-slide", href: `#${platform}/game/${encodeURIComponent(id)}` }, figure,
+      return el("a", { class: "stage-slide", href: `#${p}/game/${encodeURIComponent(id)}` }, figure,
         el("div", { class: "stage-text" }, el("span", { class: "stage-kicker", text: kicker }), el("strong", { class: "stage-name", text: name }),
           el("span", { class: "stage-meta" }, score(s), trend(tr)), el("span", { class: "stage-cta", text: t("x_see_sheet") })));
     });
@@ -434,31 +446,35 @@
     pressed("x-views", "view", "");
     setStatus(t("x_loading"));
     const [lists, every] = await Promise.all([get(`x/${platform}/lists.json`), get("x/stats.json").catch(() => null)]);
+    const everywhere = platform === "all";
+    // The lists of all the platforms hold rows with their platform in front: it goes on the row (`row.p`), the rest is as ever.
+    if (everywhere) for (const kind of ["popular", "trending", "upcoming", "recent"]) lists[kind] = (lists[kind] || []).map(([p, ...r]) => Object.assign(r, { p }));
+    const of = (r) => r.p || platform;
     const home = $("x-home");
     home.dataset.platform = platform;
     const row = (title, link, items) => (items.length ? el("section", { class: "homerow" },
       el("div", { class: "homerow-head" }, el("h3", { text: title }), link),
       el("ul", { class: "cardgrid carousel" }, ...items.map((c) => el("li", {}, c)))) : null);
-    const all = (view, n) => el("a", { class: "chip", href: `#${platform}/${view}`, text: t("x_see_all", { n: num(n) }) });
-    const known = (rows) => rows.slice(0, 12).map(([id, name, s, tr, , pic]) =>
-      card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [score(s), trend(tr)], pic));
+    const all = (view, n) => (everywhere ? null : el("a", { class: "chip", href: `#${platform}/${view}`, text: t("x_see_all", { n: num(n) }) }));
+    const known = (rows) => rows.slice(0, 12).map((r) => {
+      const [id, name, s, tr, , pic] = r;
+      return card(`#${of(r)}/game/${encodeURIComponent(id)}`, of(r), id, name, [score(s), trend(tr)], pic);
+    });
     const seen = recents().slice().reverse().slice(0, 12).map((f) => {
       const at = f.k.indexOf("/");
       return card(favHref(f.k), f.k.slice(0, at), f.k.slice(at + 1), f.name, [], picOf(f));
     });
-    const soon = (lists.upcoming || []).slice(0, 12).map(([id, name, when, , pic]) =>
-      card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
+    const dated = (r) => { const [id, name, when, , pic] = r; return card(`#${of(r)}/game/${encodeURIComponent(id)}`, of(r), id, name, [el("span", { class: "date", text: ymd(when) })], pic); };
+    const soon = (lists.upcoming || []).slice(0, 12).map(dated);
     // Just out: the last two weeks of the list (it holds sixty days, the data being a few days old at most).
     const cut = new Date(Date.now() - 14 * 864e5), since = cut.getFullYear() * 10000 + (cut.getMonth() + 1) * 100 + cut.getDate();
-    const out = (lists.recent || []).filter((r) => r[2] >= since).slice(0, 12).map(([id, name, when, , pic]) =>
-      card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
+    const out = (lists.recent || []).filter((r) => r[2] >= since).slice(0, 12).map(dated);
     // The favourites that come out soon (the coming-soon list of the platform being looked at).
     const mine = new Set(favs().map((f) => f.k));
-    const mineSoon = (lists.upcoming || []).filter(([id]) => mine.has(`${platform}/${id}`)).slice(0, 12).map(([id, name, when, , pic]) =>
-      card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
+    const mineSoon = (lists.upcoming || []).filter((r) => mine.has(`${of(r)}/${r[0]}`)).slice(0, 12).map(dated);
     // A favourite out today: a line above everything and a burst of paper, the first time that day.
     const dn = new Date(), today = dn.getFullYear() * 10000 + (dn.getMonth() + 1) * 100 + dn.getDate();
-    const outToday = (lists.recent || []).concat(lists.upcoming || []).filter(([id, , when]) => when === today && mine.has(`${platform}/${id}`));
+    const outToday = (lists.recent || []).concat(lists.upcoming || []).filter((r) => r[2] === today && mine.has(`${of(r)}/${r[0]}`));
     let banner = null;
     if (outToday.length) {
       banner = el("p", { class: "today", role: "status", text: t("x_fav_today", { name: outToday.map((r) => r[1]).slice(0, 3).join(", ") }) });
@@ -469,7 +485,8 @@
     // Since the last visit (a day or more ago): the games that entered the trending list or came out since.
     let fresh = [];
     try {
-      const ids = (lists.trending || []).map((r) => r[0]).concat((lists.recent || []).map((r) => r[0]));
+      const key = (r) => (everywhere ? `${of(r)}/${r[0]}` : r[0]);
+      const ids = (lists.trending || []).map(key).concat((lists.recent || []).map(key));
       const all = JSON.parse(localStorage.getItem("atlas-visit") || "{}"), was = all[platform];
       let e = was && Array.isArray(was.cur) ? was : null;
       if (!e) e = { d: today, prev: null, cur: ids };
@@ -479,16 +496,16 @@
       localStorage.setItem("atlas-visit", JSON.stringify(all));
       if (e.prev) {
         const old = new Set(e.prev), mark = new Set();
-        const rows = (lists.recent || []).map((r) => ({ id: r[0], name: r[1], s: r[3], pic: r[4] }))
-          .concat((lists.trending || []).map((r) => ({ id: r[0], name: r[1], s: r[2], pic: r[5] })));
-        fresh = rows.filter((r) => !old.has(r.id) && !mark.has(r.id) && mark.add(r.id)).slice(0, 12)
-          .map((r) => card(`#${platform}/game/${encodeURIComponent(r.id)}`, platform, r.id, r.name, [score(r.s)], r.pic));
+        const rows = (lists.recent || []).map((r) => ({ k: key(r), p: of(r), id: r[0], name: r[1], s: r[3], pic: r[4] }))
+          .concat((lists.trending || []).map((r) => ({ k: key(r), p: of(r), id: r[0], name: r[1], s: r[2], pic: r[5] })));
+        fresh = rows.filter((r) => !old.has(r.k) && !mark.has(r.k) && mark.add(r.k)).slice(0, 12)
+          .map((r) => card(`#${r.p}/game/${encodeURIComponent(r.id)}`, r.p, r.id, r.name, [score(r.s)], r.pic));
       }
     } catch (e) { /* no storage: no such row */ }
     const lead = hero(platform, home, (lists.trending || []).length >= 3 ? lists.trending : (lists.popular || []), (lists.trending || []).length >= 3 ? t("x_trending") : t("x_popular"));
     // The other platforms, the biggest first, each a tile to its own first page.
     const tiles = every && Array.isArray(every.platforms) ? every.platforms.filter((r) => PLATFORMS.includes(r[0]) && r[0] !== platform && r[1])
-      .sort((x, y) => (FIRST_VISIT.indexOf(x[0]) + 1 || 99) - (FIRST_VISIT.indexOf(y[0]) + 1 || 99)).slice(0, 16) : [];   // today's big platforms first, then by size
+      .sort((x, y) => (FIRST_VISIT.indexOf(x[0]) + 1 || 99) - (FIRST_VISIT.indexOf(y[0]) + 1 || 99)).slice(0, everywhere ? 24 : 16) : [];   // today's big platforms first, then by size
     const platRow = tiles.length ? el("section", { class: "homerow" }, el("div", { class: "homerow-head" }, el("h3", { text: t("x_home_platforms") })),
       el("ul", { class: "platiles" }, ...tiles.map(([p, n]) => {
         const a = el("a", { class: "platile", href: `#${p}/home` }, el("b", { text: shortName(p) }), el("small", { class: "dim", text: `${t("x_st_games")} · ${num(n)}` }));
@@ -514,7 +531,7 @@
     setStatus("");
     // "On this day" comes last and on its own: a file of its own, asked after the page is up.
     const now = new Date(), day = String((now.getMonth() + 1) * 100 + now.getDate()).padStart(4, "0");
-    get(`x/${platform}/days.json`).then((d) => {
+    if (!everywhere) get(`x/${platform}/days.json`).then((d) => {
       const rows = ((d.days || {})[day] || []).map(([id, name, when, , pic]) =>
         card(`#${platform}/game/${encodeURIComponent(id)}`, platform, id, name, [el("span", { class: "date", text: ymd(when) })], pic));
       const block = row(t("x_this_day"), null, rows);
@@ -2797,7 +2814,7 @@
     const b = e.target.closest("button[data-platform]");
     if (!b) return;
     const { view } = route();
-    const keep = view === "game" || view === "ugame" || view === "search" || view === "searchall" ? "home" : view;
+    const keep = b.dataset.platform === "all" || view === "game" || view === "ugame" || view === "search" || view === "searchall" ? "home" : view;
     go(`#${b.dataset.platform}/${keep}`);
   });
   document.getElementById("x-views").addEventListener("click", (e) => {
@@ -2828,8 +2845,8 @@
   const pBtn = $("x-platform-btn"), pPanel = $("x-platform-panel"), pFind = $("x-platform-find"), pNone = $("x-platform-none");
   const tintOf = (p) => TINTS[p] || `hsl(${hueOf(p)} 60% 50%)`;
   function syncPlatform(platform) {
-    $("x-platform-name").textContent = (S._names && S._names[platform]) || platform;
-    pBtn.style.setProperty("--tint", tintOf(platform));
+    $("x-platform-name").textContent = platform === "all" ? t("x_search_all") : (S._names && S._names[platform]) || platform;
+    pBtn.style.setProperty("--tint", platform === "all" ? "#33bbff" : tintOf(platform));
   }
   function filterPlatforms(q) {
     const f = fold(q.trim());
@@ -3054,7 +3071,7 @@
     const on = controlsAway && !WIDE.matches && !results.hidden && !document.body.classList.contains("x-on-sheet");
     mini.hidden = !on;
     if (!on) return;
-    mini.style.setProperty("--tint", tintOf(from || PLATFORMS[0]));
+    mini.style.setProperty("--tint", route().platform === "all" ? "#33bbff" : tintOf(from || PLATFORMS[0]));
     mini.querySelector("#x-mini-plat span").textContent = $("x-platform-name").textContent;
     miniFilters.hidden = filtersBtn.hidden;
     miniFilters.lastElementChild.textContent = filtersBtn.lastElementChild.textContent;

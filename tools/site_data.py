@@ -545,6 +545,34 @@ def overall(everyone: dict) -> dict:
             "renown": {"mean": mean(renown), "median": median(renown), "q": quantiles(renown)}}
 
 
+ALL_LIST = 100          # games a list of all the platforms holds
+
+
+def all_lists(pool: dict) -> dict:
+    """The first page of all the platforms at once. `pool` has, for each of the lists (popular, trending, upcoming,
+    recent), (key, platform, row) of every platform's list: key is the game's Wikidata item when it has one, so a
+    game on several platforms is one row, the one of the platform that ranks it first (today's big platforms win a
+    tie). Each row is its platform's, with the platform in front: [platform, id, name, ...]."""
+    def seat(platform):
+        return PRIORITY.index(platform) if platform in PRIORITY else len(PRIORITY)
+    order = {
+        "popular": lambda x: (-x[2][2], seat(x[1]), x[1]),
+        "trending": lambda x: (-x[2][3], -x[2][2], seat(x[1]), x[1]),
+        "upcoming": lambda x: (x[2][2], seat(x[1]), x[1]),
+        "recent": lambda x: (-x[2][2], seat(x[1]), x[1]),
+    }
+    out = {"platform": "all"}
+    for kind, by in order.items():
+        seen, rows = set(), []
+        for key, platform, row in sorted(pool.get(kind, ()), key=by):
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append([platform, *row])
+        out[kind] = rows[:ALL_LIST]
+    return out
+
+
 def unify(entries: dict, similar_of: dict) -> dict:
     """One sheet for a game on several platforms: {platform: (id, sheet)} merged. Its name is the
     one most platforms give; each platform keeps its own figures (release, renown, reviews, ratings),
@@ -664,6 +692,7 @@ def build(data_dir: str, out_dir: str) -> dict:
         tally(found.get("games") or {}, found.get("tags") or {}, seen)
     spelled = spelled_of(seen)
     every_platform = []     # each platform's headline figures, side by side (x/stats.json)
+    pool = {"popular": [], "trending": [], "upcoming": [], "recent": []}   # every platform's lists, for the first page of all
     everyone = {}           # each game once, its scores on every platform it is on (x/all/stats.json)
     for platform in plats:
         files = platform_files(data_dir, platform)
@@ -703,6 +732,9 @@ def build(data_dir: str, out_dir: str) -> dict:
             "upcoming": [with_pic([g, names.get(g, ""), r[0], r[2] if len(r) > 2 else 0], g) for g, r in soon[:LIST]],
             "recent": [with_pic([g, names[g], r, scores[g][0]], g) for g, r in recent if names.get(g)][:RECENT_LIST],
         }
+        for kind in pool:
+            for row in lists[kind]:
+                pool[kind].append(((own_links.get(row[0]) or [""])[0] or f"{platform}:{row[0]}", platform, row))
         for gid, _ in best[:SHARE_LIST]:
             if names.get(gid) and SHARE_ID.match(gid):
                 folder = os.path.join(out_dir, "g", platform, gid)
@@ -807,6 +839,8 @@ def build(data_dir: str, out_dir: str) -> dict:
     write(os.path.join(out_dir, "x", "stats.json"), {"platforms": sorted(every_platform, key=lambda r: -r[1])})
     os.makedirs(os.path.join(out_dir, "x", "all"), exist_ok=True)
     write(os.path.join(out_dir, "x", "all", "stats.json"), overall(everyone))
+    if len(plats) > 1:
+        write(os.path.join(out_dir, "x", "all", "lists.json"), dict(all_lists(pool), generated=max((summary[k].get("generated") or "" for k in summary), default="")))
     one = {q: unify(entries, similar_refs.get(q, {})) for q, entries in kept.items()}
     os.makedirs(os.path.join(out_dir, "x", "u"), exist_ok=True)
     write(os.path.join(out_dir, "x", "u", "meta.json"),

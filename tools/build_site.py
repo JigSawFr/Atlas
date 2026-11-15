@@ -134,7 +134,12 @@ def platform_picker(language: str, catalog: dict, summary: dict) -> str:
         return f'        <section class="plat-group"><h3>{html.escape(title)}</h3><div class="plat-list">{buttons}</div></section>'
     retro = [k for k, _ in PLATFORMS if k not in STORE_IDS]
     placed = {k for _, keys in MAKERS for k in keys}
-    groups = [group(catalog["x_plat_current"], [k for k, _ in PLATFORMS if k in STORE_IDS])]
+    # The first page of all the platforms (x/all/lists.json) is the first choice, ahead of the groups.
+    everyone = ""
+    if len(summary) > 1:
+        everyone = (f'        <section class="plat-group"><div class="plat-list"><button type="button" data-platform="all">'
+                    f'<span>{html.escape(catalog["x_search_all"])}</span></button></div></section>')
+    groups = [everyone, group(catalog["x_plat_current"], [k for k, _ in PLATFORMS if k in STORE_IDS])]
     groups += [group(catalog.get(maker, maker), keys) for maker, keys in MAKERS]
     groups.append(group(catalog["x_plat_other"], [k for k in retro if k not in placed]))
     return "\n".join(g for g in groups if g)
@@ -323,6 +328,7 @@ def strings(catalog: dict, language: str, summary: dict) -> str:
     """The explorer's texts and settings, as JSON in the page (data, not a script)."""
     body = {k: v for k, v in catalog.items() if k.startswith("x_")}
     body["_platforms"] = {k: summary[k]["shards"] for k in summary}
+    body["_all"] = len(summary) > 1       # x/all/lists.json: the first page of all the platforms
     body["_names"] = dict(PLATFORMS)
     if catalog.get("x_xbox_store"):
         body["_names"]["xbox"] = catalog["x_xbox_store"]       # the one name with a word in it

@@ -105,6 +105,21 @@ def unified_errors(site: Path) -> list:
     return errors
 
 
+def all_lists_errors(body: dict, site: Path) -> list:
+    """What is wrong with the first page of all the platforms (x/all/lists.json): a row is its platform's, the
+    platform in front, and that platform has a folder of its own; each game is there once."""
+    errors = []
+    for kind in ("popular", "trending", "upcoming", "recent"):
+        seen = set()
+        for row in body.get(kind) or []:
+            if len(row) < 4 or not (site / "x" / str(row[0]) / "lists.json").is_file():
+                errors.append(f"x/all/lists.json: {kind} has a row {row[:3]} of no platform")
+            elif (row[0], row[1]) in seen:
+                errors.append(f"x/all/lists.json: {kind} has {row[0]}/{row[1]} twice")
+            seen.add((row[0], row[1]))
+    return errors
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         sys.exit(__doc__)
@@ -119,6 +134,9 @@ def main() -> None:
         errors.append(f"sitemap.xml: {error}")
     for lists in sorted(site.glob("x/*/lists.json")):
         body = json.loads(lists.read_text(encoding="utf-8"))
+        if lists.parent.name == "all":
+            errors += all_lists_errors(body, site)
+            continue
         shards = sorted(int(p.stem) for p in (lists.parent / "g").glob("*.json"))
         if shards != list(range(body.get("shards", 0))):
             errors.append(f"{lists.parent.relative_to(site)}: {len(shards)} shards, not {body.get('shards')}")
