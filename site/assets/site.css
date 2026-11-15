@@ -1349,10 +1349,34 @@ a.chip.view[aria-current] { color: var(--snow); background: color-mix(in srgb, v
 @media (max-width: 600px) {
   .sheet header.masthead { padding-top: 20px; }
   .banner { gap: 12px 14px; }
-  .rings { gap: 6px 18px; }
-  .ring { width: auto; grid-template-columns: 52px auto; justify-items: start; align-items: center; column-gap: 10px; gap: 0 10px; }
-  .ring b { left: 0; width: 52px; }
-  .ring small { text-align: start; max-width: 11ch; }
+  /* The scores as one card of equal columns, the ring above its short label, not rings and labels wrapping unevenly. */
+  .rings { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 12px 6px; padding: 12px 8px; border-radius: 14px; background: rgb(11 18 32 / 0.6); border: 1px solid var(--night-line); backdrop-filter: blur(6px); }
+  .ring { width: auto; justify-items: center; align-content: start; gap: 4px; }
+  .ring b { left: 0; right: 0; width: auto; }
+  .ring small { text-align: center; max-width: none; line-height: 1.25; }
+  .ring.atlas { transform: none; margin: 0; }
+  /* The traits: the label above its row, the chips on one line that scrolls sideways, a fade where there is more. */
+  .traits div { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .traits dd { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; padding: 3px 2px; margin: -3px -2px; overscroll-behavior-x: contain; }
+  .traits dd::-webkit-scrollbar { display: none; }
+  .traits dd > *, .traits dd .more-chips > * { flex: none; white-space: nowrap; scroll-snap-align: start; }
+  .traits dd.fade-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+  .traits dd.fade-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
+  .traits dd.fade-l.fade-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
+  /* The sheet's sections, under the head from the start. */
+  .jump { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-inline: -4px; padding: 0 4px; }
+  .jump::-webkit-scrollbar { display: none; }
+  .jump .tab { flex: none; min-height: 40px; padding: 4px 14px; border-radius: 99px; border: 1px solid var(--night-line); background: rgb(11 18 32 / 0.6); color: var(--snow); font: inherit; font-size: 0.875rem; cursor: pointer; }
+  .jump .tab[hidden] { display: none; }
+  .jump.fade-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+  .jump.fade-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
+  .jump.fade-l.fade-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
 }
+.jump { display: none; }
+@media (max-width: 600px) { .jump { display: flex; } }
+
+/* The reviews of all the stores: the share of good ones large, the count beside the word, a thin bar under. */
+.stats .rev.pooled dd { grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: 8px; }
+.stats .rev.pooled .bar.wide { grid-column: 1 / -1; width: 100%; height: 4px; }
 
 .sheet-bar .tab[hidden] { display: none; }

@@ -1084,6 +1084,19 @@
       el("p", { class: "dim", text: t("x_dist_help", { p: num(p) }) }));
   }
 
+  // A row that scrolls sideways says so: a fade on the edge that has more beyond it (site.css, under 600px).
+  function scrollFades(...rows) {
+    for (const row of rows.flatMap((r) => (r.matches && r.matches("dd, nav") ? [r] : [...r.querySelectorAll("dd")]))) {
+      const update = () => {
+        row.classList.toggle("fade-l", row.scrollLeft > 2);
+        row.classList.toggle("fade-r", Math.abs(row.scrollLeft) + row.clientWidth < row.scrollWidth - 2);
+      };
+      row.addEventListener("scroll", update, { passive: true });
+      if (window.ResizeObserver) new ResizeObserver(update).observe(row);
+      update();
+    }
+  }
+
   // The bar that slides in once the head has left the window: the game, its score, the sheet's sections (the one in
   // view marked). Buttons, not links: the address belongs to the router.
   let barOff = null;
@@ -1098,6 +1111,14 @@
       b.addEventListener("click", () => sec.scrollIntoView({ behavior: MOTION.matches ? "smooth" : "auto", block: "start" }));
       return b;
     });
+    // On a phone the same sections stand as a row under the head from the start (the fixed bar only comes once the head is gone).
+    const jump = el("nav", { class: "jump", "aria-label": t("x_sections") }, ...targets.map((sec) => {
+      const b = el("button", { type: "button", class: "tab", text: sec.querySelector(":scope > h3").textContent });
+      b.addEventListener("click", () => sec.scrollIntoView({ behavior: MOTION.matches ? "smooth" : "auto", block: "start" }));
+      return b;
+    }));
+    head.after(jump);
+    scrollFades(jump);
     const bar = el("div", { class: "sheet-bar", inert: "" },
       el("p", { class: "bar-title" }, el("span", { text: name }), score ? el("b", { text: String(score) }) : null),
       el("nav", { "aria-label": t("x_sections") }, ...buttons));
@@ -1109,7 +1130,7 @@
       bar.toggleAttribute("inert", !shownBar);
       let here = -1;
       // A section that left the page (a screenshots strip none of whose pictures came) leaves the bar too.
-      targets.forEach((sec, i) => { buttons[i].hidden = !sec.isConnected; if (sec.isConnected && sec.getBoundingClientRect().top <= window.innerHeight * 0.3) here = i; });
+      targets.forEach((sec, i) => { buttons[i].hidden = jump.children[i].hidden = !sec.isConnected; if (sec.isConnected && sec.getBoundingClientRect().top <= window.innerHeight * 0.3) here = i; });
       buttons.forEach((b, i) => { b.classList.toggle("here", i === here); if (i === here) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
       const cur = buttons[here];
       if (cur && shownBar) { const nav = bar.querySelector("nav"); nav.scrollLeft = cur.offsetLeft - nav.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; }   // offsetLeft is the bar's (it is fixed), not the nav's
@@ -1117,7 +1138,7 @@
     const ask = () => { if (!frame) frame = requestAnimationFrame(update); };
     window.addEventListener("scroll", ask, on);
     window.addEventListener("resize", ask, on);
-    barOff = () => { ctl.abort(); barOff = null; };
+    barOff = () => { ctl.abort(); jump.remove(); barOff = null; };
     ask();
     return bar;
   }
@@ -1462,7 +1483,13 @@
       // The game as a whole: the stores' reviews pooled, how many platforms, the renown on average.
       let n = 0, sum = 0;
       for (const e of es) for (const r of [e.reviews, e.rating]) if (r && r[0]) { n += r[0]; sum += r[0] * r[1]; }
-      if (n) stat(t("x_pooled_label"), t("x_pooled_value", { p: num(Math.round(sum / n)), n: num(n) }));
+      if (n) {
+        // The share of good reviews large in the rings' colours, a thin bar under it, how many reviews beside the word.
+        const pct = Math.round(sum / n);
+        stats.append(el("div", { class: "rev pooled" }, el("dt", { text: t("x_pooled_label") }),
+          el("dd", {}, el("span", { class: `pct ${toneOf(pct)}`, text: `${num(pct)} %` }), el("small", { text: t("x_pooled_value", { n: num(n) }) }),
+            el("span", { class: "bar wide", "aria-hidden": "true" }, el("i", { "data-w": String(pct) })))));
+      }
       if (best) stat(t("x_score"), String(best.popular[0]));
     } else {
       if (best && best.popular[1]) stat(t("x_trend"), trend(best.popular[1]));
@@ -1530,6 +1557,7 @@
         }))));
       }
       main.append(dl);
+      scrollFades(dl);
       // How many games of the platform have it, once its menus are in (a few kB, the browse view's own).
       const homeName = S._names[home] || home;
       get(`x/${home}/facets.json`).then((f) => {
