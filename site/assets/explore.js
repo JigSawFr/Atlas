@@ -107,18 +107,16 @@
   }
 
   // The address, read and written.
-  // The platform last visited is where an empty address opens (kept in this browser only).
+  // An empty address opens the first page of all the platforms: no platform is kept between visits.
   const SHARE_LIST = 60;   // the best known games that have a page for a shared link (site_data.py)
   const HOME_KEY = "atlas-platform";
-  // Where an empty address opens for a first visit: the platform with the most to see, not the first by name.
+  // The key an earlier version kept the last platform in is taken away once, for the visitors who still have it (this
+  // line goes after 2026-12-31: plans/atlas/suivi.md of the workbench).
+  try { localStorage.removeItem(HOME_KEY); } catch (e) { /* no storage */ }
+  // The platform the views that need one show when "all" is where the visitor is: the one looked at last in this visit,
+  // at first the first of FIRST_VISIT the data has (Steam, Switch, PS5, Xbox, GOG) when the data has no "all" page.
   const FIRST_VISIT = ["steam", "switch", "ps5", "xbox", "gog"];
-  let lastReal = FIRST_VISIT.find((p) => PLATFORMS.includes(p)) || PLATFORMS[0];   // the platform the views that need one show when "all" is picked
-  let home = S._all ? "all" : lastReal;                                              // "all": the first page of all the platforms
-  try {
-    const kept = localStorage.getItem(HOME_KEY);
-    if (PLATFORMS.includes(kept) || (kept === "all" && S._all)) home = kept;
-    if (PLATFORMS.includes(kept)) lastReal = kept;
-  } catch (e) { /* no storage: the first platform */ }
+  let lastReal = FIRST_VISIT.find((p) => PLATFORMS.includes(p)) || PLATFORMS[0];
   let from = "";               // the platform last shown, which a sheet of all a game's platforms goes back to ("" before any)
   function route() {
     const raw = location.hash.slice(1), q = raw.indexOf("?");
@@ -127,11 +125,11 @@
     if (parts[0] === "all" && parts[1] === "search") return { platform: from || PLATFORMS[0], view: "searchall", arg: parts.slice(2).join("/"), query };
     if (parts[0] === "game" && parts[1]) return { platform: from || PLATFORMS[0], view: "ugame", arg: parts.slice(1).join("/"), query };
     // The first page of all the platforms: its own address, and what an empty one opens when that was the last.
-    if (S._all && ((parts[0] === "all" && (!parts[1] || parts[1] === "home")) || (home === "all" && !PLATFORMS.includes(parts[0]) && parts[0] !== "all"))) {
+    if (S._all && ((parts[0] === "all" && (!parts[1] || parts[1] === "home")) || (!PLATFORMS.includes(parts[0]) && parts[0] !== "all"))) {
       return { platform: "all", view: "home", arg: "", query };
     }
     // The other views need a platform: "all" there is the one last looked at.
-    const platform = PLATFORMS.includes(parts[0]) ? parts[0] : home === "all" || parts[0] === "all" ? lastReal : home;
+    const platform = PLATFORMS.includes(parts[0]) ? parts[0] : lastReal;
     from = platform;
     lastReal = platform;
     const view = ["home", "browse", "popular", "trending", "upcoming", "search", "game", "stats", "favorites", "compare", "play"].includes(parts[1]) ? parts[1] : parts[1] ? "popular" : "home";
@@ -2759,7 +2757,6 @@
     tipBox.hidden = true;
     pressed("x-platforms", "platform", platform);
     syncPlatform(platform);
-    if (platform !== home) { home = platform; try { localStorage.setItem(HOME_KEY, platform); } catch (e) { /* not kept */ } }
     pickerOpen(false);
     $("x-search-all").setAttribute("aria-pressed", String(view === "searchall"));
     for (const a of document.querySelectorAll("#x-bottom [data-go]")) {
