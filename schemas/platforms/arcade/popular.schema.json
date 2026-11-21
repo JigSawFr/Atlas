@@ -1,0 +1,70 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A platform's games' renown: [score 0..100, trend -100..999, critics 0..100]",
+ "type": "object",
+ "required": [
+  "schema",
+  "generated",
+  "games"
+ ],
+ "properties": {
+  "schema": {
+   "const": 1
+  },
+  "generated": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+  },
+  "source": {
+   "type": "string"
+  },
+  "platform": {
+   "type": "string"
+  },
+  "license": {
+   "type": "string"
+  },
+  "part": {
+   "type": "integer"
+  },
+  "parts": {
+   "type": "integer"
+  },
+  "month": {
+   "type": "string"
+  },
+  "views": {
+   "type": "boolean"
+  },
+  "trends": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+  },
+  "games": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "array",
+    "minItems": 3,
+    "maxItems": 3,
+    "prefixItems": [
+     {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+     },
+     {
+      "type": "integer",
+      "minimum": -100,
+      "maximum": 999
+     },
+     {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+     }
+    ]
+   }
+  }
+ },
+ "$id": "https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/schemas/platforms/arcade/popular.schema.json"
+}
