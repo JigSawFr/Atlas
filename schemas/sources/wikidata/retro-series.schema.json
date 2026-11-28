@@ -1,0 +1,55 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A source's answers, as collected",
+ "type": "object",
+ "required": [
+  "schema",
+  "generated",
+  "source",
+  "license"
+ ],
+ "properties": {
+  "schema": {
+   "const": 1
+  },
+  "generated": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+  },
+  "source": {
+   "type": "string"
+  },
+  "platform": {
+   "type": "string"
+  },
+  "license": {
+   "type": "string"
+  },
+  "part": {
+   "type": "integer"
+  },
+  "parts": {
+   "type": "integer"
+  },
+  "source_id": {
+   "type": "string"
+  },
+  "rows": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": {
+     "type": "string"
+    }
+   }
+  },
+  "games": {
+   "type": "object"
+  },
+  "items": {},
+  "pages": {
+   "type": "object"
+  }
+ },
+ "$id": "https://cdn.jsdelivr.net/gh/JigSawFr/Atlas@data/schemas/sources/wikidata/retro-series.schema.json"
+}
